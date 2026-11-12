@@ -1,4 +1,9 @@
-export const QAWMI_MARHALAS = [
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.QAWMI_MARHALAS = void 0;
+exports.calculateQawmiGrade = calculateQawmiGrade;
+exports.getQawmiGradeLabel = getQawmiGradeLabel;
+exports.QAWMI_MARHALAS = [
     {
         id: 'nurani',
         code: 'NUR',
@@ -154,7 +159,7 @@ export const QAWMI_MARHALAS = [
         canonicalKitabs: ['রমজুদ্দাকায়েক', 'আল-আশবাহ ওয়ান-নাজায়ের', 'উসূলুল ইফতা', 'ফাতাওয়া শামী']
     }
 ];
-export function calculateQawmiGrade(percentage) {
+function calculateQawmiGrade(percentage) {
     if (percentage >= 80)
         return 'mumtaz';
     if (percentage >= 65)
@@ -165,7 +170,7 @@ export function calculateQawmiGrade(percentage) {
         return 'maqbool';
     return 'rasib';
 }
-export function getQawmiGradeLabel(grade, locale = 'bn') {
+function getQawmiGradeLabel(grade, locale = 'bn') {
     const labels = {
         mumtaz: { bn: 'মুমতাজ (প্রথম বিভাগ স্টার)', en: 'Mumtaz (Distinction)', ar: 'ممتاز' },
         jayyid_jiddan: { bn: 'জায়্যিদ জিদ্দান (প্রথম বিভাগ)', en: 'Jayyid Jiddan (Very Good)', ar: 'جيد جداً' },

@@ -1,4 +1,8 @@
-export const ROLE_PERMISSIONS = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ROLE_PERMISSIONS = void 0;
+exports.hasPermission = hasPermission;
+exports.ROLE_PERMISSIONS = {
     super_admin: [
         'manage_tenant_settings',
         'manage_branches',
@@ -75,7 +79,7 @@ export const ROLE_PERMISSIONS = {
         'view_own_fees'
     ]
 };
-export function hasPermission(role, permission) {
-    const permissions = ROLE_PERMISSIONS[role] || [];
+function hasPermission(role, permission) {
+    const permissions = exports.ROLE_PERMISSIONS[role] || [];
     return permissions.includes(permission);
 }

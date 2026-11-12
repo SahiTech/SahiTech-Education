@@ -1,15 +1,16 @@
-'useclient';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, Globe, Shield, User } from 'lucide-react';
+import { BookOpen, Globe, User, PlusCircle } from 'lucide-react';
 
 interface NavbarProps {
   currentLocale?: string;
   onLocaleChange?: (locale: string) => void;
+  user?: { email?: string } | null;
 }
 
-export function Navbar({ currentLocale = 'bn', onLocaleChange }: NavbarProps) {
+export function Navbar({ currentLocale = 'bn', onLocaleChange, user }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -39,6 +40,10 @@ export function Navbar({ currentLocale = 'bn', onLocaleChange }: NavbarProps) {
           <Link href="/dashboard/students" className="hover:text-emerald-700 transition-colors">
             শিক্ষার্থী ও ছাত্রাবাস (Students)
           </Link>
+          <Link href="/register-madrasa" className="hover:text-emerald-700 transition-colors inline-flex items-center gap-1 text-emerald-800 font-semibold">
+            <PlusCircle className="h-3.5 w-3.5" />
+            মাদরাসা নিবন্ধন
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -63,4 +68,3 @@ export function Navbar({ currentLocale = 'bn', onLocaleChange }: NavbarProps) {
     </header>
   );
 }
-

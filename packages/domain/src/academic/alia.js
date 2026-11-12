@@ -1,4 +1,8 @@
-export const ALIA_CLASSES = [
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ALIA_GRADE_SCALE = exports.ALIA_CLASSES = void 0;
+exports.calculateAliaGpa = calculateAliaGpa;
+exports.ALIA_CLASSES = [
     { id: 'ebt_1', code: 'EBT-1', name: { bn: 'ইবতেদায়ি ১ম শ্রেণি', en: 'Ebtedayee Class 1', ar: 'الصف الأول الابتدائي' }, tier: 'ebtedayee', numericGradeEquivalent: 1 },
     { id: 'ebt_2', code: 'EBT-2', name: { bn: 'ইবতেদায়ি ২য় শ্রেণি', en: 'Ebtedayee Class 2', ar: 'الصف الثاني الابتدائي' }, tier: 'ebtedayee', numericGradeEquivalent: 2 },
     { id: 'ebt_3', code: 'EBT-3', name: { bn: 'ইবতেদায়ি ৩য় শ্রেণি', en: 'Ebtedayee Class 3', ar: 'الصف الثالث الابتدائي' }, tier: 'ebtedayee', numericGradeEquivalent: 3 },
@@ -14,7 +18,7 @@ export const ALIA_CLASSES = [
     { id: 'faz_deg', code: 'FAZ-DEG', name: { bn: 'ফাযিল (স্নাতক পাস/অনার্স)', en: 'Fazil (Undergraduate)', ar: 'مرحلة الفاضل (بكالوريوس)' }, tier: 'fazil', numericGradeEquivalent: 15 },
     { id: 'kam_mas', code: 'KAM-MAS', name: { bn: 'কামিল (স্নাতকোত্তর/মাস্টার্স)', en: 'Kamil (Postgraduate)', ar: 'مرحلة الكامل (ماجستير)' }, tier: 'kamil', numericGradeEquivalent: 16 }
 ];
-export const ALIA_GRADE_SCALE = [
+exports.ALIA_GRADE_SCALE = [
     { grade: 'A+', gradePoint: 5.0, marksRange: { min: 80, max: 100 } },
     { grade: 'A', gradePoint: 4.0, marksRange: { min: 70, max: 79 } },
     { grade: 'A-', gradePoint: 3.5, marksRange: { min: 60, max: 69 } },
@@ -23,11 +27,11 @@ export const ALIA_GRADE_SCALE = [
     { grade: 'D', gradePoint: 1.0, marksRange: { min: 33, max: 39 } },
     { grade: 'F', gradePoint: 0.0, marksRange: { min: 0, max: 32 } }
 ];
-export function calculateAliaGpa(marks) {
-    for (const scale of ALIA_GRADE_SCALE) {
+function calculateAliaGpa(marks) {
+    for (const scale of exports.ALIA_GRADE_SCALE) {
         if (marks >= scale.marksRange.min && marks <= scale.marksRange.max) {
             return scale;
         }
     }
-    return ALIA_GRADE_SCALE[ALIA_GRADE_SCALE.length - 1];
+    return exports.ALIA_GRADE_SCALE[exports.ALIA_GRADE_SCALE.length - 1];
 }
