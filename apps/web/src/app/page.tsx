@@ -41,10 +41,18 @@ export default function HomePage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/dashboard/academic"
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur hover:bg-white/10 transition"
+              href="/verify"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/20 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 transition"
             >
-              একাডেমিক ইঞ্জিন বিস্তারিত
+              <ShieldCheck className="h-4 w-4 text-emerald-300" />
+              ডিজিটাল সনদ যাচাই
+            </Link>
+            <Link
+              href="/public-site"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/20 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 transition"
+            >
+              <Building2 className="h-4 w-4 text-emerald-300" />
+              মাদরাসা ওয়েব পোর্টাল
             </Link>
           </div>
         </div>

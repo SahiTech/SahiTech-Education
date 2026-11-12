@@ -75,13 +75,21 @@ export default async function StudentsDirectoryPage({ searchParams }: StudentsDi
           </p>
         </div>
 
-        <Link
-          href="/dashboard/students/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
-        >
-          <Plus className="h-4 w-4" />
-          নতুন ভর্তি (New Admission)
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/admissions"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
+          >
+            ভর্তি আবেদনসমূহ
+          </Link>
+          <Link
+            href="/dashboard/students/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
+          >
+            <Plus className="h-4 w-4" />
+            নতুন ভর্তি (New Admission)
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

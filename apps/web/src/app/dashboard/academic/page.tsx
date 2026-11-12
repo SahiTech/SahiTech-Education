@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { QAWMI_MARHALAS } from '@sahitech/domain';
-import { BookOpen, Layers, Award, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Layers, Award, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export default function AcademicEnginePage() {
   return (
@@ -15,10 +16,21 @@ export default function AcademicEnginePage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <button className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition">
-            + নতুন কিতাব / বিষয় যোগ
-          </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/academic/exams"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition inline-flex items-center gap-1.5"
+          >
+            <Award className="h-4 w-4 text-emerald-700" />
+            ইমতিহান ও পরীক্ষা
+          </Link>
+          <Link
+            href="/dashboard/academic/sanad"
+            className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition inline-flex items-center gap-1.5"
+          >
+            <ShieldCheck className="h-4 w-4 text-emerald-200" />
+            ডিজিটাল সনদ রেজিস্ট্রি
+          </Link>
         </div>
       </div>
 

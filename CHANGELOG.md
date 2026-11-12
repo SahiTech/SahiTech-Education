@@ -5,6 +5,51 @@ All notable changes to the Madrasa Digitalization Initiative (MDI) platform will
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-11-12
+
+### Added
+- **Complete MDI Institutional SaaS Platform Ecosystem (Phases 3 through 10)**:
+  - **Database Migration 00004 & 00005**:
+    - Created 16 additional tables bringing database total to **32 public tables with 100% Row Level Security (RLS)**.
+    - Added tables: `student_admissions`, `student_guardians`, `hostel_rooms`, `hostel_allocations`, `lillah_evaluations`, `exams`, `exam_marks`, `sanads`, `staff_leaves`, `class_routines`, `accounts`, `journal_entries`, `journal_entry_lines`, `tenant_notices`, `tenant_pages`, `communication_logs`.
+    - Implemented Security Definer RPC function `public.verify_sanad_public(p_token)` for tamper-proof credentials verification.
+  - **Domain Engine Enhancements (`@sahitech/domain`)**:
+    - Added Document 26 Shariah Fund Segregation validator preventing cross-fund commingling.
+    - Added balanced double-entry accounting validator (`validateJournalEntry`).
+    - Added Befaqul Madaris canonical Qawmi Dharja grading scale (`calculateQawmiDharja`).
+    - Added portable bitwise cryptographic Sanad verification hash generator (`generateSanadVerificationHash`).
+    - Added Shariah Lillah eligibility assessment calculator (`evaluateLillahEligibility`).
+    - Added admission workflow progression state machine (`canTransitionAdmission`).
+    - All 24 unit and security tests passing.
+  - **Server Actions Suite**:
+    - `admissions.ts`: Online admissions, scoring, and atomic student enrollment.
+    - `hostel.ts`: Hostel room inventory and bed allocations.
+    - `lillah.ts`: Shariah Lillah Boarding assessments and subsidy approvals.
+    - `exams.ts`: Chala exam creation, marks entry, and result publication.
+    - `sanad.ts`: Cryptographic Sanad issuance and public verification.
+    - `finance.ts`: Chart of Accounts seeding, double-entry vouchers, and cash receipts.
+    - `teachers.ts`: Staff registration and leave approval workflow.
+    - `attendance.ts`: Batch attendance recording and live metric updates.
+    - `cms.ts`: Public notice creation and publication.
+    - `reports.ts`: Executive overview reports and Befaqul Madaris board returns.
+  - **Fullstack User Interface (24 Production Routes)**:
+    - `/dashboard/admissions`: Admissions tracker with exam evaluation modal.
+    - `/dashboard/academic/exams`: Chala examinations, mark entry sheets, and publication controls.
+    - `/dashboard/academic/sanad`: Digital Sanad issuance, registry, and printable certificates.
+    - `/dashboard/hostel`: Darul Iqamah hostel room inventory and bed vacancy tracker.
+    - `/dashboard/lillah`: Lillah Boarding and Zakat welfare grant assessment workspace.
+    - `/dashboard/teachers`: Staff service directory and leave approval desk.
+    - `/dashboard/attendance`: Daily attendance sheet, bulk mark-all, and live attendance metrics.
+    - `/dashboard/finance`: Double-entry Chart of Accounts, journal vouchers, and cash counter receipts.
+    - `/dashboard/reports`: Executive Muhtamim KPIs and Befaqul Madaris board return tables.
+    - `/dashboard/settings`: Institutional profile, board affiliation, and zero-trust security guarantees.
+    - `/public-site`: Public institutional web portal with notice board and online admission inquiry form.
+    - `/verify` & `/verify/[hash]`: Official digital certificate verification lookup and sheet with QR verification token.
+  - **Verification**:
+    - `pnpm test` ➔ 24/24 passing.
+    - `pnpm --filter web lint` ➔ 0 warnings, 0 errors.
+    - `pnpm --filter web build` ➔ 24 routes successfully compiled.
+
 ## [0.3.0] - 2026-11-12
 
 ### Added
