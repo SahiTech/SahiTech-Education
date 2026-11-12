@@ -14,7 +14,7 @@ export async function updateSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({
           request,
@@ -51,7 +51,10 @@ export async function updateSession(request: NextRequest) {
 
   // Route protection
   const pathname = request.nextUrl.pathname;
-  const isProtectedPath = pathname.startsWith('/dashboard') || pathname.startsWith('/portals');
+  const isProtectedPath = 
+    pathname.startsWith('/dashboard') || 
+    pathname.startsWith('/portals') ||
+    pathname.startsWith('/onboarding');
   const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/forgot-password');
 
   if (isProtectedPath && !user) {

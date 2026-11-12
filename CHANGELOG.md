@@ -5,6 +5,23 @@ All notable changes to the Madrasa Digitalization Initiative (MDI) platform will
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-12
+
+### Added
+- **Phase 2 Institution Setup & Onboarding Wizard**:
+  - Applied Database Migration `00003_institution_onboarding_wizard.sql` extending `public.tenants` with `onboarding_step`, `is_verified`, `onboarding_completed_at`, `board_affiliation`, `motto_bn`, `motto_en`, `established_year`, and `program_policies`.
+  - Implemented 6-step Onboarding Server Action suite in `apps/web/src/app/actions/onboarding.ts`:
+    - `saveOnboardingStep1`: Institutional Profile & Program Policies.
+    - `saveOnboardingStep2`: Campuses & Branches Setup.
+    - `saveOnboardingStep3`: Academic Year & Calendar Initialization.
+    - `saveOnboardingStep4`: Departments & Canonical Marhala Seeding.
+    - `saveOnboardingStep5`: Leadership & Staff Role Designation.
+    - `finalizeOnboarding`: Institutional Eligibility Verification, completion audit trail, and launch.
+    - `getOnboardingState`: Multi-table draft state retrieval.
+  - Built interactive multi-step Onboarding Wizard UI (`/onboarding`) with progress indicators, forward/backward navigation, step validation, and mobile support.
+  - Added dynamic setup alert banner to Main Dashboard (`/dashboard`) directing administrators to incomplete onboarding.
+  - Added unit test suite in `packages/domain/test/onboarding.test.mjs` verifying multi-step validation and completeness gates (17 total tests passing).
+
 ## [0.2.0] - 2026-11-12
 
 ### Added

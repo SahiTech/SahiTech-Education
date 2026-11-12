@@ -11,7 +11,8 @@ import {
   Plus,
   School,
   ExternalLink,
-  Lock
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { getActiveTenantContext } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
@@ -59,6 +60,7 @@ export default async function DashboardOverviewPage() {
   const supabase = await createClient();
 
   const [
+    tenantRes,
     studentsRes,
     residentialRes,
     lillahRes,
@@ -67,6 +69,11 @@ export default async function DashboardOverviewPage() {
     todayAttendanceRes,
     recentStudentsRes,
   ] = await Promise.all([
+    supabase
+      .from('tenants')
+      .select('*')
+      .eq('id', context.tenantId)
+      .single(),
     supabase
       .from('students')
       .select('id', { count: 'exact', head: true })
@@ -105,6 +112,7 @@ export default async function DashboardOverviewPage() {
       .limit(5),
   ]);
 
+  const tenant = tenantRes.data;
   const totalStudents = studentsRes.count ?? 0;
   const residentialCount = residentialRes.count ?? 0;
   const lillahCount = lillahRes.count ?? 0;
@@ -168,6 +176,34 @@ export default async function DashboardOverviewPage() {
           </Link>
         </div>
       </div>
+
+      {/* Onboarding Progress Alert Banner */}
+      {(!tenant?.onboarding_completed_at || (tenant?.onboarding_step ?? 1) < 6) && (
+        <div className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 text-white shrink-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                <span>প্রতিষ্ঠান অনবোর্ডিং সেটআপ চলমান (ধাপ {tenant?.onboarding_step || 1} / ৬)</span>
+                <span className="rounded-full bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-900">
+                  Phase 2 Setup
+                </span>
+              </div>
+              <div className="text-xs text-emerald-800 mt-0.5">
+                আপনার মাদরাসার পাঠ্যক্রম, ক্যাম্পাস ও দায়িত্বশীলদের পূর্ণাঙ্গ রূপরেখা চূড়ান্ত করতে সেটআপ উইজার্ডটি সম্পন্ন করুন।
+              </div>
+            </div>
+          </div>
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-800 transition shrink-0"
+          >
+            সেটআপ উইজার্ডে প্রবেশ করুন →
+          </Link>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

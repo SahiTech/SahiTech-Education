@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useActionState } from 'react';
-import { provisionInstitution } from '@/app/actions/provisioning';
+import { provisionInstitution, ProvisioningResult } from '@/app/actions/provisioning';
 import { Building2, Globe, Shield, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
+const initialProvisioningState: ProvisioningResult = { success: false, error: '' };
+
 export function RegisterForm() {
-  const [state, formAction, isPending] = useActionState(provisionInstitution, { success: false });
+  const [state, formAction, isPending] = useActionState(provisionInstitution, initialProvisioningState);
 
   return (
     <form action={formAction} className="space-y-4">

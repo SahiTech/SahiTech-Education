@@ -1,4 +1,13 @@
 import { CurriculumType } from '../academic/types';
+export interface ProgramPolicies {
+    residentialQuota?: number;
+    lillahFundEnabled?: boolean;
+    termSystem?: 'chala' | 'semester';
+    minimumAttendancePercent?: number;
+    allowOnlineAdmission?: boolean;
+    boardReportingEnabled?: boolean;
+    customRules?: Record<string, any>;
+}
 export interface Tenant {
     id: string;
     name: string;
@@ -14,6 +23,14 @@ export interface Tenant {
     division?: string;
     logoUrl?: string;
     isActive: boolean;
+    onboardingStep: number;
+    isVerified: boolean;
+    onboardingCompletedAt?: string;
+    boardAffiliation?: string;
+    mottoBn?: string;
+    mottoEn?: string;
+    establishedYear?: number;
+    programPolicies?: ProgramPolicies;
     createdAt: string;
     updatedAt: string;
 }

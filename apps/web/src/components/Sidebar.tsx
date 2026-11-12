@@ -11,11 +11,13 @@ import {
   CalendarCheck, 
   Receipt, 
   Building2, 
-  Settings 
+  Settings,
+  Sparkles 
 } from 'lucide-react';
 
 const navigationItems = [
   { name: 'ড্যাশবোর্ড', enName: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'অনবোর্ডিং উইজার্ড', enName: 'Setup Wizard', href: '/onboarding', icon: Sparkles },
   { name: 'একাডেমিক ও কিতাব', enName: 'Curriculum & Kitab', href: '/dashboard/academic', icon: BookMarked },
   { name: 'শিক্ষার্থী ও ভর্তি', enName: 'Students & Admission', href: '/dashboard/students', icon: Users },
   { name: 'আসতিযা ও স্টাফ', enName: 'Teachers & Staff', href: '/dashboard/teachers', icon: GraduationCap },
