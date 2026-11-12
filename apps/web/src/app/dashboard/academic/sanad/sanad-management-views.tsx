@@ -341,3 +341,4 @@ export function SanadManagementViews({ students, classes, academicYears, sanads 
     </div>
   );
 }
+

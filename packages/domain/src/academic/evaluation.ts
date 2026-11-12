@@ -64,3 +64,4 @@ export function calculateQawmiDharja(obtainedMarks: number, totalMarks: number):
 
   return QAWMI_DHARJA_SCALES[QAWMI_DHARJA_SCALES.length - 1];
 }
+

@@ -96,3 +96,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.verify_sanad_public(TEXT) TO anon, authenticated, service_role;
+

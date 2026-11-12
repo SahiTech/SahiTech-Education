@@ -232,3 +232,4 @@ export function HostelRoomModal({ rooms, students }: HostelModalProps) {
     </>
   );
 }
+

@@ -579,3 +579,4 @@ export function FinanceViews({ accounts, entries, invoices, students }: FinanceV
     </div>
   );
 }
+

@@ -132,3 +132,4 @@ export const STANDARD_CHART_OF_ACCOUNTS = [
   { code: '5004', nameBn: 'কিতাব, খাতা ও শিক্ষা উপকরণ ব্যয়', nameEn: 'Books & Educational Materials', category: 'expense', fundType: 'general_fund' },
   { code: '5005', nameBn: 'চিকিৎসা ও ওষুধ বাবদ ব্যয় (লিল্লাহ)', nameEn: 'Student Medical Expenses (Lillah)', category: 'expense', fundType: 'lillah_zakat_fund' },
 ] as const;
+

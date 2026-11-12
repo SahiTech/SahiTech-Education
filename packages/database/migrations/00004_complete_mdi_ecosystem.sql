@@ -528,3 +528,4 @@ USING (public.has_tenant_role(tenant_id, ARRAY['super_admin'::user_role, 'madras
 CREATE POLICY "Communication logs insertable by admins"
 ON public.communication_logs FOR INSERT
 WITH CHECK (public.has_tenant_role(tenant_id, ARRAY['super_admin'::user_role, 'madrasa_admin'::user_role]));
+

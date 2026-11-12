@@ -61,3 +61,4 @@ export async function createTenantNotice(input: CreateNoticeInput) {
     return { success: false, error: err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
   }
 }
+

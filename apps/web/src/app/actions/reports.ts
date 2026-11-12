@@ -56,3 +56,4 @@ export async function getBefaqBoardReturn() {
     generatedAt: new Date().toISOString(),
   };
 }
+

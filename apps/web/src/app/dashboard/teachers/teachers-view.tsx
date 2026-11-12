@@ -493,3 +493,4 @@ export function TeachersView({ teachers, leaves }: TeachersViewProps) {
     </div>
   );
 }
+

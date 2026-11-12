@@ -310,3 +310,4 @@ export function PublicSiteView({ tenant, notices }: PublicSiteViewProps) {
     </div>
   );
 }
+

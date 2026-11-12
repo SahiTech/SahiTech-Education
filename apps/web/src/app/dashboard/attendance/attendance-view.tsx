@@ -295,3 +295,4 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
     </div>
   );
 }
+

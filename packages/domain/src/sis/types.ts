@@ -95,3 +95,4 @@ export interface LillahEvaluation {
   validUntil?: string;
   notes?: string;
 }
+

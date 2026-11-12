@@ -72,3 +72,4 @@ export default async function PublicInstitutionalSitePage() {
     </div>
   );
 }
+
