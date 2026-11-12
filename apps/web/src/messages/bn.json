@@ -1,0 +1,23 @@
+{
+  "brand": {
+    "parent": "SahiTech",
+    "division": "SahiTech Education",
+    "initiative": "মাদরাসা ডিজিটালাইজেশন ইনিশিয়েটিভ (MDI)"
+  },
+  "navigation": {
+    "dashboard": "ড্যাশবোর্ড",
+    "academic": "একাডেমিক ও কিতাব",
+    "students": "শিক্ষার্থী ও ভর্তি",
+    "teachers": "আসতিযা ও স্টাফ",
+    "attendance": "উপস্থিতি (হাজিরা)",
+    "finance": "হিসাব ও মাহাদ ফান্ড",
+    "hostel": "দারুল ইক্বামাহ (হোস্টেল)",
+    "settings": "মাদ্রাসা সেটিংস"
+  },
+  "academic": {
+    "qawmi": "কওমি দরসে নেজামী",
+    "alia": "আলিয়া মাদ্রাসা বোর্ড",
+    "hybrid": "সমন্বিত কারিকুলাম"
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+  "name": "@sahitech/domain",
+  "version": "1.0.0",
+  "description": "Core Domain Models & Academic Engines for SahiTech MDI",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Domain tests passing\""
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
+

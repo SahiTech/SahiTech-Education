@@ -1,0 +1,23 @@
+{
+  "brand": {
+    "parent": "SahiTech",
+    "division": "SahiTech Education",
+    "initiative": "Madrasa Digitalization Initiative (MDI)"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "academic": "Curriculum & Kitab",
+    "students": "Students & SIS",
+    "teachers": "Faculty & Staff",
+    "attendance": "Attendance",
+    "finance": "Finance & Funds",
+    "hostel": "Hostel & Boarding",
+    "settings": "Settings"
+  },
+  "academic": {
+    "qawmi": "Qawmi Dars-e-Nizami",
+    "alia": "Alia Madrasa Board",
+    "hybrid": "Hybrid Curriculum"
+  }
+}
+
