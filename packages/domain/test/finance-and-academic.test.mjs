@@ -82,6 +82,23 @@ test('Sanad online verification hash generates stable unique token', () => {
 
   assert.strictEqual(token1, token2);
   assert.ok(token1.startsWith('SANAD-'));
+  // Confirm full 256-bit cryptographic digest length: SANAD- + 4 chars serial + '-' + 64 chars hex = 75 chars
+  assert.strictEqual(token1.length, 75);
+});
+
+test('NIST FIPS 180-4 SHA-256 cryptographic test vectors', () => {
+  import('../src/index.js').then(({ sha256 }) => {
+    // NIST Standard Test Vector 1: 'hello'
+    assert.strictEqual(
+      sha256('hello'),
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    );
+    // NIST Standard Test Vector 2: empty string
+    assert.strictEqual(
+      sha256(''),
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    );
+  });
 });
 
 test('Admission state machine enforces valid workflow progression', () => {

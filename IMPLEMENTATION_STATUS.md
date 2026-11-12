@@ -16,12 +16,13 @@
 | **Documentation Foundation** | COMPLETE (27 Specs) | 27 specialized specifications in [docs/](file:///c:/Users/O%20MAMA/SahiTech-Education/docs/README.md), including Shariah Double-Entry (Doc 26) & Support Impersonation Protocol (Doc 27). |
 | **GitHub Repository** | SYNCHRONIZED | Remote `origin/main` actively tracking all platform phases. |
 | **Supabase Cloud Project** | CONNECTED & HEALTHY | Remote project `sahitech-mdi` (`xbswamfmslhliayoowlo`) active in `ap-south-1` (Mumbai). |
-| **PostgreSQL Database** | 5 MIGRATIONS LIVE | Migrations 00001, 00002, 00003, 00004, and 00005 applied; **32 public tables, 100% RLS enabled**. |
+| **PostgreSQL Database** | 6 MIGRATIONS LIVE | Migrations 00001 to 00006 applied; **32 public tables, 100% RLS enabled** + 3 storage buckets. |
 | **Row Level Security (RLS)** | STRICT RLS & RBAC | Enabled on 100% of tables; tenant isolation guaranteed with `get_auth_tenant_ids()` and `has_tenant_role()`. |
 | **Shariah Fund Segregation** | STRICT & VERIFIED | Document 26 Shariah fund segregation enforced at domain level and ledger schema (General Fund vs. Lillah/Zakat). |
-| **Cryptographic Sanad Registry**| LIVE & VERIFIED | 64-bit deterministic tamper-proof verification hash + public verification RPC and portal (`/verify/[hash]`). |
+| **Cryptographic Sanad Registry**| 256-BIT FIPS 180-4 | Full 256-bit SHA-256 collision-resistant tokens (`VARCHAR(128)`) + public verification RPC and portal (`/verify/[hash]`). |
+| **Storage Infrastructure** | LIVE & SECURED | 3 storage buckets (`madrasa-assets`, `sanad-documents`, `student-documents`) with tenant upload RLS. |
 | **Next.js Fullstack Engine** | VERIFIED (24 Routes) | Next.js 15.5 App Router + React 19 production build compiles cleanly with 0 errors and 0 warnings. |
-| **Unit & Security Tests** | 24/24 PASSING | Built-in Node test runner verifying RBAC, multi-tenancy, double-entry, Shariah segregation, and admission machines. |
+| **Unit & Security Tests** | 25/25 PASSING | Built-in Node test runner verifying RBAC, multi-tenancy, double-entry, Shariah segregation, admission machines, and NIST SHA-256 test vectors. |
 
 ---
 
@@ -43,6 +44,7 @@
    - `tenant_notices` & `tenant_pages`: Institutional CMS and public announcement boards.
    - `communication_logs`: SMS and notification dispatch audit records.
 5. **`00005_public_access_and_sanad_verification.sql`**: Public tenant profile read, online admission inquiry submission, and Security Definer RPC function `public.verify_sanad_public(p_token)` for tamper-proof credentials verification.
+6. **`00006_upgrade_sanad_cryptographic_verification.sql`**: Upgrades `verification_hash` to `VARCHAR(128)`, integrates NIST FIPS 180-4 256-bit SHA-256 tokens, and provisions storage buckets (`madrasa-assets`, `sanad-documents`, `student-documents`) with RLS.
 
 ---
 

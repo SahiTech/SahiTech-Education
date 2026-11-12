@@ -17,7 +17,8 @@ import {
   HeartHandshake,
   BarChart3,
   Globe,
-  ShieldCheck
+  ShieldCheck,
+  Settings
 } from 'lucide-react';
 
 const navigationItems = [
@@ -27,13 +28,14 @@ const navigationItems = [
   { name: 'শিক্ষার্থী রেজিস্ট্রি', enName: 'Students SIS', href: '/dashboard/students', icon: Users },
   { name: 'একাডেমিক ও কিতাব', enName: 'Curriculum & Kitab', href: '/dashboard/academic', icon: BookMarked },
   { name: 'ইমতিহান ও পরীক্ষা', enName: 'Exams & Marks', href: '/dashboard/academic/exams', icon: Award },
-  { name: 'ডিজিタル সনদ', enName: 'Digital Sanad', href: '/dashboard/academic/sanad', icon: ShieldCheck },
+  { name: 'ডিজিটাল সনদ', enName: 'Digital Sanad', href: '/dashboard/academic/sanad', icon: ShieldCheck },
   { name: 'দারুল ইক্বামাহ (হোস্টেল)', enName: 'Hostel & Boarding', href: '/dashboard/hostel', icon: Building2 },
   { name: 'লিল্লাহ ও যাকাত ফান্ড', enName: 'Lillah & Zakat', href: '/dashboard/lillah', icon: HeartHandshake },
   { name: 'আসতিযা ও স্টাফ', enName: 'Teachers & Staff', href: '/dashboard/teachers', icon: GraduationCap },
   { name: 'উপস্থিতি (হাজিরা)', enName: 'Attendance', href: '/dashboard/attendance', icon: CalendarCheck },
   { name: 'হিসাব ও মাহাদ ফান্ড', enName: 'Finance & Ledger', href: '/dashboard/finance', icon: Receipt },
   { name: 'বোর্ড বিবরণী ও রিপোর্ট', enName: 'Executive Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { name: 'মাদ্রাসা সেটিংস', enName: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 const portalItems = [

@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Complete MDI Institutional SaaS Platform Ecosystem (Phases 3 through 10)**:
-  - **Database Migration 00004 & 00005**:
+  - **Database Migration 00004, 00005 & 00006**:
     - Created 16 additional tables bringing database total to **32 public tables with 100% Row Level Security (RLS)**.
     - Added tables: `student_admissions`, `student_guardians`, `hostel_rooms`, `hostel_allocations`, `lillah_evaluations`, `exams`, `exam_marks`, `sanads`, `staff_leaves`, `class_routines`, `accounts`, `journal_entries`, `journal_entry_lines`, `tenant_notices`, `tenant_pages`, `communication_logs`.
     - Implemented Security Definer RPC function `public.verify_sanad_public(p_token)` for tamper-proof credentials verification.
+    - Upgraded Sanad verification tokens to full NIST FIPS 180-4 256-bit SHA-256 collision resistance (`VARCHAR(128)`).
+    - Initialized production storage buckets (`madrasa-assets`, `sanad-documents`, `student-documents`) with RLS upload policies.
   - **Domain Engine Enhancements (`@sahitech/domain`)**:
     - Added Document 26 Shariah Fund Segregation validator preventing cross-fund commingling.
     - Added balanced double-entry accounting validator (`validateJournalEntry`).
