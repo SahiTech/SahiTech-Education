@@ -10,12 +10,24 @@ export interface AuthActionResult {
   redirectTo?: string;
 }
 
-export async function signInWithEmail(prevState: any, formData: FormData): Promise<AuthActionResult> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
+function safeRedirectPath(value: FormDataEntryValue | null): string {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
+    return '/dashboard';
+  }
+  try {
+    const parsed = new URL(value, 'https://local.invalid');
+    return parsed.origin === 'https://local.invalid' ? `${parsed.pathname}${parsed.search}${parsed.hash}` : '/dashboard';
+  } catch {
+    return '/dashboard';
+  }
+}
 
-  if (!email || !password) {
+export async function signInWithEmail(prevState: any, formData: FormData): Promise<AuthActionResult> {
+  const email = formData.get('email');
+  const password = formData.get('password');
+  const redirectTo = safeRedirectPath(formData.get('redirectTo'));
+
+  if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
     return {
       success: false,
       error: 'ইমেইল এবং পাসওয়ার্ড প্রদান করুন (Please enter email and password)',
@@ -23,18 +35,15 @@ export async function signInWithEmail(prevState: any, formData: FormData): Promi
   }
 
   const supabase = await createClient();
-
   const { error } = await supabase.auth.signInWithPassword({
-    email,
+    email: email.trim(),
     password,
   });
 
   if (error) {
     return {
       success: false,
-      error: error.message === 'Invalid login credentials' 
-        ? 'ভুল ইমেইল বা পাসওয়ার্ড। পুনরায় চেষ্টা করুন।' 
-        : error.message,
+      error: 'ভুল ইমেইল বা পাসওয়ার্ড। পুনরায় চেষ্টা করুন।',
     };
   }
 
@@ -48,4 +57,3 @@ export async function signOutUser() {
   revalidatePath('/', 'layout');
   redirect('/login');
 }
-
