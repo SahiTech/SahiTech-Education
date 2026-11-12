@@ -191,3 +191,4 @@ test('Onboarding Step 6: Completeness and verification gate', () => {
     false
   );
 });
+

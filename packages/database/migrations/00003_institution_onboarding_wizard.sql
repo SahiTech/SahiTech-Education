@@ -14,3 +14,4 @@ ALTER TABLE public.tenants
 -- Index for onboarding progress and verification queries
 CREATE INDEX IF NOT EXISTS idx_tenants_onboarding_step ON public.tenants(onboarding_step);
 CREATE INDEX IF NOT EXISTS idx_tenants_is_verified ON public.tenants(is_verified);
+

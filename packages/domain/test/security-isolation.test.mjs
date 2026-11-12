@@ -174,3 +174,4 @@ test('Audit log format and immutability invariants', () => {
     /AuditLogInvariantViolation/
   );
 });
+
