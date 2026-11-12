@@ -104,3 +104,4 @@ export function sha256(ascii: string): string {
 
   return hex;
 }
+
