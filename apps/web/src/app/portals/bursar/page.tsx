@@ -181,3 +181,4 @@ export default async function BursarPortalPage() {
     </div>
   );
 }
+

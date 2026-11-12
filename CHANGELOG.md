@@ -37,3 +37,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Completed comprehensive 27-document specification suite in `docs/` covering all aspects of MDI architecture, security, multi-tenancy, curricula, and operations.
   - Established initial database schema with 15 public tables, 30 foreign keys, 29 btree indexes, and zero-trust RLS policies.
   - Created pnpm monorepo architecture with `@sahitech/domain`, `@sahitech/database`, and `apps/web`.
+

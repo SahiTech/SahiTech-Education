@@ -1,16 +1,14 @@
 'use client';
 
 import React, { useActionState } from 'react';
-import { signInWithEmail, AuthActionResult } from '@/app/actions/auth';
+import { signInWithEmail } from '@/app/actions/auth';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-
-const initialAuthState: AuthActionResult = { success: false };
 
 export function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
-  const [state, formAction, isPending] = useActionState(signInWithEmail, initialAuthState);
+  const [state, formAction, isPending] = useActionState(signInWithEmail, { success: false });
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
@@ -89,3 +87,4 @@ export function LoginForm() {
     </form>
   );
 }
+

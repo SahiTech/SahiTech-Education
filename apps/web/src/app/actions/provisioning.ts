@@ -16,13 +16,7 @@ export interface ProvisioningInput {
   address?: string;
 }
 
-export interface ProvisioningResult {
-  success: boolean;
-  error?: string;
-  tenantId?: string;
-}
-
-export async function provisionInstitution(prevState: any, formData: FormData): Promise<ProvisioningResult> {
+export async function provisionInstitution(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
   const code = (formData.get('code') as string || '').toUpperCase().trim();
   const subdomain = (formData.get('subdomain') as string || '').toLowerCase().trim();
@@ -147,3 +141,4 @@ export async function provisionInstitution(prevState: any, formData: FormData): 
   revalidatePath('/dashboard');
   redirect('/dashboard');
 }
+

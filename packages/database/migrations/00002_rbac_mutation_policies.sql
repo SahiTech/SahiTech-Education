@@ -221,3 +221,4 @@ DO $$ BEGIN
     WITH CHECK (tenant_id IN (SELECT public.get_auth_tenant_ids()));
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
+

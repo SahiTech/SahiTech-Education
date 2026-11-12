@@ -48,3 +48,4 @@ export async function signOutUser() {
   revalidatePath('/', 'layout');
   redirect('/login');
 }
+

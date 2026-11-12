@@ -31,3 +31,4 @@ export async function logAuditEvent(params: AuditLogParams) {
     console.error('Audit log emission failed:', err);
   }
 }
+
