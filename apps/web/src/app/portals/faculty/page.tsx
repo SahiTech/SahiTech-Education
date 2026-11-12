@@ -38,7 +38,7 @@ export default async function FacultyPortalPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              আসতিযা হাজিরা ও পাঠদান পোর্টাল (Faculty Workspace)
+              আসতিযা হাজিরা ও পাঠদান পোর্টাল
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
               দৈনিক হাজিরা ও সাবজেক্ট নোট
@@ -61,7 +61,7 @@ export default async function FacultyPortalPage() {
           <div>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Users className="h-4 w-4 text-emerald-700" />
-              দৈনিক জামাত হাজিরা খাতা (Daily Attendance Register)
+              দৈনিক জামাত হাজিরা খাতা
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               তালিবুল ইলমদের দৈনন্দিন সবক ও তালিমে উপস্থিতি সংরক্ষণ।

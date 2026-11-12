@@ -41,7 +41,7 @@ export default async function BursarPortalPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              হিসাব ও ক্যাশ কাউন্টার পোর্টাল (Bursar & Finance Desk)
+              হিসাব ও ক্যাশ কাউন্টার পোর্টাল
             </h1>
             <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
               শরীয়াহ তহবিল ও অর্থ বিভাগ
@@ -59,7 +59,7 @@ export default async function BursarPortalPage() {
           <HeartHandshake className="h-5 w-5 text-purple-700 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-purple-950">
-              শরীয়াহ তহবিল পৃথকীকরণ নীতি সক্রিয় (Shariah Fund Segregation — Doc 26)
+              শরীয়াহ তহবিল পৃথকীকরণ নীতি সক্রিয়
             </h3>
             <p className="text-xs text-purple-900 leading-relaxed">
               এমডিআই আর্কিটেকচার অনুযায়ী যাকাত ও লিল্লাহ বোর্ডিং ফান্ড সাধারণ প্রাতিষ্ঠানিক ফান্ড হতে সম্পূর্ণ পৃথক লেজারে সংরক্ষিত হয়। যাকাত ও ফিতরাহ তহবিলের অর্থ কেবলমাত্র হকদার এতিম ও দরিদ্র শিক্ষার্থীদের খোরাকি বাবদ ব্যয়যোগ্য।
@@ -124,7 +124,7 @@ export default async function BursarPortalPage() {
         <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">
-              সাম্প্রতিক ফি ভাউচার ও রসিদ (Recent Invoices)
+              সাম্প্রতিক ফি ভাউচার ও রসিদ
             </h3>
             <span className="text-xs text-slate-400 font-mono">কাউন্টার খাতা</span>
           </div>

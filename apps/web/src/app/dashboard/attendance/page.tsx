@@ -3,16 +3,20 @@ import { getActiveTenantContext } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
 import { AttendanceView } from './attendance-view';
 import { CalendarCheck } from 'lucide-react';
+import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AttendancePage() {
+  const dict = await getServerDictionary();
+  const locale = await getServerLocale();
+  const direction = await getServerDirection();
   const context = await getActiveTenantContext();
 
   if (!context) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
-        হাজিরা রেজিস্ট্রি দেখার জন্য অনুগ্রহ করে প্রথমে লগইন করুন।
+        {dict.attendance.subtitle}
       </div>
     );
   }
@@ -52,24 +56,19 @@ export default async function AttendancePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              দৈনিক উপস্থিতি ও হাজিরা খাতা (Attendance Matrix)
+              {dict.attendance.title}
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-              রিয়েল-টাইম ট্র্যাকিং
+              {dict.common.active}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · জামাত ও সেকশনভিত্তিক তালিবুল ইলমদের দৈনিক হাজিরা, অনুপস্থিতি ও দেরির খতিয়ান।
+            {context.tenantName} · {dict.attendance.subtitle}
           </p>
         </div>
       </div>
 
-      <AttendanceView
-        students={students}
-        sections={sections}
-        initialRecords={initialRecords}
-      />
+      <AttendanceView students={students} sections={sections} initialRecords={initialRecords} />
     </div>
   );
 }
-

@@ -5,10 +5,14 @@ import { getActiveTenantContext } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { NewStudentForm } from './new-student-form';
+import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NewStudentPage() {
+  const dict = await getServerDictionary();
+  const locale = await getServerLocale();
+  const direction = await getServerDirection();
   const context = await getActiveTenantContext();
 
   if (!context) {
@@ -29,24 +33,23 @@ export default async function NewStudentPage() {
       <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
         <Link
           href="/dashboard/students"
-          className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 transition"
+          className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
         </Link>
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            নতুন শিক্ষার্থী ভর্তি ফরম (New Student Admission)
+            {dict.students.formTitle}
           </h1>
           <p className="text-xs text-slate-500">
-            {context.tenantName} · শিক্ষার্থী ডাটাবেজ অন্তর্ভুক্তি
+            {context.tenantName} · {dict.students.directorySubtitle}
           </p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <NewStudentForm classes={classes || []} />
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+          <NewStudentForm classes={classes || []} />
+        </div>
       </div>
-    </div>
-  );
+      );
 }
-

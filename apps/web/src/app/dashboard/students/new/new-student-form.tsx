@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createStudent } from '@/app/actions/student';
 import { UserPlus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 interface ClassOption {
   id: string;
@@ -17,6 +18,7 @@ interface NewStudentFormProps {
 
 export function NewStudentForm({ classes }: NewStudentFormProps) {
   const router = useRouter();
+  const { t, locale, direction } = useI18n();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -72,7 +74,7 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
         router.push('/dashboard/students');
       }, 1500);
     } else {
-      setError(res.error || 'ভর্তি প্রক্রিয়া সম্পন্ন করা যায়নি।');
+      setError(res.error || t.common.error);
     }
   };
 
@@ -80,8 +82,8 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
     return (
       <div className="py-12 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600 mb-3" />
-        <h3 className="text-lg font-bold text-slate-900">ভর্তি সফলভাবে সম্পন্ন হয়েছে!</h3>
-        <p className="text-xs text-slate-500 mt-1">শিক্ষার্থী তালিকা লোড করা হচ্ছে...</p>
+        <h3 className="text-lg font-bold text-slate-900">{t.students.successMessage}</h3>
+        <p className="text-xs text-slate-500 mt-1">{t.common.loading}</p>
       </div>
     );
   }
@@ -99,29 +101,29 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            ভর্তি / দাখেলা নম্বর (Admission No) <span className="text-red-500">*</span>
+            {t.students.admissionNo} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
             value={formData.admissionNo}
             onChange={(e) => setFormData({ ...formData, admissionNo: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono focus:border-emerald-600 focus:outline-none min-h-[42px]"
             placeholder="ADM-2026-001"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            লিঙ্গ (Gender)
+            {t.students.gender}
           </label>
           <select
             value={formData.gender}
             onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
           >
-            <option value="male">ছাত্র (Male)</option>
-            <option value="female">ছাত্রী (Female)</option>
+            <option value="male">{t.students.male}</option>
+            <option value="female">{t.students.female}</option>
           </select>
         </div>
       </div>
@@ -130,29 +132,29 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            শিক্ষার্থীর পূর্ণ নাম (বাংলায়) <span className="text-red-500">*</span>
+            {t.students.fullNameBn} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
             value={formData.fullNameBn}
             onChange={(e) => setFormData({ ...formData, fullNameBn: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-            placeholder="উদা: মুহাম্মদ আব্দুল্লাহ"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
+            placeholder={locale === 'ar' ? 'محمد عبد الله' : 'মুহাম্মদ আব্দুল্লাহ'}
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Full Name in English <span className="text-red-500">*</span>
+            {t.students.fullNameEn} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
             value={formData.fullNameEn}
             onChange={(e) => setFormData({ ...formData, fullNameEn: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-            placeholder="e.g. Muhammad Abdullah"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
+            placeholder="Muhammad Abdullah"
           />
         </div>
       </div>
@@ -161,40 +163,40 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            অভিভাবকের মোবাইল নম্বর <span className="text-red-500">*</span>
+            {t.students.guardianPhone} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
             value={formData.guardianPhone}
             onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono focus:border-emerald-600 focus:outline-none min-h-[42px]"
             placeholder="017xxxxxxxx"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            জন্ম তারিখ (Date of Birth)
+            {t.students.dateOfBirth}
           </label>
           <input
             type="date"
             value={formData.dateOfBirth}
             onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            রক্তের গ্রুপ (Blood Group)
+            {t.students.bloodGroup}
           </label>
           <select
             value={formData.bloodGroup}
             onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
           >
-            <option value="">নির্বাচন করুন</option>
+            <option value="">{t.students.selectBloodGroup}</option>
             <option value="A+">A+</option>
             <option value="A-">A-</option>
             <option value="B+">B+</option>
@@ -211,27 +213,27 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            পিতার নাম (Father&apos;s Name)
+            {t.students.fatherName}
           </label>
           <input
             type="text"
             value={formData.fatherNameBn}
             onChange={(e) => setFormData({ ...formData, fatherNameBn: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-            placeholder="পিতার নাম"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
+            placeholder={t.students.fatherName}
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            মাতার নাম (Mother&apos;s Name)
+            {t.students.motherName}
           </label>
           <input
             type="text"
             value={formData.motherNameBn}
             onChange={(e) => setFormData({ ...formData, motherNameBn: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-            placeholder="মাতার নাম"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
+            placeholder={t.students.motherName}
           />
         </div>
       </div>
@@ -239,7 +241,7 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       {/* Row 5: Residential & Lillah Boarder Status */}
       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-          আবাসিক ও বোর্ডিং সম্পর্কিত বিবরণ (Boarding Status)
+          {t.students.boardingStatusTitle}
         </h4>
         <div className="flex flex-col sm:flex-row gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -250,7 +252,7 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
               className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
             />
             <span className="text-xs font-medium text-slate-700">
-              আবাসিক ছাত্র (Residential Boarder)
+              {t.students.residentialCheckbox}
             </span>
           </label>
 
@@ -262,7 +264,7 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
               className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
             />
             <span className="text-xs font-medium text-slate-700">
-              লিল্লাহ বোর্ডিং ও যাকাত খোরাকি সুবিধাভোগী (Shariah Lillah Boarder)
+              {t.students.lillahCheckbox}
             </span>
           </label>
         </div>
@@ -272,16 +274,16 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       {classes.length > 0 && (
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            ভর্তিকৃত জামাত / শ্রেণি (Assigned Class)
+            {t.students.assignedClass}
           </label>
           <select
             value={formData.classId}
             onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
           >
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name_bn} ({c.name_en})
+                {locale === 'en' ? c.name_en || c.name_bn : c.name_bn}
               </option>
             ))}
           </select>
@@ -293,25 +295,25 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition min-h-[42px]"
         >
-          বাতিল করুন
+          {t.common.cancel}
         </button>
 
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-emerald-800 disabled:opacity-50 transition"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-emerald-800 disabled:opacity-50 transition min-h-[42px]"
         >
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              সংরক্ষণ করা হচ্ছে...
+              <span>{t.students.saving}</span>
             </>
           ) : (
             <>
               <UserPlus className="h-4 w-4" />
-              শিক্ষার্থী ভর্তি নিশ্চিত করুন
+              <span>{t.students.confirmAdmissionBtn}</span>
             </>
           )}
         </button>

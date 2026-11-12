@@ -39,7 +39,7 @@ export default async function NazimeTaleematPortalPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              নাজেমে তা&apos;লীমাত একাডেমিক পোর্টাল (Academic Dean Portal)
+              নাজেমে তা&apos;লীমাত একাডেমিক পোর্টাল
             </h1>
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
               শিক্ষা ও পাঠ্যসূচি প্রশাসন
@@ -55,7 +55,7 @@ export default async function NazimeTaleematPortalPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-3">
           <Calendar className="h-5 w-5 text-emerald-700" />
-          চলতি শিক্ষাবর্ষ ও টার্ম ক্যালেন্ডার (Academic Calendar)
+          চলতি শিক্ষাবর্ষ ও টার্ম ক্যালেন্ডার
         </h2>
         {currentYear ? (
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm">
@@ -86,7 +86,7 @@ export default async function NazimeTaleematPortalPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
             <Layers className="h-5 w-5 text-purple-600" />
-            বিভাগসমূহ (Academic Departments)
+            বিভাগসমূহ
           </h3>
           <div className="divide-y divide-slate-100">
             {departments.length === 0 ? (
@@ -110,7 +110,7 @@ export default async function NazimeTaleematPortalPage() {
         <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
             <BookMarked className="h-5 w-5 text-emerald-700" />
-            অনুমোদিত জামাত ও মারহালা তালিকা (Active Classes)
+            অনুমোদিত জামাত ও মারহালা তালিকা
           </h3>
           <div className="divide-y divide-slate-100">
             {classes.length === 0 ? (
@@ -139,7 +139,7 @@ export default async function NazimeTaleematPortalPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-3">
           <Award className="h-5 w-5 text-amber-600" />
-          কওমি দরসে নেজামী অনুমোদিত প্রামাণ্য কিতাব মানচিত্র (Canonical Kitab Mapping)
+          কওমি দরসে নেজামী অনুমোদিত প্রামাণ্য কিতাব মানচিত্র
         </h3>
         <p className="text-xs text-slate-500 mb-4">
           বেফাকুল মাদারিসিল আরাবিয়া বাংলাদেশ ও আল-হাইআতুল উলয়া কর্তৃক নির্ধারিত প্রামাণ্য কিতাব নির্দেশিকা।

@@ -4,16 +4,20 @@ import { createClient } from '@/lib/supabase/server';
 import { SanadManagementViews } from './sanad-management-views';
 import { Award, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SanadPage() {
+  const dict = await getServerDictionary();
+  const locale = await getServerLocale();
+  const direction = await getServerDirection();
   const context = await getActiveTenantContext();
 
   if (!context) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
-        সনদ ব্যবস্থাপনা দেখার জন্য অনুগ্রহ করে প্রথমে লগইন করুন।
+        {dict.sanad.subtitle}
       </div>
     );
   }
@@ -69,24 +73,24 @@ export default async function SanadPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              ডিজিটাল সনদ রেজিস্ট্রি (Sanad & Credentials)
+              {dict.sanad.title}
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-              ক্রিপ্টোগ্রাফিক সুরক্ষা
+              {dict.sanad.tamperProof}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · দাওরায়ে হাদীস, হিফজুল কুরআন ও বোর্ড সমমান সনদের ডিজিটাল অনুমোদন এবং অনলাইন যাচাই।
+            {context.tenantName} · {dict.sanad.subtitle}
           </p>
         </div>
 
         <div className="flex gap-2">
           <Link
             href="/dashboard/academic"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5"
+            className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 min-h-[40px]"
           >
-            <ArrowLeft className="h-4 w-4" />
-            কারিকুলামে ফিরে যান
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+            <span>{dict.common.back}</span>
           </Link>
         </div>
       </div>
@@ -100,4 +104,3 @@ export default async function SanadPage() {
     </div>
   );
 }
-

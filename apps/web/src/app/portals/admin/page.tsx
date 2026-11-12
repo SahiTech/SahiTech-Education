@@ -44,7 +44,7 @@ export default async function MuhtamimAdminPortalPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              মুহতামিম প্রশাসনিক নিয়ন্ত্রণ পোর্টাল (Muhtamim Executive Portal)
+              মুহতামিম প্রশাসনিক নিয়ন্ত্রণ পোর্টাল
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
               প্রধান প্রশাসনিক কর্তৃত্ব
@@ -60,7 +60,7 @@ export default async function MuhtamimAdminPortalPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
           <Building2 className="h-5 w-5 text-emerald-700" />
-          প্রতিষ্ঠান বিবরণ ও স্বীকৃতি (Institutional Profile)
+          প্রতিষ্ঠান বিবরণ ও স্বীকৃতি
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
@@ -98,7 +98,7 @@ export default async function MuhtamimAdminPortalPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <GitBranch className="h-5 w-5 text-blue-600" />
-              শাখাসমূহ (Campus & Branches)
+              শাখাসমূহ
             </h3>
             <span className="text-xs font-mono font-bold text-slate-500">
               {branches.length}টি শাখা
@@ -163,7 +163,7 @@ export default async function MuhtamimAdminPortalPage() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <History className="h-5 w-5 text-emerald-700" />
-            নিরাপত্তা ও অ্যাক্টিভিটি অডিট লগ (Compliance & Audit Trail)
+            নিরাপত্তা ও অ্যাক্টিভিটি অডিট লগ
           </h3>
           <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
             <CheckCircle2 className="h-3.5 w-3.5" />

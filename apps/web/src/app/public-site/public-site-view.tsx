@@ -2,19 +2,19 @@
 
 import React, { useState } from 'react';
 import { submitPublicAdmissionApplication } from '@/app/actions/admissions';
-import { 
-  Building2, 
-  Bell, 
-  BookOpen, 
-  GraduationCap, 
-  Send, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  ShieldCheck, 
+import {
+  Building2,
+  Bell,
+  BookOpen,
+  GraduationCap,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  ShieldCheck,
   ArrowRight,
   ExternalLink
 } from 'lucide-react';
@@ -75,11 +75,10 @@ export function PublicSiteView({ tenant, notices }: PublicSiteViewProps) {
     <div className="space-y-12">
       {statusMessage && (
         <div
-          className={`rounded-2xl p-6 text-sm font-medium shadow-md flex items-start justify-between ${
-            statusMessage.type === 'success'
+          className={`rounded-2xl p-6 text-sm font-medium shadow-md flex items-start justify-between ${statusMessage.type === 'success'
               ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
               : 'bg-red-50 text-red-900 border border-red-300'
-          }`}
+            }`}
         >
           <div className="flex items-start gap-3">
             {statusMessage.type === 'success' ? (
@@ -269,7 +268,7 @@ export function PublicSiteView({ tenant, notices }: PublicSiteViewProps) {
                     className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <label htmlFor="pubRes" className="font-bold text-slate-700">
-                    আবাসিক ছাত্রাবাসে সিট বরাদ্দ আবেদন (Residential)
+                    আবাসিক ছাত্রাবাসে সিট বরাদ্দ আবেদন
                   </label>
                 </div>
 
@@ -282,7 +281,7 @@ export function PublicSiteView({ tenant, notices }: PublicSiteViewProps) {
                     className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <label htmlFor="pubLil" className="font-bold text-slate-700">
-                    লিল্লাহ বোর্ডিং ও যাকাত সহায়তা আবেদন (অনাথ ও অস্বচ্ছলদের জন্য)
+                    লিল্লাহ বোর্ডিং ও যাকাত সহায়তা আবেদন
                   </label>
                 </div>
               </div>

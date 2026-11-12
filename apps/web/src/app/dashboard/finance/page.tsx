@@ -3,10 +3,14 @@ import { getActiveTenantContext } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
 import { Receipt, Landmark, HeartHandshake, CreditCard, Plus, ArrowUpRight, ShieldCheck, BookOpen } from 'lucide-react';
 import { FinanceViews } from './finance-views';
+import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function FinancePage() {
+  const dict = await getServerDictionary();
+  const locale = await getServerLocale();
+  const direction = await getServerDirection();
   const context = await getActiveTenantContext();
   if (!context) return null;
 
@@ -66,14 +70,14 @@ export default async function FinancePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              হিসাব ও দ্বি-তরফা দাখিলা ফাইন্যান্স (Double-Entry Financial Accounting)
+              {dict.finance.title}
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-              Document 26 Compliant
+              {dict.finance.shariahSegregated}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · সাধারণ প্রাতিষ্ঠানিক তহবিল ও লিল্লাহ যাকাত তহবিলের পৃথক লেজার ও ভাউচার রেজিস্টার।
+            {context.tenantName} · {dict.finance.subtitle}
           </p>
         </div>
       </div>
@@ -88,4 +92,3 @@ export default async function FinancePage() {
     </div>
   );
 }
-

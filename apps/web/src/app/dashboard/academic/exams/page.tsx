@@ -4,16 +4,20 @@ import { createClient } from '@/lib/supabase/server';
 import { ExamManagementViews } from './exam-management-views';
 import { Award, Layers } from 'lucide-react';
 import Link from 'next/link';
+import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ExamsPage() {
+  const dict = await getServerDictionary();
+  const locale = await getServerLocale();
+  const direction = await getServerDirection();
   const context = await getActiveTenantContext();
 
   if (!context) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
-        পরীক্ষা ব্যবস্থাপনা দেখার জন্য অনুগ্রহ করে প্রথমে লগইন করুন।
+        {dict.academic.examsSubtitle}
       </div>
     );
   }
@@ -49,24 +53,24 @@ export default async function ExamsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              ইমতিহান ও পরীক্ষা ব্যবস্থাপনা (Examinations & Marks)
+              {dict.academic.examsTitle}
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-              একাডেমিক মূল্যায়ন
+              {dict.common.active}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · সাময়িক ও বার্ষিক ছালা ইমতিহান, কিতাবভিত্তিক নম্বর এন্ট্রি ও প্রামাণ্য ফল প্রকাশ।
+            {context.tenantName} · {dict.academic.examsSubtitle}
           </p>
         </div>
 
         <div className="flex gap-2">
           <Link
             href="/dashboard/academic/sanad"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5"
+            className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 min-h-[40px]"
           >
             <Award className="h-4 w-4 text-emerald-700" />
-            ডিজিটাল সনদ ব্যবস্থাপনা
+            <span>{dict.sanad.title}</span>
           </Link>
         </div>
       </div>
@@ -75,4 +79,3 @@ export default async function ExamsPage() {
     </div>
   );
 }
-
