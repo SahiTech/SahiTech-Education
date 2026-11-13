@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00026.
+-- Run against an isolated MDI development database after migrations 00001-00028.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -104,3 +104,42 @@ BEGIN
   END IF;
 END;
 $$;
+
+
+-- Cross-tenant references must fail even when the caller supplies a valid foreign row id.
+BEGIN;
+DO $$
+DECLARE
+  tenant_a UUID;
+  tenant_b UUID;
+  department_a UUID;
+  department_b UUID;
+  class_b UUID;
+BEGIN
+  INSERT INTO public.tenants(name,code,curriculum_type,is_active,is_verified,platform_status)
+  VALUES('Tenant FK Test A','FK-'||substr(gen_random_uuid()::text,1,8),'qawmi',FALSE,FALSE,'pending_activation')
+  RETURNING id INTO tenant_a;
+  INSERT INTO public.tenants(name,code,curriculum_type,is_active,is_verified,platform_status)
+  VALUES('Tenant FK Test B','FK-'||substr(gen_random_uuid()::text,1,8),'qawmi',FALSE,FALSE,'pending_activation')
+  RETURNING id INTO tenant_b;
+
+  INSERT INTO public.departments(tenant_id,name_bn,name_en,code,curriculum_type)
+  VALUES(tenant_a,'বিভাগ A','Department A','DPA','qawmi') RETURNING id INTO department_a;
+  INSERT INTO public.departments(tenant_id,name_bn,name_en,code,curriculum_type)
+  VALUES(tenant_b,'বিভাগ B','Department B','DPB','qawmi') RETURNING id INTO department_b;
+
+  INSERT INTO public.classes(tenant_id,department_id,name_bn,name_en,code)
+  VALUES(tenant_a,department_a,'শ্রেণি A','Class A','CLA');
+  INSERT INTO public.classes(tenant_id,department_id,name_bn,name_en,code)
+  VALUES(tenant_b,department_b,'শ্রেণি B','Class B','CLB') RETURNING id INTO class_b;
+
+  BEGIN
+    INSERT INTO public.sections(tenant_id,class_id,name)
+    VALUES(tenant_a,class_b,'Cross Tenant Attempt');
+    RAISE EXCEPTION 'Cross-tenant section reference unexpectedly accepted';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+END;
+$$;
+ROLLBACK;
