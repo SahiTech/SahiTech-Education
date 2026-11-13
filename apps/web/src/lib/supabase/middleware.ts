@@ -70,6 +70,36 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Pending tenants may access onboarding only. Academic, finance and other
+  // operational portals remain unavailable until the Global Owner activates them.
+  const isTenantOperationalPath = pathname.startsWith('/dashboard') || pathname.startsWith('/portals');
+  if (user && isTenantOperationalPath) {
+    let membershipQuery = supabase
+      .from('tenant_users')
+      .select('tenant_id, tenants:tenant_id ( platform_status )')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
+    const selectedTenantId = request.cookies.get('m_active_tenant')?.value;
+    if (selectedTenantId) {
+      membershipQuery = membershipQuery.eq('tenant_id', selectedTenantId);
+    } else if (resolvedTenantSubdomain) {
+      membershipQuery = membershipQuery.eq('tenants.subdomain', resolvedTenantSubdomain);
+    }
+
+    const { data: memberships } = await membershipQuery;
+    const selectedMembership = selectedTenantId || resolvedTenantSubdomain
+      ? memberships?.[0]
+      : memberships?.length === 1 ? memberships[0] : null;
+    const tenant = selectedMembership?.tenants as { platform_status?: string } | null;
+    if (tenant?.platform_status === 'pending_activation') {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/onboarding';
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   return supabaseResponse;
 }
 
