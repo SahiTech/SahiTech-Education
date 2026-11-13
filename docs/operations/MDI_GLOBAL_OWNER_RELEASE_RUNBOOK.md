@@ -55,6 +55,8 @@ Configure these in the **development** Supabase project using its secret-managem
 - `RESEND_FROM_EMAIL` — sender identity on the verified Resend domain.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` — Supabase function runtime credentials.
 
+Configure Supabase Auth SMTP separately for sign-up confirmation and password recovery (it may use the same verified Resend domain, but it is not the application outbox). Add the exact `/auth/callback` URL to the Supabase Auth redirect allowlist. Invitation and upload bearer tokens are placed in URL fragments so they are not sent in the initial HTTP request or normal server access logs; after confirming a new account email, the applicant reopens the original invitation email link.
+
 Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes). The worker claims jobs with a lease, sends via Resend and records success/failure with bounded retries.
 
 **No Edge Function has been deployed and no email has been sent from this branch.** The connected Resend account previously had no verified sending domain.
