@@ -23,7 +23,6 @@ export default async function PublicSanadVerificationPage({ params }: VerifySana
   const result = await verifySanadPublic(decodedHash);
   const sanad = result.verified ? (result.sanad as any) : null;
   const tenantData = sanad?.tenants ? (Array.isArray(sanad.tenants) ? sanad.tenants[0] : sanad.tenants) : null;
-  const studentData = sanad?.students ? (Array.isArray(sanad.students) ? sanad.students[0] : sanad.students) : null;
 
   return (
     <div className="min-h-screen bg-slate-100 py-12 px-4 sm:px-6 lg:px-8">
