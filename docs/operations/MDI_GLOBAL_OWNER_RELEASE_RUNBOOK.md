@@ -44,7 +44,7 @@ Email delivery is **not ready** until a sender domain is verified in Resend and 
 Set the canonical HTTPS origin and the server-only token derivation secret:
 
 - `NEXT_PUBLIC_SITE_URL` — actual HTTPS origin of the MDI web deployment, if used by the web app.
-- `MDI_EMAIL_TOKEN_HMAC_SECRET` — at least 32 cryptographically random bytes, kept server-only. Use the exact same value in the web deployment and the Supabase Edge Function. Do not use a `NEXT_PUBLIC_` prefix.
+- `MDI_EMAIL_TOKEN_HMAC_SECRET` — at least 32 cryptographically random bytes, kept server-only. Generate locally with `openssl rand -hex 32`, then use the exact same value in the web deployment and the Supabase Edge Function. Do not use a `NEXT_PUBLIC_` prefix or paste the value into chat/Git.
 
 ### Supabase Edge Function secrets
 
