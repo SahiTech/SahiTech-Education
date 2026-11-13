@@ -28,10 +28,10 @@ Deno.serve(async (request: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
-  const publicSiteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://sahitech-edu.com";
+  const publicSiteUrl = Deno.env.get("PUBLIC_SITE_URL");
 
-  if (!supabaseUrl || !serviceRoleKey || !resendApiKey || !fromEmail) {
-    return json({ error: "email_delivery_not_configured", detail: "Configure Supabase service role, Resend API key and a verified sender address before enabling delivery." }, 503);
+  if (!supabaseUrl || !serviceRoleKey || !resendApiKey || !fromEmail || !publicSiteUrl) {
+    return json({ error: "email_delivery_not_configured", detail: "Configure Supabase service role, Resend API key, verified sender address and the environment-specific public site origin before enabling delivery." }, 503);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
