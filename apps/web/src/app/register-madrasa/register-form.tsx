@@ -2,15 +2,24 @@
 
 import React, { useActionState } from 'react';
 import { submitMadrasaApplication, type ApplicationResult } from '@/app/actions/applications';
-import { AlertCircle, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
-import ApplicationDocumentUploader from './application-document-uploader';
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { ApplicationDocumentUpload } from './document-upload';
 
 const initialState: ApplicationResult = { success: false };
 
 export function RegisterForm() {
   const [state, formAction, pending] = useActionState(submitMadrasaApplication, initialState);
-  if (state.success && state.applicationId && state.uploadToken) return <div className="space-y-4"><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><div className="flex items-center gap-2 font-bold text-emerald-900"><CheckCircle2 className="h-5 w-5"/>Application submitted</div><p className="mt-1 text-xs leading-5 text-emerald-800">Your application ID: <span className="font-mono">{state.applicationId}</span>. Upload supporting documents below. You may close this page after uploading.</p></div><ApplicationDocumentUploader applicationId={state.applicationId} uploadToken={state.uploadToken}/></div>;
-
+  if(state.success && state.applicationId && state.uploadToken){
+    return <div className="space-y-5">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <CheckCircle2 className="h-8 w-8 text-emerald-700"/>
+        <h2 className="mt-2 text-lg font-black text-emerald-900">আবেদন গ্রহণ করা হয়েছে</h2>
+        <p className="mt-1 text-sm leading-6 text-emerald-800">আপনার আবেদন নম্বর: <b>{state.applicationId}</b>। এখন প্রযোজ্য প্রতিষ্ঠানের কাগজপত্র আপলোড করুন।</p>
+      </div>
+      <ApplicationDocumentUpload applicationId={state.applicationId} uploadToken={state.uploadToken}/>
+      <p className="text-xs leading-5 text-slate-500">এই আপলোড লিংকটি সাত দিনের জন্য বৈধ। টোকেনটি শুধু এই ব্রাউজার সেশনে ব্যবহার করুন; অন্য কারও সঙ্গে শেয়ার করবেন না।</p>
+    </div>;
+  }
   return (
     <form action={formAction} className="space-y-5">
       {state.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{state.error}</div>}
