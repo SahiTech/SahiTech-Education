@@ -12,7 +12,7 @@ The accepted architecture is recorded in `MDI_TARGET_ARCHITECTURE.md`. It define
 
 ## Development database migrations
 
-Development has migrations `00001`–`00006` and `00008`–`00026` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
+Development has migrations `00001`–`00006` and `00008`–`00028` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
 
 | Migration range | Implemented foundation |
 |---|---|
@@ -56,6 +56,7 @@ Development has migrations `00001`–`00006` and `00008`–`00026` applied. Repo
 - Anonymous users cannot read application records or document metadata.
 - The email outbox is inaccessible to anon and authenticated roles.
 - Anonymous table grants were reduced to SELECT plus one INSERT grant for the existing public student-admission workflow; anon UPDATE/DELETE and all TRUNCATE/REFERENCES/TRIGGER grants were removed.
+- 35 tenant-aware composite foreign keys are validated. A cross-tenant class/section reference test was rejected by the database and rolled back.
 - Tenant mutation policies now target authenticated sessions only. Multiple-permissive-policy advisor findings reduced from 150 to 34.
 - `madrasa-assets` remains public-read with tenant-admin uploads restricted to a tenant UUID folder. `sanad-documents` and `student-documents` are private; broad authenticated upload policy was removed. All three buckets had zero existing objects when changed.
 - Application upload capability validation and document bucket/policy presence were checked.
