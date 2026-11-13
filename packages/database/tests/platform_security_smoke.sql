@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00028.
+-- Run against an isolated MDI development database after migrations 00001-00029.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -50,6 +50,12 @@ BEGIN
   IF (SELECT public FROM storage.buckets WHERE id='sanad-documents') IS DISTINCT FROM FALSE
      OR (SELECT public FROM storage.buckets WHERE id='student-documents') IS DISTINCT FROM FALSE THEN
     RAISE EXCEPTION 'Sensitive document buckets must remain private';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM storage.buckets
+    WHERE id='madrasa-assets' AND 'image/svg+xml'=ANY(allowed_mime_types)
+  ) THEN
+    RAISE EXCEPTION 'Public branding bucket must not accept active SVG files';
   END IF;
   IF has_function_privilege('anon','public.handle_new_user()','EXECUTE') THEN
     RAISE EXCEPTION 'Auth trigger function remains callable as anon';
