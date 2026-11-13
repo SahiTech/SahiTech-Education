@@ -1,163 +1,45 @@
 'use client';
 
 import React, { useActionState } from 'react';
-import { provisionInstitution, ProvisioningResult } from '@/app/actions/provisioning';
-import { Building2, Globe, Shield, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { submitMadrasaApplication, type ApplicationResult } from '@/app/actions/applications';
+import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 
-const initialProvisioningState: ProvisioningResult = { success: false, error: '' };
+const initialState: ApplicationResult = { success: false };
 
 export function RegisterForm() {
-  const [state, formAction, isPending] = useActionState(provisionInstitution, initialProvisioningState);
-
+  const [state, formAction, pending] = useActionState(submitMadrasaApplication, initialState);
   return (
-    <form action={formAction} className="space-y-4">
-      {state?.error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-          <span>{state.error}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            মাদরাসার নাম (Madrasa Official Name) *
-          </label>
-          <input
-            name="name"
-            type="text"
-            required
-            placeholder="যেমন: জামিয়া ইসলামিয়া দারুল উলুম"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            প্রাতিষ্ঠানিক কোড (Code - ইউনিক) *
-          </label>
-          <input
-            name="code"
-            type="text"
-            required
-            placeholder="যেমন: JIDU-01"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm uppercase focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
+    <form action={formAction} className="space-y-5">
+      {state.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{state.error}</div>}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field name="institutionName" label="মাদরাসার অফিসিয়াল নাম *" required placeholder="Jamia Islamia..." />
+        <Field name="institutionNameBn" label="মাদরাসার নাম (বাংলা)" placeholder="জামিয়া ইসলামিয়া..." />
+        <SelectField name="institutionType" label="মাদরাসার ধরন *" required options={[['qawmi','কওমি (Qawmi)'],['alia','আলিয়া (Alia)'],['hybrid','সমন্বিত (Hybrid)']]} />
+        <Field name="boardAffiliation" label="বোর্ড / অধিভুক্তি" placeholder="বেফাক / BMEB / অন্যান্য" />
+        <Field name="registrationNumber" label="নিবন্ধন নম্বর" />
+        <Field name="establishedYear" label="প্রতিষ্ঠার সাল" type="number" />
+        <Field name="requestedCode" label="প্রস্তাবিত প্রতিষ্ঠান কোড *" required placeholder="JAMIA-01" />
+        <Field name="requestedSubdomain" label="প্রস্তাবিত সাবডোমেইন *" required placeholder="jamia-islamia" suffix=".sahitech-edu.com" />
+        <Field name="contactPersonName" label="যোগাযোগের দায়িত্বপ্রাপ্ত ব্যক্তি *" required />
+        <Field name="contactEmail" label="অফিসিয়াল ইমেইল *" type="email" required />
+        <Field name="contactPhone" label="মোবাইল নম্বর *" required />
+        <Field name="division" label="বিভাগ" />
+        <Field name="district" label="জেলা" />
+        <Field name="websiteUrl" label="ওয়েবসাইট" type="url" />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            পছন্দের সাবডোমেইন (Subdomain) *
-          </label>
-          <div className="flex rounded-lg border border-slate-300 overflow-hidden focus-within:border-emerald-600">
-            <input
-              name="subdomain"
-              type="text"
-              required
-              placeholder="darululoom"
-              className="flex-1 px-3 py-2 text-sm lowercase focus:outline-none"
-            />
-            <span className="bg-slate-100 px-2.5 py-2 text-xs text-slate-500 border-l border-slate-300 flex items-center">
-              .sahitech-edu.com
-            </span>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            কারিকুলাম ধরন (Academic Curriculum) *
-          </label>
-          <select
-            name="curriculumType"
-            defaultValue="qawmi"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none bg-white"
-          >
-            <option value="qawmi">কওমি দরসে নেজামী (Dars-e-Nizami / Befaq)</option>
-            <option value="alia">আলিয়া মাদ্রাসা বোর্ড (BMEB Framework)</option>
-            <option value="hybrid">সমন্বিত (উভয় কারিকুলাম পরিচালিত)</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            প্রাতিষ্ঠানিক ইমেইল (Official Email) *
-          </label>
-          <input
-            name="contactEmail"
-            type="email"
-            required
-            placeholder="office@madrasa.edu.bd"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            অফিসিয়াল মোবাইল নং (Phone Number) *
-          </label>
-          <input
-            name="contactPhone"
-            type="text"
-            required
-            placeholder="01711-000000"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            জেলা (District)
-          </label>
-          <input
-            name="district"
-            type="text"
-            placeholder="যেমন: ঢাকা / চট্টগ্রাম / সিলেট"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            ক্যাম্পাসের ঠিকানা (Campus Address)
-          </label>
-          <input
-            name="address"
-            type="text"
-            placeholder="রোড, পোস্ট অফিস, থানা"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <div className="rounded-lg bg-emerald-50/70 border border-emerald-200 p-3 text-xs text-emerald-800">
-        <p className="font-semibold mb-1">স্বয়ংক্রিয় প্রাতিষ্ঠানিক সেটআপ:</p>
-        <p>নিবন্ধন সম্পন্ন হলে প্রধান ক্যাম্পাস, চলতি শিক্ষাবর্ষ এবং নির্বাচিত কারিকুলামের ডিফল্ট বিভাগসমূহ তাৎক্ষণিকভাবে তৈরি হয়ে যাবে।</p>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-sm font-bold text-white shadow hover:bg-emerald-800 disabled:opacity-60 transition mt-4"
-      >
-        {isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            মাদরাসা তৈরি ও প্রোভিশনিং হচ্ছে...
-          </>
-        ) : (
-          <>
-            মাদরাসা প্রোভিশনিং সম্পন্ন করুন (Complete Provisioning)
-            <ArrowRight className="h-4 w-4" />
-          </>
-        )}
+      <Field name="address" label="পূর্ণ ঠিকানা" />
+      <div><label className="mb-1 block text-xs font-bold text-slate-700">আবেদন সম্পর্কে অতিরিক্ত তথ্য</label><textarea name="applicationNote" rows={4} maxLength={1500} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none" /></div>
+      <div className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true"><label>Company website<input name="companyWebsite" tabIndex={-1} autoComplete="off" /></label></div>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">আবেদন জমা দিলেই মাদরাসার tenant তৈরি বা account সক্রিয় হবে না। Global Platform Owner-এর document verification ও approval-এর পর invitation পাঠানো হবে।</div>
+      <button type="submit" disabled={pending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60">
+        {pending ? <><Loader2 className="h-4 w-4 animate-spin" />আবেদন জমা হচ্ছে...</> : <>মাদরাসার আবেদন জমা দিন <ArrowRight className="h-4 w-4" /></>}
       </button>
     </form>
   );
 }
-
+function Field({name,label,type='text',required=false,placeholder='',suffix}:{name:string;label:string;type?:string;required?:boolean;placeholder?:string;suffix?:string}) {
+  return <div><label htmlFor={name} className="mb-1 block text-xs font-bold text-slate-700">{label}</label><div className="flex overflow-hidden rounded-lg border border-slate-300 focus-within:border-emerald-600"><input id={name} name={name} type={type} required={required} placeholder={placeholder} maxLength={500} className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none" />{suffix && <span className="flex items-center border-l bg-slate-50 px-2 text-[11px] text-slate-500">{suffix}</span>}</div></div>;
+}
+function SelectField({name,label,required,options}:{name:string;label:string;required?:boolean;options:[string,string][]}) {
+  return <div><label htmlFor={name} className="mb-1 block text-xs font-bold text-slate-700">{label}</label><select id={name} name={name} required={required} defaultValue="qawmi" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm">{options.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></div>;
+}
