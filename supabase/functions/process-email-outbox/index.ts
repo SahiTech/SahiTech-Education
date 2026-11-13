@@ -59,6 +59,7 @@ Deno.serve(async (request: Request) => {
         headers: {
           authorization: `Bearer ${resendApiKey}`,
           "content-type": "application/json",
+          "Idempotency-Key": job.id,
         },
         body: JSON.stringify({
           from: fromEmail,
