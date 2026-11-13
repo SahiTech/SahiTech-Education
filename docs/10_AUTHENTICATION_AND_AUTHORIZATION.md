@@ -17,11 +17,10 @@ MDI leverages Supabase Auth for enterprise-grade authentication:
 
 ## 2. Role Taxonomy & Authorization Matrix
 
-MDI defines 8 distinct institutional roles scoped by `tenant_id`:
+MDI defines 7 institutional roles scoped by `tenant_id`. The Global Platform Owner is a separate platform identity and is never a tenant role:
 
 | Role Key | Classical Designation | Primary Operational Scope |
 | :--- | :--- | :--- |
-| `super_admin` | MDI Platform Operator | Cross-tenant platform configuration, tenant approvals, audit inspection. |
 | `madrasa_admin` | Muhtamim / Principal | Full administrative governance within the tenant. |
 | `academic_dean` | Nazim-e-Taleemat | Curricula, routines, exam schedules, mark approvals, Sanads. |
 | `teacher` | Ustad / Muallim | Class attendance entry, subject marks recording, student remarks. |
@@ -32,7 +31,13 @@ MDI defines 8 distinct institutional roles scoped by `tenant_id`:
 
 ---
 
-## 3. Granular Permission Matrix
+## 3. Global Platform Owner
+
+The single Global Platform Owner identity is stored separately from tenant memberships. It authenticates with email/password and mandatory TOTP MFA (`aal2`). Only the bound, verified owner can review applications, issue/revoke invitations, inspect application documents, and perform final tenant activation. No tenant role has cross-tenant privileges.
+
+The legacy database enum value `super_admin` is retained temporarily for migration compatibility but is rejected for new or updated tenant memberships, excluded from tenant RLS helper checks, and has no application permissions. Existing memberships must be audited before the enum value is removed in a later migration.
+
+## 4. Granular Permission Matrix
 
 ```mermaid
 graph TD
