@@ -2,10 +2,10 @@
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
-  IF (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') <> 36 THEN
-    RAISE EXCEPTION 'Expected 36 public tables in clean dev baseline';
+  IF (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') <> 37 THEN
+    RAISE EXCEPTION 'Expected 37 public tables in clean dev baseline';
   END IF;
-  IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity) <> 36 THEN
+  IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity) <> 37 THEN
     RAISE EXCEPTION 'RLS is not enabled on every public table';
   END IF;
   IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='student_guardians' AND policyname='Public admission guardian submission') THEN
