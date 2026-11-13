@@ -72,6 +72,8 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
 
   const active = memberships[0];
   const tenantData = active.tenants as any;
+  // Legacy super_admin is not a tenant role; Global Platform Owner uses a separate identity.
+  if (active.role === 'super_admin') return null;
   if (!tenantData || (tenantData.is_active !== true && tenantData.platform_status !== 'pending_activation')) return null;
 
   return {
