@@ -16,10 +16,11 @@ export default async function PlatformOwnerDashboard() {
   const { data: isOwner } = await (supabase.rpc as any)('is_platform_owner');
   if (isOwner !== true) redirect('/platform/login');
 
-  const [{ data: applications }, { data: tenants }, { data: invitations }] = await Promise.all([
+  const [{ data: applications }, { data: tenants }, { data: invitations }, { data: auditLogs }] = await Promise.all([
     (supabase.from('madrasa_applications') as any).select('*').order('submitted_at', { ascending: false }).limit(100),
     (supabase.from('tenants') as any).select('id,name,code,subdomain,onboarding_step,onboarding_completed_at,platform_status,source_application_id').eq('platform_status','pending_activation').not('onboarding_completed_at','is',null).order('onboarding_completed_at',{ascending:true}),
     (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').order('created_at',{ascending:false}).limit(30),
+    (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,before_state,after_state,created_at').order('created_at',{ascending:false}).limit(40),
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
@@ -86,6 +87,16 @@ export default async function PlatformOwnerDashboard() {
               <form action={activateTenant}><input type="hidden" name="tenantId" value={tenant.id}/><button className="rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-bold text-white">Verify & activate tenant</button></form>
             </article>
           ))}
+        </section>
+
+        <section className="space-y-4">
+          <div><h2 className="text-xl font-bold text-slate-900">Platform audit trail</h2><p className="text-sm text-slate-500">Append-only lifecycle events. Visible only to the verified Global Platform Owner.</p></div>
+          {(auditLogs||[]).length===0 ? <Empty>No platform lifecycle events recorded yet.</Empty> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {(auditLogs||[]).map((event:any)=><div key={event.id} className="flex flex-col gap-1 border-b border-slate-100 px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="text-sm font-semibold text-slate-800">{event.action}</p><p className="text-[11px] text-slate-500">{event.entity_type} · {event.entity_id||'—'} · Actor {event.actor_user_id||'system/public'} · {event.actor_aal||'no AAL claim'}</p></div>
+              <time className="text-[11px] tabular-nums text-slate-500">{new Date(event.created_at).toLocaleString('en-GB')}</time>
+            </div>)}
+          </div>}
         </section>
       </div>
     </div>
