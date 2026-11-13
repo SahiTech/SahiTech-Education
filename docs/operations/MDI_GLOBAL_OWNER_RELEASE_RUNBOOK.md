@@ -88,9 +88,9 @@ The database smoke checks should confirm:
 
 ## 6. Current development state (2026-11-13)
 
-- Development migrations through `00039` are applied.
+- Development migrations through `00040` are applied.
 - 37 public tables were observed and all 37 had RLS enabled. Migration `00036` makes operational tenant policies require `platform_status='active'` and grants pending tenants only narrowly scoped onboarding reads/writes. Migration `00037` adds indexes for the 14 uncovered foreign keys and fixes both Auth RLS initplan warnings on profile policies.
-- Application submission, HMAC-derived upload capability, application-received outbox enqueue, private Storage object policy and document metadata registration passed rollback-only SQL smoke tests. The outbox stores only token hashes and nonces, never raw bearer tokens. No test Auth users, tenants, application rows, document metadata, Storage objects or outbox rows remained afterward.
+- Application submission, HMAC-derived upload capability, application-received outbox enqueue, private Storage object policy, document metadata registration and append-only document-review audit event passed rollback-only SQL smoke tests. The outbox stores only token hashes and nonces, never raw bearer tokens. No test Auth users, tenants, application rows, document metadata, Storage objects or outbox rows remained afterward.
 - No test records remained after that test.
 - GitHub Actions run #238 completed successfully after the hash-only token/outbox changes: all 25 domain/database tests, TypeScript check, web lint and production build passed.
 - Production project was not modified.
