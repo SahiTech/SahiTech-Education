@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00024.
+-- Run against an isolated MDI development database after migrations 00001-00026.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -31,6 +31,25 @@ BEGIN
   IF has_table_privilege('authenticated','public.email_outbox','SELECT')
      OR has_table_privilege('authenticated','public.email_outbox','INSERT') THEN
     RAISE EXCEPTION 'Email outbox is exposed to authenticated users';
+  END IF;
+  IF has_table_privilege('anon','public.tenants','UPDATE')
+     OR has_table_privilege('anon','public.tenants','DELETE')
+     OR has_table_privilege('anon','public.tenants','TRUNCATE')
+     OR has_table_privilege('authenticated','public.tenants','TRUNCATE') THEN
+    RAISE EXCEPTION 'Anonymous mutation or RLS-bypassing table privileges remain';
+  END IF;
+  IF NOT has_table_privilege('anon','public.student_admissions','INSERT') THEN
+    RAISE EXCEPTION 'Public student admission submission grant was unintentionally removed';
+  END IF;
+  IF has_table_privilege('anon','public.madrasa_applications','INSERT') THEN
+    RAISE EXCEPTION 'Direct public Madrasa application table insert must remain revoked';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Tenant Admins Can Upload Assets') THEN
+    RAISE EXCEPTION 'Legacy broad Storage upload policy remains';
+  END IF;
+  IF (SELECT public FROM storage.buckets WHERE id='sanad-documents') IS DISTINCT FROM FALSE
+     OR (SELECT public FROM storage.buckets WHERE id='student-documents') IS DISTINCT FROM FALSE THEN
+    RAISE EXCEPTION 'Sensitive document buckets must remain private';
   END IF;
   IF has_function_privilege('anon','public.handle_new_user()','EXECUTE') THEN
     RAISE EXCEPTION 'Auth trigger function remains callable as anon';
