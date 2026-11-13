@@ -419,43 +419,21 @@ export async function finalizeOnboarding(): Promise<OnboardingActionResult> {
     const context = await requirePermission('manage_tenant_settings');
     const supabase = await createClient();
 
-    // Verify minimum institutional onboarding completeness
-    const [tenantRes, branchRes, yearRes, deptRes] = await Promise.all([
-      supabase.from('tenants').select('id, name, code, contact_phone').eq('id', context.tenantId).single(),
-      supabase.from('branches').select('id', { count: 'exact', head: true }).eq('tenant_id', context.tenantId),
-      supabase.from('academic_years').select('id', { count: 'exact', head: true }).eq('tenant_id', context.tenantId),
-      supabase.from('departments').select('id', { count: 'exact', head: true }).eq('tenant_id', context.tenantId),
-    ]);
-
-    const tenant = tenantRes.data;
-    if (!tenant || !tenant.name || !tenant.code) {
-      return { success: false, error: 'প্রাতিষ্ঠানিক পরিচিতি অপূর্ণ রয়েছে। অনুগ্রহ করে ধাপ ১ পুনরায় পরীক্ষা করুন।' };
+    // The database re-validates completeness and performs the final transition atomically.
+    const { data, error } = await (supabase.rpc as any)('complete_tenant_onboarding', {
+      p_tenant_id: context.tenantId,
+    });
+    if (error || data !== true) {
+      const message = error?.message || 'onboarding_completion_failed';
+      const friendly: Record<string,string> = {
+        main_branch_missing: 'কমপক্ষে একটি সক্রিয় প্রধান শাখা থাকা আবশ্যক।',
+        academic_year_missing: 'চলতি শিক্ষাবর্ষ নির্ধারিত নেই।',
+        departments_missing: 'কমপক্ষে একটি একাডেমিক বিভাগ কনফিগার করা আবশ্যক।',
+        institution_profile_incomplete: 'প্রাতিষ্ঠানিক পরিচিতি অপূর্ণ রয়েছে।',
+        madrasa_admin_required: 'শুধুমাত্র মাদরাসা প্রশাসক onboarding সম্পন্ন করতে পারবেন।',
+      };
+      return { success:false,error:friendly[message] || 'Onboarding সম্পন্ন করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।' };
     }
-
-    if ((branchRes.count ?? 0) === 0) {
-      return { success: false, error: 'কমপক্ষে একটি সক্রিয় প্রধান শাখা থাকা আবশ্যক।' };
-    }
-
-    if ((yearRes.count ?? 0) === 0) {
-      return { success: false, error: 'চলতি শিক্ষাবর্ষ নির্ধারিত নেই।' };
-    }
-
-    if ((deptRes.count ?? 0) === 0) {
-      return { success: false, error: 'কমপক্ষে একটি একাডেমিক বিভাগ কনফিগার করা আবশ্যক।' };
-    }
-
-    // Complete onboarding, but keep the tenant pending final Global Owner review.
-    await supabase
-      .from('tenants')
-      .update({
-        onboarding_step: 6,
-        onboarding_completed_at: new Date().toISOString(),
-        is_verified: false,
-        is_active: false,
-        platform_status: 'pending_activation',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', context.tenantId);
 
     await logAuditEvent({
       tenantId: context.tenantId,
@@ -464,14 +442,15 @@ export async function finalizeOnboarding(): Promise<OnboardingActionResult> {
       action: 'institution.onboarding_completed',
       entityName: 'tenants',
       entityId: context.tenantId,
-      newState: { onboarding_completed_at: new Date().toISOString(), is_verified: false, platform_status: 'pending_activation' },
+      newState: { onboarding_step: 6, is_verified: false, platform_status: 'pending_activation' },
     });
 
     revalidatePath('/dashboard');
     revalidatePath('/onboarding');
-    return { success: true, currentStep: 6 };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
+    revalidatePath('/platform');
+    return { success:true,currentStep:6 };
+  } catch (err:any) {
+    return { success:false,error:err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
   }
 }
 
