@@ -29,9 +29,11 @@ function renderEmail(item: OutboxItem) {
   const institution = escapeHtml(item.payload.institution_name || 'your institution');
   if (item.event_type === 'madrasa_application_received') {
     const contact = escapeHtml(item.payload.contact_person_name || 'Applicant');
+    const uploadUrl = String(item.payload.upload_url || '');
+    if (!uploadUrl.startsWith('https://')) throw new Error('Application document upload URL is missing or invalid.');
     return {
       subject: 'MDI application received — SahiTech Education',
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#172033;line-height:1.7"><h2>Application received</h2><p>Dear ${contact},</p><p>We have received the Madrasa application for <strong>${institution}</strong>.</p><p>The application will be reviewed by the SahiTech Education Global Platform Owner. No tenant workspace or active account is created until verification and approval are complete.</p><p>Thank you,<br/>SahiTech Education · MDI</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#172033;line-height:1.7"><h2>Application received</h2><p>Dear ${contact},</p><p>We have received the Madrasa application for <strong>${institution}</strong>.</p><p>The application will be reviewed by the SahiTech Education Global Platform Owner. No tenant workspace or active account is created until verification and approval are complete.</p><p><a href="${escapeHtml(uploadUrl)}" style="display:inline-block;background:#047857;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Upload / continue documents</a></p><p>This private upload link expires in seven days. Keep it confidential.</p><p>Thank you,<br/>SahiTech Education · MDI</p></div>`,
     };
   }
   if (item.event_type === 'madrasa_invitation') {
