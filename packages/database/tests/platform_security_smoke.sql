@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00029.
+-- Run against an isolated MDI development database after migrations 00001-00030.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -143,6 +143,49 @@ BEGIN
     INSERT INTO public.sections(tenant_id,class_id,name)
     VALUES(tenant_a,class_b,'Cross Tenant Attempt');
     RAISE EXCEPTION 'Cross-tenant section reference unexpectedly accepted';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+END;
+$$;
+ROLLBACK;
+
+
+-- Finance journal lines inherit tenant scope from their journal and cannot reference another tenant's account.
+BEGIN;
+DO $$
+DECLARE
+  tenant_a UUID;
+  tenant_b UUID;
+  account_a UUID;
+  account_b UUID;
+  entry_a UUID;
+  line_id UUID;
+BEGIN
+  INSERT INTO public.tenants(name,code,curriculum_type,is_active,is_verified,platform_status)
+  VALUES('Finance Tenant A','FIN-'||substr(gen_random_uuid()::text,1,8),'qawmi',FALSE,FALSE,'pending_activation') RETURNING id INTO tenant_a;
+  INSERT INTO public.tenants(name,code,curriculum_type,is_active,is_verified,platform_status)
+  VALUES('Finance Tenant B','FIN-'||substr(gen_random_uuid()::text,1,8),'qawmi',FALSE,FALSE,'pending_activation') RETURNING id INTO tenant_b;
+
+  INSERT INTO public.accounts(tenant_id,code,name_bn,name_en,category)
+  VALUES(tenant_a,'CASH-A','নগদ A','Cash A','asset') RETURNING id INTO account_a;
+  INSERT INTO public.accounts(tenant_id,code,name_bn,name_en,category)
+  VALUES(tenant_b,'CASH-B','নগদ B','Cash B','asset') RETURNING id INTO account_b;
+
+  INSERT INTO public.journal_entries(tenant_id,entry_number,narration)
+  VALUES(tenant_a,'JE-A-'||substr(gen_random_uuid()::text,1,8),'Finance FK smoke') RETURNING id INTO entry_a;
+
+  INSERT INTO public.journal_entry_lines(journal_entry_id,account_id,debit,credit)
+  VALUES(entry_a,account_a,10,0) RETURNING id INTO line_id;
+
+  IF NOT EXISTS (SELECT 1 FROM public.journal_entry_lines WHERE id=line_id AND tenant_id=tenant_a) THEN
+    RAISE EXCEPTION 'Journal line tenant was not derived from its journal entry';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.journal_entry_lines(journal_entry_id,account_id,debit,credit)
+    VALUES(entry_a,account_b,0,10);
+    RAISE EXCEPTION 'Cross-tenant finance account reference unexpectedly accepted';
   EXCEPTION WHEN foreign_key_violation THEN
     NULL;
   END;
