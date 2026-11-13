@@ -40,7 +40,16 @@ export async function issueApplicationInvitation(formData: FormData) {
   if (!/^[0-9a-f-]{36}$/i.test(applicationId)) throw new Error('Invalid application.');
   const rawToken = randomBytes(32).toString('hex').toUpperCase();
   const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL || 'https://sahitech-edu.com').replace(/\/$/, '');
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!configuredSiteUrl) throw new Error('NEXT_PUBLIC_SITE_URL must be configured for this environment before issuing invitations.');
+  let origin: string;
+  try {
+    const parsed = new URL(configuredSiteUrl);
+    if (parsed.protocol !== 'https:' || parsed.pathname !== '/' || parsed.search || parsed.hash) throw new Error('invalid');
+    origin = parsed.origin;
+  } catch {
+    throw new Error('NEXT_PUBLIC_SITE_URL must be a canonical HTTPS origin.');
+  }
   const invitationUrl = `${origin}/platform/accept?token=${rawToken}`;
   const { error } = await (supabase.rpc as any)('owner_issue_invitation', {
     p_application_id: applicationId,
