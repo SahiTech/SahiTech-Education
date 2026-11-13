@@ -121,19 +121,8 @@ CREATE INDEX madrasa_application_documents_application_idx
 
 ALTER TABLE public.madrasa_application_documents ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.madrasa_application_documents FROM PUBLIC;
-GRANT INSERT ON public.madrasa_application_documents TO anon, authenticated;
-GRANT SELECT, UPDATE, DELETE ON public.madrasa_application_documents TO authenticated;
-
-CREATE POLICY "Applicants can attach document metadata to pending applications"
-ON public.madrasa_application_documents
-FOR INSERT TO anon, authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.madrasa_applications AS application
-    WHERE application.id = application_id
-      AND application.status = 'pending'
-  )
-);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.madrasa_application_documents TO authenticated;
+GRANT ALL ON public.madrasa_application_documents TO service_role;
 
 CREATE POLICY "Global owner can review application document metadata"
 ON public.madrasa_application_documents
