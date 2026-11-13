@@ -18,7 +18,7 @@
 | **Documentation Foundation** | COMPLETE (27 Specs) | 27 specialized specifications in [docs/](file:///c:/Users/O%20MAMA/SahiTech-Education/docs/README.md), including Shariah Double-Entry (Doc 26) & Support Impersonation Protocol (Doc 27). |
 | **GitHub Repository** | SYNCHRONIZED | Remote `origin/main` actively tracking all platform phases. |
 | **Supabase Cloud Projects** | DEV + PROD | Production `sahitech-mdi` (`xbswamfmslhliayoowlo`) remains untouched; isolated development `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`) is active in `ap-south-1`. |
-| **PostgreSQL Database** | DEV HARDENING APPLIED | Development has the accepted owner/tenant workflow and hardening migrations through 00034; **37 public tables, 100% RLS enabled**. Production remains on its pre-hardening baseline. |
+| **PostgreSQL Database** | DEV HARDENING APPLIED | Development has the accepted owner/tenant workflow and hardening migrations through 00035; **37 public tables, 100% RLS enabled**. Production remains on its pre-hardening baseline. |
 | **Row Level Security (RLS)** | STRICT RLS & RBAC | Enabled on 100% of tables; tenant isolation guaranteed with `get_auth_tenant_ids()` and `has_tenant_role()`. |
 | **Shariah Fund Segregation** | STRICT & VERIFIED | Document 26 Shariah fund segregation enforced at domain level and ledger schema (General Fund vs. Lillah/Zakat). |
 | **Cryptographic Sanad Registry**| 256-BIT FIPS 180-4 | Full 256-bit SHA-256 collision-resistant tokens (`VARCHAR(128)`) + public verification RPC and portal (`/verify/[hash]`). |
