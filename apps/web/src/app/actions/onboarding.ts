@@ -444,13 +444,15 @@ export async function finalizeOnboarding(): Promise<OnboardingActionResult> {
       return { success: false, error: 'কমপক্ষে একটি একাডেমিক বিভাগ কনফিগার করা আবশ্যক।' };
     }
 
-    // Complete onboarding and mark is_verified true (or pending review)
+    // Complete onboarding, but keep the tenant pending final Global Owner review.
     await supabase
       .from('tenants')
       .update({
         onboarding_step: 6,
         onboarding_completed_at: new Date().toISOString(),
-        is_verified: true, // auto-verified upon full self-service setup compliance
+        is_verified: false,
+        is_active: false,
+        platform_status: 'pending_activation',
         updated_at: new Date().toISOString(),
       })
       .eq('id', context.tenantId);
@@ -462,7 +464,7 @@ export async function finalizeOnboarding(): Promise<OnboardingActionResult> {
       action: 'institution.onboarding_completed',
       entityName: 'tenants',
       entityId: context.tenantId,
-      newState: { onboarding_completed_at: new Date().toISOString(), is_verified: true },
+      newState: { onboarding_completed_at: new Date().toISOString(), is_verified: false, platform_status: 'pending_activation' },
     });
 
     revalidatePath('/dashboard');
