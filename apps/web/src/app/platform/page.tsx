@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { issueApplicationInvitation, updateApplicationStatus, activateTenant } from '@/app/actions/platform';
+import { issueApplicationInvitation, updateApplicationStatus, activateTenant, reviewApplicationDocument } from '@/app/actions/platform';
 
 const OWNER_EMAIL = 'helpline.sahitech@gmail.com';
 
@@ -67,6 +67,25 @@ export default async function PlatformOwnerDashboard() {
                     {(documentsByApplication.get(app.id)||[]).length===0 ? <p className="text-[11px] text-slate-500">No supporting documents uploaded.</p> : <ul className="space-y-1">{(documentsByApplication.get(app.id)||[]).map((doc:any)=><li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 text-xs"><span className="text-slate-700">{doc.document_type} · {doc.original_file_name}</span>{doc.signedUrl&&<a href={doc.signedUrl} target="_blank" rel="noreferrer" className="font-semibold text-emerald-700 underline">Open securely</a>}</li>)}</ul>}
                   </div>
                   {app.application_note && <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{app.application_note}</p>}
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <p className="text-xs font-bold text-slate-700">Supporting documents ({(documentsByApplication.get(app.id)||[]).length})</p>
+                    {(documentsByApplication.get(app.id)||[]).map((doc:any)=><div key={doc.id} className="rounded-lg border border-slate-200 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-800">{doc.original_file_name}</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{doc.verification_status}</span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-slate-500">{doc.document_type} · {(doc.file_size_bytes/1024/1024).toFixed(2)} MB</p>
+                      {doc.signedUrl&&<a href={doc.signedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold text-blue-700 underline">Open private document</a>}
+                      <form action={reviewApplicationDocument} className="mt-2 flex flex-wrap gap-2">
+                        <input type="hidden" name="documentId" value={doc.id}/>
+                        <input name="reviewNote" placeholder="Review note (optional)" maxLength={2000} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-[11px]"/>
+                        <button name="status" value="verified" className="rounded bg-emerald-700 px-2 py-1 text-[11px] font-bold text-white">Verify</button>
+                        <button name="status" value="rejected" className="rounded border border-red-300 px-2 py-1 text-[11px] font-bold text-red-700">Reject</button>
+                      </form>
+                      {doc.review_note&&<p className="mt-1 text-[10px] text-amber-700">{doc.review_note}</p>}
+                    </div>)}
+                    {(documentsByApplication.get(app.id)||[]).length===0&&<p className="text-xs text-amber-700">No supporting documents uploaded yet. Invitation remains blocked.</p>}
+                  </div>
                   {app.review_note && <p className="text-xs text-amber-700">Previous note: {app.review_note}</p>}
                 </div>
                 <div className="flex w-full flex-col gap-2 lg:max-w-xs">
