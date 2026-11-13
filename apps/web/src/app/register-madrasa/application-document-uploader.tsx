@@ -35,7 +35,10 @@ export default function ApplicationDocumentUploader({applicationId,uploadToken}:
         p_mime_type:file.type,
         p_file_size_bytes:file.size
       });
-      if(registerError) throw new Error('The file was uploaded but could not be registered. Contact MDI support before retrying.');
+      if(registerError) {
+        await supabase.storage.from('madrasa-application-documents').remove([path]);
+        throw new Error('The file could not be registered, so the temporary upload was removed. Please try again.');
+      }
       setFiles(prev=>[...prev,file.name]);
       setSuccess('Document uploaded securely.');
       input.value='';
