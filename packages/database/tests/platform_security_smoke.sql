@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00021.
+-- Run against an isolated MDI development database after migrations 00001-00022.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -37,6 +37,27 @@ BEGIN
   END IF;
   IF (SELECT count(*) FROM private.platform_owner WHERE singleton AND owner_email='helpline.sahitech@gmail.com') <> 1 THEN
     RAISE EXCEPTION 'Singleton Global Platform Owner seed missing';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.tenant_users WHERE role='super_admin') THEN
+    RAISE EXCEPTION 'Legacy super_admin tenant membership must not exist';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger t
+    JOIN pg_class c ON c.oid=t.tgrelid
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relname='tenants'
+      AND t.tgname='guard_tenant_platform_lifecycle' AND NOT t.tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'Tenant lifecycle guard trigger is missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger t
+    JOIN pg_class c ON c.oid=t.tgrelid
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relname='tenant_users'
+      AND t.tgname='reject_legacy_super_admin_membership' AND NOT t.tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'Legacy tenant role guard trigger is missing';
   END IF;
   IF public.is_platform_owner() THEN
     RAISE EXCEPTION 'Owner authorization unexpectedly granted without an authenticated AAL2 session';
