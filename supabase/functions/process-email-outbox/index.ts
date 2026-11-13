@@ -73,8 +73,6 @@ Deno.serve(async (request: Request) => {
         throw new Error("unsupported_email_event");
       }
 
-      const safeName = escapeHtml(institutionName);
-      const safeUrl = escapeHtml(invitationUrl);
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
