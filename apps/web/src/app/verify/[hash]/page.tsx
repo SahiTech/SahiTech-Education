@@ -125,16 +125,9 @@ export default async function PublicSanadVerificationPage({ params }: VerifySana
                       </div>
                     )}
 
-                    <div className="py-2">
-                      <span className="text-xs text-slate-400 block mb-1">{dict.verify.recipientStudent}</span>
-                      <div className="text-xl sm:text-2xl font-bold text-slate-900">
-                        {studentData?.full_name_bn}
-                      </div>
-                      {studentData?.full_name_en && (
-                        <div className="text-xs text-slate-500 font-medium">
-                          {studentData?.full_name_en} · {dict.verify.admissionNo}: {studentData?.admission_no}
-                        </div>
-                      )}
+                    <div className="py-2 text-xs text-slate-500">
+                      Public verification confirms the certificate record and academic result.
+                      Student identity and private certificate details are not displayed publicly.
                     </div>
 
                     {sanad.marhala_name_ar && (
@@ -177,7 +170,7 @@ export default async function PublicSanadVerificationPage({ params }: VerifySana
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 pt-6 text-center text-xs text-slate-600">
                         <div className="space-y-1">
                           <div className="h-10 border-b border-dashed border-slate-300 flex items-end justify-center font-serif text-slate-700">
-                            {sanad.signatory_dean || dict.verify.signatoryDean}
+                            {dict.verify.signatoryDean}
                           </div>
                           <div className="font-bold text-slate-800">{dict.verify.signatoryDean}</div>
                           <div className="text-[10px] text-slate-400">স্বাক্ষর ও মোহর</div>
@@ -185,7 +178,7 @@ export default async function PublicSanadVerificationPage({ params }: VerifySana
 
                         <div className="space-y-1">
                           <div className="h-10 border-b border-dashed border-slate-300 flex items-end justify-center font-serif text-slate-700">
-                            {sanad.signatory_muhtamim || dict.verify.signatoryMuhtamim}
+                            {dict.verify.signatoryMuhtamim}
                           </div>
                           <div className="font-bold text-slate-800">{dict.verify.signatoryMuhtamim}</div>
                           <div className="text-[10px] text-slate-400">স্বাক্ষর ও প্রাতিষ্ঠানিক সীল</div>
@@ -193,15 +186,9 @@ export default async function PublicSanadVerificationPage({ params }: VerifySana
                       </div>
 
                       {/* Verification Footer & QR Token */}
-                      <div className="mt-10 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 font-mono gap-2">
-                        <div>
-                          <span className="text-slate-500 font-bold block">Verification Hash Token:</span>
-                          <span className="select-all text-slate-700 text-xs break-all">{sanad.verification_hash}</span>
-                        </div>
-                          <div className="sm:text-right">
-                            <span>MDI Immutable Sanad Registry</span>
-                          </div>
-                        </div>
+                      <div className="mt-10 pt-4 border-t border-slate-100 text-[11px] text-slate-400 font-mono sm:text-right">
+                        <span>MDI Immutable Sanad Registry</span>
+                      </div>
                       </div>
                     </div>
         )}
