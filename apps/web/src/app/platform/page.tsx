@@ -21,6 +21,16 @@ export default async function PlatformOwnerDashboard() {
     (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').order('created_at',{ascending:false}).limit(30),
   ]);
 
+  const applicationIds = (applications || []).map((app:any)=>app.id);
+  const { data: documentRows } = applicationIds.length
+    ? await (supabase.from('madrasa_application_documents') as any).select('*').in('application_id',applicationIds).order('uploaded_at',{ascending:false})
+    : { data: [] as any[] };
+  const documentsWithLinks = await Promise.all((documentRows || []).map(async (doc:any) => {
+    const { data } = await supabase.storage.from('madrasa-application-documents').createSignedUrl(doc.storage_object_path, 300);
+    return { ...doc, signedUrl: data?.signedUrl || null };
+  }));
+  const documentsByApplication = new Map<string,any[]>();
+  for (const doc of documentsWithLinks) documentsByApplication.set(doc.application_id,[...(documentsByApplication.get(doc.application_id)||[]),doc]);
   const invitationByApplication = new Map((invitations || []).map((item:any)=>[item.application_id,item]));
   const pending = (applications || []).filter((app:any)=>['pending','under_review','info_requested'].includes(app.status));
 
@@ -50,6 +60,10 @@ export default async function PlatformOwnerDashboard() {
                   <p className="text-xs text-slate-500">Requested code: <b>{app.requested_code||'Missing'}</b> · Subdomain: <b>{app.requested_subdomain||'Missing'}</b></p>
                   {app.registration_number && <p className="text-xs text-slate-500">Registration: {app.registration_number}</p>}
                   {app.address && <p className="text-xs text-slate-500">{app.address}</p>}
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-bold text-slate-700">Verification documents ({(documentsByApplication.get(app.id)||[]).length})</p>
+                    {(documentsByApplication.get(app.id)||[]).length===0 ? <p className="text-[11px] text-slate-500">No supporting documents uploaded.</p> : <ul className="space-y-1">{(documentsByApplication.get(app.id)||[]).map((doc:any)=><li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 text-xs"><span className="text-slate-700">{doc.document_type} · {doc.original_file_name}</span>{doc.signedUrl&&<a href={doc.signedUrl} target="_blank" rel="noreferrer" className="font-semibold text-emerald-700 underline">Open securely</a>}</li>)}</ul>}
+                  </div>
                   {app.application_note && <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{app.application_note}</p>}
                   {app.review_note && <p className="text-xs text-amber-700">Previous note: {app.review_note}</p>}
                 </div>
