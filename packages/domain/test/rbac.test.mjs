@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { hasPermission } from '../src/index.js';
 
-test('Super admin has full permissions', () => {
-  assert.strictEqual(hasPermission('super_admin', 'manage_tenant_settings'), true);
-  assert.strictEqual(hasPermission('super_admin', 'manage_branches'), true);
-  assert.strictEqual(hasPermission('super_admin', 'manage_staff'), true);
-  assert.strictEqual(hasPermission('super_admin', 'manage_admissions'), true);
-  assert.strictEqual(hasPermission('super_admin', 'collect_payments'), true);
+test('Deprecated super_admin is not a tenant role and has no permissions', () => {
+  assert.strictEqual(hasPermission('super_admin', 'manage_tenant_settings'), false);
+  assert.strictEqual(hasPermission('super_admin', 'manage_branches'), false);
+  assert.strictEqual(hasPermission('super_admin', 'manage_staff'), false);
+  assert.strictEqual(hasPermission('super_admin', 'manage_admissions'), false);
+  assert.strictEqual(hasPermission('super_admin', 'collect_payments'), false);
 });
 
 test('Madrasa admin (Muhtamim) has executive institutional permissions', () => {
