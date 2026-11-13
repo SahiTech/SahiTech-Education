@@ -12,7 +12,7 @@ The accepted architecture is recorded in `MDI_TARGET_ARCHITECTURE.md`. It define
 
 ## Development database migrations
 
-Development has migrations `00001`–`00006` and `00008`–`00024` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
+Development has migrations `00001`–`00006` and `00008`–`00026` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
 
 | Migration range | Implemented foundation |
 |---|---|
@@ -55,6 +55,9 @@ Development has migrations `00001`–`00006` and `00008`–`00024` applied. Repo
 - Direct anonymous INSERT on `madrasa_applications` is revoked; the validated submission RPC remains callable.
 - Anonymous users cannot read application records or document metadata.
 - The email outbox is inaccessible to anon and authenticated roles.
+- Anonymous table grants were reduced to SELECT plus one INSERT grant for the existing public student-admission workflow; anon UPDATE/DELETE and all TRUNCATE/REFERENCES/TRIGGER grants were removed.
+- Tenant mutation policies now target authenticated sessions only. Multiple-permissive-policy advisor findings reduced from 150 to 34.
+- `madrasa-assets` remains public-read with tenant-admin uploads restricted to a tenant UUID folder. `sanad-documents` and `student-documents` are private; broad authenticated upload policy was removed. All three buckets had zero existing objects when changed.
 - Application upload capability validation and document bucket/policy presence were checked.
 - A smoke application and its upload capability were created and deleted inside a test block; no smoke rows remain.
 - The SQL assertions in `packages/database/tests/platform_security_smoke.sql` were executed successfully against development, including tenant lifecycle and legacy-role guard checks. A transactional application submission test also confirmed the audit trigger writes the corresponding platform audit event.
@@ -67,7 +70,7 @@ Development has migrations `00001`–`00006` and `00008`–`00024` applied. Repo
 2. Verify the real application submission, file upload, owner review, email delivery, invitation acceptance and onboarding flows end-to-end in a browser with real test accounts.
 3. Configure and verify the Resend sender domain, set Edge Function secrets, deploy the outbox worker, and schedule authenticated invocations.
 4. Review remaining legacy SECURITY DEFINER warnings function by function. Current warnings include legacy tenant helper RPCs used by RLS, public Sanad verification, and intentionally restricted platform workflow functions.
-5. Review remaining performance advisor findings: 56 unindexed foreign keys, 2 Auth RLS initplan warnings, 5 unused-index warnings, and 150 multiple-permissive-policy findings. These are not automatically vulnerabilities and require workload-aware review.
+5. Review remaining performance advisor findings: 56 unindexed foreign keys, 2 Auth RLS initplan warnings, 3 unused-index warnings, and 34 multiple-permissive-policy findings. These are not automatically vulnerabilities and require workload-aware review.
 6. Add full RLS cross-tenant integration tests and browser E2E tests for invitation and activation lifecycles.
 7. Keep the PR draft until real Auth/MFA and browser integration checks are completed.
 
