@@ -12,7 +12,7 @@ The accepted architecture is recorded in `MDI_TARGET_ARCHITECTURE.md`. It define
 
 ## Development database migrations
 
-Development has migrations `00001`–`00006` and `00008`–`00023` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
+Development has migrations `00001`–`00006` and `00008`–`00024` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
 
 | Migration range | Implemented foundation |
 |---|---|
