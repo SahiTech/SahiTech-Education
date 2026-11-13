@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -18,7 +18,7 @@ export default function OwnerLoginForm(){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
 
-  async function beginLogin(e:React.FormEvent){
+  async function beginLogin(e:FormEvent){
     e.preventDefault(); setBusy(true);setError('');
     try{
       if(email.trim().toLowerCase()!==OWNER_EMAIL) throw new Error('This login is reserved for the designated Global Platform Owner.');
