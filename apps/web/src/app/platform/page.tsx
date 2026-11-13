@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { issueApplicationInvitation, updateApplicationStatus, activateTenant } from '@/app/actions/platform';
 
@@ -91,4 +92,4 @@ export default async function PlatformOwnerDashboard() {
   );
 }
 function Metric({label,value}:{label:string;value:number}){return <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">{label}</p><p className="mt-1 text-3xl font-black tabular-nums text-slate-900">{value}</p></div>}
-function Empty({children}:{children:React.ReactNode}){return <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">{children}</div>}
+function Empty({children}:{children:ReactNode}){return <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">{children}</div>}
