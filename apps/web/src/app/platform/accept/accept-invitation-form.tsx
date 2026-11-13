@@ -9,6 +9,7 @@ export default function AcceptInvitationForm(){
   const [mode,setMode]=useState<'signup'|'signin'>('signup');
   const [token,setToken]=useState('');
   const [tokenReady,setTokenReady]=useState(false);
+  const [reopenInvitation,setReopenInvitation]=useState(false);
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [password,setPassword]=useState('');
@@ -20,6 +21,7 @@ export default function AcceptInvitationForm(){
     const params=new URLSearchParams(window.location.hash.replace(/^#/,''));
     const value=params.get('token')||'';
     setToken(value);
+    setReopenInvitation(params.has('awaiting-invitation'));
     window.history.replaceState(null,'',window.location.pathname+window.location.search);
     setTokenReady(true);
   },[]);
@@ -36,14 +38,14 @@ export default function AcceptInvitationForm(){
       const {data:{user:current}}=await supabase.auth.getUser();
       if(!current){
         if(mode==='signup'){
-          const redirectTo=`${window.location.origin}/auth/callback?next=${encodeURIComponent(`/platform/accept#token=${token}`)}`;
+          const redirectTo=`${window.location.origin}/auth/callback?next=${encodeURIComponent('/platform/accept#awaiting-invitation')}`;
           const {data,error:signupError}=await supabase.auth.signUp({
             email:email.trim().toLowerCase(),password,
             options:{data:{full_name_en:name.trim()},emailRedirectTo:redirectTo}
           });
           if(signupError) throw signupError;
           if(!data.session){
-            setMessage('Registration received. Verify the invitation email sent by Supabase Auth. The verification link will return here to finish tenant setup.');
+            setMessage('Registration received. Verify your email using the Supabase message, then reopen the original MDI invitation email and click its invitation link again to finish setup.');
             return;
           }
         }else{
@@ -66,9 +68,11 @@ export default function AcceptInvitationForm(){
   }
 
   if(!tokenReady) return <div className="mt-7 rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">Checking secure invitation link...</div>;
+  if(!/^[A-Fa-f0-9]{64}$/.test(token)) return <div className="mt-7 space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+    {reopenInvitation ? 'Your email verification step is complete. Please reopen the original MDI invitation email and click the invitation link again to continue.' : 'The invitation token is missing or invalid. Please open the original MDI invitation email link.'}
+  </div>;
 
   return <form onSubmit={accept} className="mt-7 space-y-4">
-    {!token||!/^[A-Fa-f0-9]{64}$/.test(token)?<div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">Invitation token is invalid.</div>:null}
     <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-xs font-semibold">
       <button type="button" onClick={()=>setMode('signup')} className={mode==='signup'?'rounded-md bg-white p-2 text-emerald-800 shadow-sm':'p-2 text-slate-500'}>New account</button>
       <button type="button" onClick={()=>setMode('signin')} className={mode==='signin'?'rounded-md bg-white p-2 text-emerald-800 shadow-sm':'p-2 text-slate-500'}>Existing account</button>
