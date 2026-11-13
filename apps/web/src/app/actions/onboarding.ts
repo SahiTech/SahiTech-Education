@@ -364,35 +364,22 @@ export async function saveOnboardingStep4(input: Step4DepartmentsInput): Promise
  */
 export async function saveOnboardingStep5(input: Step5LeadershipInput): Promise<OnboardingActionResult> {
   try {
-    const context = await requirePermission('manage_staff');
+    const context = await requirePermission('manage_tenant_settings');
     const supabase = await createClient();
-
-    // Store leadership profile designations in program_policies
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('program_policies')
-      .eq('id', context.tenantId)
-      .single();
-
-    const existingPolicies = (tenant?.program_policies as any) || {};
-    const updatedPolicies = {
-      ...existingPolicies,
-      leadership: {
-        deanName: input.deanName?.trim() || null,
-        deanPhone: input.deanPhone?.trim() || null,
-        bursarName: input.bursarName?.trim() || null,
-        bursarPhone: input.bursarPhone?.trim() || null,
-      },
+    const leadership = {
+      deanName: input.deanName?.trim() || null,
+      deanPhone: input.deanPhone?.trim() || null,
+      bursarName: input.bursarName?.trim() || null,
+      bursarPhone: input.bursarPhone?.trim() || null,
     };
 
-    await supabase
-      .from('tenants')
-      .update({
-        program_policies: updatedPolicies,
-        onboarding_step: 6,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', context.tenantId);
+    const { data, error } = await (supabase.rpc as any)('save_onboarding_leadership', {
+      p_tenant_id: context.tenantId,
+      p_leadership: leadership,
+    });
+    if (error || data !== true) {
+      return { success:false,error:'Leadership information could not be saved. Complete onboarding steps in order and try again.' };
+    }
 
     await logAuditEvent({
       tenantId: context.tenantId,
@@ -405,9 +392,9 @@ export async function saveOnboardingStep5(input: Step5LeadershipInput): Promise<
 
     revalidatePath('/onboarding');
     revalidatePath('/dashboard');
-    return { success: true, currentStep: 6 };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
+    return { success:true,currentStep:6 };
+  } catch (err:any) {
+    return { success:false,error:err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
   }
 }
 
