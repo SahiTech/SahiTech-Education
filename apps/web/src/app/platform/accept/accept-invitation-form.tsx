@@ -20,7 +20,11 @@ export default function AcceptInvitationForm({token}:{token:string}){
       if(!/^[A-Fa-f0-9]{64}$/.test(token)) throw new Error('Invitation link is invalid or incomplete.');
       const supabase=createClient();
       const {data:{user:existing}}=await supabase.auth.getUser();
-      if(!existing){
+      if(existing && existing.email?.toLowerCase()!==email.trim().toLowerCase()){
+        await supabase.auth.signOut();
+      }
+      const {data:{user:current}}=await supabase.auth.getUser();
+      if(!current){
         if(mode==='signup'){
           const redirectTo=`${window.location.origin}/auth/callback?next=${encodeURIComponent(`/platform/accept?token=${token}`)}`;
           const {data,error:signupError}=await supabase.auth.signUp({
