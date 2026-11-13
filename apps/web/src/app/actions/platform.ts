@@ -1,6 +1,6 @@
 'use server';
 
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -38,24 +38,17 @@ export async function issueApplicationInvitation(formData: FormData) {
   const { supabase } = await requirePlatformOwner();
   const applicationId = String(formData.get('applicationId') || '');
   if (!/^[0-9a-f-]{36}$/i.test(applicationId)) throw new Error('Invalid application.');
-  const rawToken = randomBytes(32).toString('hex').toUpperCase();
-  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!configuredSiteUrl) throw new Error('NEXT_PUBLIC_SITE_URL must be configured for this environment before issuing invitations.');
-  let origin: string;
-  try {
-    const parsed = new URL(configuredSiteUrl);
-    if (parsed.protocol !== 'https:' || parsed.pathname !== '/' || parsed.search || parsed.hash) throw new Error('invalid');
-    origin = parsed.origin;
-  } catch {
-    throw new Error('NEXT_PUBLIC_SITE_URL must be a canonical HTTPS origin.');
+  const tokenNonce = randomBytes(32).toString('hex');
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  if (!hmacSecret || Buffer.byteLength(hmacSecret,'utf8') < 32) {
+    throw new Error('The server-side MDI email token HMAC secret is not configured.');
   }
-  const invitationUrl = `${origin}/platform/accept#token=${rawToken}`;
+  const rawToken = createHmac('sha256',hmacSecret).update(`mdi-invitation:${applicationId}:${tokenNonce}`).digest('hex').toUpperCase();
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
   const { error } = await (supabase.rpc as any)('owner_issue_invitation', {
     p_application_id: applicationId,
     p_token_hash: tokenHash,
-    p_raw_token: rawToken,
-    p_invitation_url: invitationUrl,
+    p_token_nonce: tokenNonce,
   });
   if (error) throw new Error('Invitation could not be issued. Verify that the application has a requested code and subdomain.');
   revalidatePath('/platform');
