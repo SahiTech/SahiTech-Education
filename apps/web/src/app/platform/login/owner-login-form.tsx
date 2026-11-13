@@ -91,6 +91,7 @@ export default function OwnerLoginForm(){
       <div><label className="mb-1 block text-xs font-bold text-slate-700">Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required autoComplete="current-password" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"/></div>
       <button disabled={busy} className="w-full rounded-lg bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{busy?'Signing in...':'Continue securely'}</button>
       <button type="button" onClick={()=>{setStep('setup');setError('');setMessage('');}} className="w-full py-2 text-xs font-semibold text-emerald-700 underline">First-time setup: create the designated Owner account</button>
+      <a href="/forgot-password" className="block text-center text-xs font-semibold text-slate-500 underline">Forgot owner password?</a>
     </form>}
     {step==='setup'&&<form onSubmit={createOwnerAccount} className="space-y-3">
       <p className="text-xs leading-5 text-slate-600">Create the single Global Platform Owner account. Email verification is required, and the account cannot access the Owner Portal until TOTP MFA is enrolled and verified.</p>
