@@ -1,0 +1,53 @@
+name: MDI CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/mdi-production-hardening]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mdi-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: https://sahitech-edu.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Domain and database tests
+        run: pnpm test
+
+      - name: TypeScript check
+        run: pnpm --filter web exec tsc --noEmit
+
+      - name: Web lint
+        run: pnpm --filter web lint
+
+      - name: Production build
+        run: pnpm --filter web build
