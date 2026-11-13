@@ -69,3 +69,20 @@ export async function activateTenant(formData: FormData) {
   if (error) throw new Error('Tenant is not ready for final activation.');
   revalidatePath('/platform');
 }
+
+export async function reviewApplicationDocument(formData: FormData) {
+  const { supabase } = await requirePlatformOwner();
+  const documentId = String(formData.get('documentId') || '');
+  const status = String(formData.get('status') || '');
+  const note = String(formData.get('reviewNote') || '').trim().slice(0, 2000);
+  if (!/^[0-9a-f-]{36}$/i.test(documentId) || !['verified','rejected'].includes(status)) {
+    throw new Error('Invalid document review request.');
+  }
+  const { error } = await (supabase.rpc as any)('owner_review_application_document', {
+    p_document_id: documentId,
+    p_status: status,
+    p_review_note: note || null,
+  });
+  if (error) throw new Error('Could not save document verification decision.');
+  revalidatePath('/platform');
+}
