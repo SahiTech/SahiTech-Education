@@ -27,6 +27,8 @@ export interface Tenant {
   isActive: boolean;
   onboardingStep: number;
   isVerified: boolean;
+  platformStatus?: 'provisioning' | 'pending_activation' | 'active' | 'suspended' | 'closed';
+  sourceApplicationId?: string;
   onboardingCompletedAt?: string;
   boardAffiliation?: string;
   mottoBn?: string;
@@ -48,7 +50,6 @@ export interface Branch {
 }
 
 export type UserRole = 
-  | 'super_admin'
   | 'madrasa_admin'
   | 'academic_dean'
   | 'teacher'
