@@ -1,18 +1,28 @@
 'use client';
 
-import {useState, type FormEvent} from 'react';
+import {useEffect, useState, type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {createClient} from '@/lib/supabase/client';
 
-export default function AcceptInvitationForm({token}:{token:string}){
+export default function AcceptInvitationForm(){
   const router=useRouter();
   const [mode,setMode]=useState<'signup'|'signin'>('signup');
+  const [token,setToken]=useState('');
+  const [tokenReady,setTokenReady]=useState(false);
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [password,setPassword]=useState('');
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.hash.replace(/^#/,''));
+    const value=params.get('token')||'';
+    setToken(value);
+    window.history.replaceState(null,'',window.location.pathname+window.location.search);
+    setTokenReady(true);
+  },[]);
 
   async function accept(e:FormEvent){
     e.preventDefault();setBusy(true);setError('');setMessage('');
@@ -26,7 +36,7 @@ export default function AcceptInvitationForm({token}:{token:string}){
       const {data:{user:current}}=await supabase.auth.getUser();
       if(!current){
         if(mode==='signup'){
-          const redirectTo=`${window.location.origin}/auth/callback?next=${encodeURIComponent(`/platform/accept?token=${token}`)}`;
+          const redirectTo=`${window.location.origin}/auth/callback?next=${encodeURIComponent(`/platform/accept#token=${token}`)}`;
           const {data,error:signupError}=await supabase.auth.signUp({
             email:email.trim().toLowerCase(),password,
             options:{data:{full_name_en:name.trim()},emailRedirectTo:redirectTo}
@@ -55,6 +65,8 @@ export default function AcceptInvitationForm({token}:{token:string}){
     finally{setBusy(false);}
   }
 
+  if(!tokenReady) return <div className="mt-7 rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">Checking secure invitation link...</div>;
+
   return <form onSubmit={accept} className="mt-7 space-y-4">
     {!token||!/^[A-Fa-f0-9]{64}$/.test(token)?<div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">Invitation token is invalid.</div>:null}
     <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-xs font-semibold">
@@ -66,6 +78,6 @@ export default function AcceptInvitationForm({token}:{token:string}){
     <div><label className="mb-1 block text-xs font-bold text-slate-700">Invited email address</label><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"/></div>
     {mode==='signup'&&<div><label className="mb-1 block text-xs font-bold text-slate-700">Full name</label><input value={name} onChange={e=>setName(e.target.value)} required autoComplete="name" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"/></div>}
     <div><label className="mb-1 block text-xs font-bold text-slate-700">{mode==='signup'?'Create password':'Password'}</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={10} autoComplete={mode==='signup'?'new-password':'current-password'} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"/>{mode==='signup'&&<p className="mt-1 text-[11px] text-slate-500">Use at least 10 characters.</p>}</div>
-    <button type="submit" disabled={busy||!token||!/^[A-Fa-f0-9]{64}$/.test(token)} className="w-full rounded-lg bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">{busy?'Processing invitation...':mode==='signup'?'Create account and accept invitation':'Sign in and accept invitation'}</button>
+    <button type="submit" disabled={busy||!tokenReady||!/^[A-Fa-f0-9]{64}$/.test(token)} className="w-full rounded-lg bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">{busy?'Processing invitation...':mode==='signup'?'Create account and accept invitation':'Sign in and accept invitation'}</button>
   </form>
 }
