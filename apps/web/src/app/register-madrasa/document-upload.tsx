@@ -43,6 +43,7 @@ export function ApplicationDocumentUpload({applicationId,uploadToken}:{applicati
         });
         if(recordError)throw new Error(`File uploaded but its record could not be saved: ${item.name}. Contact support before retrying.`);
         setDone(current=>[...current,item.name]);
+        setItems(current=>current.filter(existing=>existing!==item));
       }
       setItems([]);
     }catch(err:any){setError(err.message||'Document upload failed.');}
