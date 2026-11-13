@@ -26,7 +26,7 @@
 ## 3. Madrasa application lifecycle
 
 1. Applicant submits the public form at `/register-madrasa`. No Auth account or tenant is created at this stage.
-2. The application RPC validates the payload, applies an email-based submission limit, stores a hash of a random upload capability and queues an application-received email.
+2. The application RPC validates the payload, applies a three-per-email-per-24-hour submission limit, stores a hash plus nonce for a random HMAC-derived upload capability and queues an application-received email. The web form also includes a honeypot; this is baseline abuse friction, not a replacement for IP/CAPTCHA protection.
 3. Applicant uses the private, seven-day document link to upload PDF/JPEG/PNG supporting documents (maximum 10 MB each; upload capability permits up to 10 files).
 4. Global Owner reviews the application and each document in `/platform`. Documents can be marked verified or rejected with a review note.
 5. If more information is needed, set the application to `info_requested`; the applicant can continue uploading with the original unexpired capability link.
@@ -103,6 +103,7 @@ Do not merge or deploy until all of the following are true:
 - [ ] Global Owner Auth account is verified, bound and protected by TOTP MFA (AAL2).
 - [ ] Browser E2E covers application submission, private document upload, owner review, invitation email, verified-email acceptance, onboarding and final activation.
 - [ ] Resend sender domain is verified and test delivery succeeds from the development environment.
+- [ ] Add a production-grade public application abuse control (e.g. Turnstile plus server-side verification and/or edge IP rate limiting); the current honeypot and per-email cap alone are not sufficient for a high-traffic public launch.
 - [ ] Edge Function is deployed and scheduled in development with secrets configured.
 - [ ] RLS, grants, Storage policies, tenant lifecycle and audit controls are rechecked.
 - [ ] Production migration plan is reviewed separately, including a redesigned replacement for excluded migration 00007.
