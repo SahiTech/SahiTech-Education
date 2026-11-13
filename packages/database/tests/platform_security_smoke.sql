@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00020.
+-- Run against an isolated MDI development database after migrations 00001-00021.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
