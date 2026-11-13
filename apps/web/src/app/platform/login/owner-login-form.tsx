@@ -36,8 +36,8 @@ export default function OwnerLoginForm(){
       }else{
         const pending=factors.totp.find((factor:any)=>factor.status==='unverified');
         if(pending){
-          setFactorId(pending.id);
-          throw new Error('An unfinished authenticator setup exists. Remove the unverified factor in Auth settings, then restart owner setup.');
+          const {error:removeError}=await supabase.auth.mfa.unenroll({factorId:pending.id});
+          if(removeError) throw new Error('An unfinished authenticator setup could not be safely reset. Contact platform support.');
         }
         const {data:enrolled,error:enrollError}=await supabase.auth.mfa.enroll({factorType:'totp',friendlyName:'MDI Global Platform Owner'});
         if(enrollError||!enrolled) throw enrollError||new Error('MFA enrollment failed.');
