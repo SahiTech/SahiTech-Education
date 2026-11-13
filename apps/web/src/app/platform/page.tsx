@@ -16,14 +16,16 @@ export default async function PlatformOwnerDashboard() {
   const { data: isOwner } = await (supabase.rpc as any)('is_platform_owner');
   if (isOwner !== true) redirect('/platform/login');
 
-  const [{ data: applications }, { data: tenants }, { data: invitations }, { data: auditLogs }] = await Promise.all([
+  const [{ data: applications }, { data: tenants }, { data: auditLogs }] = await Promise.all([
     (supabase.from('madrasa_applications') as any).select('*').order('submitted_at', { ascending: false }).limit(100),
     (supabase.from('tenants') as any).select('id,name,code,subdomain,onboarding_step,onboarding_completed_at,platform_status,source_application_id').eq('platform_status','pending_activation').not('onboarding_completed_at','is',null).order('onboarding_completed_at',{ascending:true}),
-    (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').order('created_at',{ascending:false}).limit(30),
     (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,before_state,after_state,created_at').order('created_at',{ascending:false}).limit(40),
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
+  const { data: invitations } = applicationIds.length
+    ? await (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
+    : { data: [] as any[] };
   const { data: documentRows } = applicationIds.length
     ? await (supabase.from('madrasa_application_documents') as any).select('*').in('application_id',applicationIds).order('uploaded_at',{ascending:false})
     : { data: [] as any[] };
@@ -41,7 +43,7 @@ export default async function PlatformOwnerDashboard() {
     if (['pending','under_review','info_requested'].includes(app.status)) return true;
     if (app.status !== 'approved') return false;
     const invitation = invitationByApplication.get(app.id);
-    return !invitation || ['expired','revoked','failed'].includes(invitation.status);
+    return invitation?.status !== 'accepted';
   });
 
   return (
