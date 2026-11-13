@@ -3,8 +3,10 @@
 **Parent Brand**: SahiTech  
 **Division**: SahiTech Education  
 **Active Project**: Madrasa Digitalization Initiative (MDI)  
-**Last Updated**: 2026-11-12  
-**Platform Status**: FULL PRODUCTION-READY IMPLEMENTATION COMPLETED
+**Last Updated**: 2026-11-13  
+**Platform Status**: SECURITY HARDENING IN PROGRESS — NOT RELEASE READY
+
+> **Environment truth (2026-11-13):** The production project `sahitech-mdi` (`xbswamfmslhliayoowlo`) remains untouched by this hardening work. All new security and workflow migrations are applied only to the isolated development project `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`). Migration `00007_security_hardening.sql` is intentionally not applied because its legacy `super_admin` assumptions conflict with the separate Global Platform Owner model. The work is tracked in draft PR #1. Do not treat this branch as production-ready until CI, browser E2E, owner MFA binding, verified Resend sender setup, and deployment review are complete.
 
 ---
 
@@ -15,8 +17,8 @@
 | **Master Blueprint** | APPROVED | Codified in [MDI_MASTER_BLUEPRINT.md](file:///c:/Users/O%20MAMA/.gemini/antigravity/brain/2de4f6e7-57d7-499e-a85e-90cc0e27c5b9/MDI_MASTER_BLUEPRINT.md). |
 | **Documentation Foundation** | COMPLETE (27 Specs) | 27 specialized specifications in [docs/](file:///c:/Users/O%20MAMA/SahiTech-Education/docs/README.md), including Shariah Double-Entry (Doc 26) & Support Impersonation Protocol (Doc 27). |
 | **GitHub Repository** | SYNCHRONIZED | Remote `origin/main` actively tracking all platform phases. |
-| **Supabase Cloud Project** | CONNECTED & HEALTHY | Remote project `sahitech-mdi` (`xbswamfmslhliayoowlo`) active in `ap-south-1` (Mumbai). |
-| **PostgreSQL Database** | 6 MIGRATIONS LIVE | Migrations 00001 to 00006 applied; **32 public tables, 100% RLS enabled** + 3 storage buckets. |
+| **Supabase Cloud Projects** | DEV + PROD | Production `sahitech-mdi` (`xbswamfmslhliayoowlo`) remains untouched; isolated development `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`) is active in `ap-south-1`. |
+| **PostgreSQL Database** | DEV HARDENING APPLIED | Development has the accepted owner/tenant workflow and hardening migrations through 00034; **37 public tables, 100% RLS enabled**. Production remains on its pre-hardening baseline. |
 | **Row Level Security (RLS)** | STRICT RLS & RBAC | Enabled on 100% of tables; tenant isolation guaranteed with `get_auth_tenant_ids()` and `has_tenant_role()`. |
 | **Shariah Fund Segregation** | STRICT & VERIFIED | Document 26 Shariah fund segregation enforced at domain level and ledger schema (General Fund vs. Lillah/Zakat). |
 | **Cryptographic Sanad Registry**| 256-BIT FIPS 180-4 | Full 256-bit SHA-256 collision-resistant tokens (`VARCHAR(128)`) + public verification RPC and portal (`/verify/[hash]`). |
@@ -28,7 +30,11 @@
 
 ## 2. Complete Architecture Delivery Summary
 
-### A. Database Migrations Applied to Supabase (`xbswamfmslhliayoowlo`)
+### A. Original Production Baseline and Isolated Development Hardening
+
+Production baseline (`xbswamfmslhliayoowlo`) retains migrations 00001–00006. Development project (`srcmodeinjvfqwkramni`) carries the new owner/application/invitation/security work through migration 00034. The migration 00007 file is intentionally excluded pending redesign.
+
+### B. Original Database Migrations (00001–00006)
 1. **`00001_initial_mdi_schema.sql`**: Foundation schema (tenants, branches, profiles, tenant_users, academic_years, departments, classes, sections, subjects, students, teachers, attendance_records, fee_categories, fee_invoices, audit_logs) with base RLS.
 2. **`00002_rbac_mutation_policies.sql`**: Comprehensive RBAC mutation policies (`has_tenant_role`) for institutional deans, accountants, and teachers.
 3. **`00003_institution_onboarding_wizard.sql`**: Onboarding progression tracking, verification gating, board affiliation, and configurable program policies.
