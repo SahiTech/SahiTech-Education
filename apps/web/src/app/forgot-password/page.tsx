@@ -1,0 +1,2 @@
+import ForgotPasswordForm from './forgot-password-form';
+export default function ForgotPasswordPage(){return <div className="flex min-h-[70vh] items-center justify-center bg-slate-50 px-4 py-12"><div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"><h1 className="text-2xl font-black text-slate-900">পাসওয়ার্ড রিসেট</h1><p className="mt-2 text-sm text-slate-500">আপনার account email দিন। Supabase Auth থেকে নিরাপদ recovery link পাঠানো হবে।</p><ForgotPasswordForm/></div></div>}
