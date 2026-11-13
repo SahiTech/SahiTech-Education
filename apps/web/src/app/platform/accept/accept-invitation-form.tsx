@@ -40,7 +40,7 @@ export default function AcceptInvitationForm({token}:{token:string}){
           const {error:loginError}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
           if(loginError) throw new Error('Sign-in failed. Use the invited email address and its password.');
         }
-      }else if(existing.email?.toLowerCase()!==email.trim().toLowerCase()){
+      }else if(current.email?.toLowerCase()!==email.trim().toLowerCase()){
         throw new Error('The signed-in email does not match the invited email. Sign out and use the invited address.');
       }
 
