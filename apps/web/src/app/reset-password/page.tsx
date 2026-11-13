@@ -1,0 +1,2 @@
+import ResetPasswordForm from './reset-password-form';
+export default function ResetPasswordPage(){return <div className="flex min-h-[70vh] items-center justify-center bg-slate-50 px-4 py-12"><div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"><h1 className="text-2xl font-black text-slate-900">নতুন পাসওয়ার্ড সেট করুন</h1><p className="mt-2 text-sm text-slate-500">Recovery link দিয়ে যাচাই সম্পন্ন হলে নতুন পাসওয়ার্ড দিন।</p><ResetPasswordForm/></div></div>}
