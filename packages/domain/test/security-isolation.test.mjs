@@ -19,10 +19,7 @@ test('Multi-tenant isolation: user in Tenant A cannot execute operations targeti
   // Simulating cross-tenant action verification
   function authorizeTenantAction(actorContext, targetTenantId, permission) {
     if (actorContext.tenantId !== targetTenantId) {
-      // Direct cross-tenant access rejection unless platform super_admin
-      if (actorContext.role !== 'super_admin') {
-        throw new Error('TenantIsolationViolation: Cross-tenant operation rejected.');
-      }
+      throw new Error('TenantIsolationViolation: Cross-tenant operation rejected.');
     }
     if (!hasPermission(actorContext.role, permission)) {
       throw new Error(`Unauthorized: Role '${actorContext.role}' lacks '${permission}'.`);
@@ -52,6 +49,12 @@ test('Multi-tenant isolation: user in Tenant A cannot execute operations targeti
   assert.throws(
     () => authorizeTenantAction(tenantBContext, 'tenant-bbb-222', 'manage_tenant_settings'),
     /Unauthorized/
+  );
+
+  // Legacy super_admin is not a tenant-scoped cross-tenant bypass.
+  assert.throws(
+    () => authorizeTenantAction({ userId: 'legacy-user', tenantId: 'tenant-aaa-111', role: 'super_admin' }, 'tenant-bbb-222', 'manage_admissions'),
+    /TenantIsolationViolation/
   );
 });
 
