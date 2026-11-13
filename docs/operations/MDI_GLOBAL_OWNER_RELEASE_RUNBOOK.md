@@ -84,8 +84,8 @@ The database smoke checks should confirm:
 
 ## 6. Current development state (2026-11-13)
 
-- Development migrations through `00035` are applied.
-- 37 public tables were observed and all 37 had RLS enabled.
+- Development migrations through `00036` are applied.
+- 37 public tables were observed and all 37 had RLS enabled. Migration `00036` makes operational tenant policies require `platform_status='active'` and grants pending tenants only narrowly scoped onboarding reads/writes.
 - Application submission, upload capability and application-received outbox enqueue passed a rollback-only SQL smoke test.
 - No test records remained after that test.
 - CI run #198 passed all 25 domain/database tests but found one TypeScript nullability issue in the invitation acceptance form; the specific issue was fixed and a new CI run was queued.
