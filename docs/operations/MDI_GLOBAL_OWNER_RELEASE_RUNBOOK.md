@@ -41,9 +41,10 @@ Email delivery is **not ready** until a sender domain is verified in Resend and 
 
 ### Web deployment environment
 
-Set the canonical HTTPS origin:
+Set the canonical HTTPS origin and the server-only token derivation secret:
 
-- `NEXT_PUBLIC_SITE_URL` — e.g. the actual HTTPS origin of the MDI web deployment.
+- `NEXT_PUBLIC_SITE_URL` — actual HTTPS origin of the MDI web deployment, if used by the web app.
+- `MDI_EMAIL_TOKEN_HMAC_SECRET` — at least 32 cryptographically random bytes, kept server-only. Use the exact same value in the web deployment and the Supabase Edge Function. Do not use a `NEXT_PUBLIC_` prefix.
 
 ### Supabase Edge Function secrets
 
@@ -51,13 +52,14 @@ Configure these in the **development** Supabase project using its secret-managem
 
 - `CRON_SECRET` — long random secret used to authenticate scheduled calls.
 - `PUBLIC_SITE_URL` — same canonical HTTPS origin as the web deployment.
+- `MDI_EMAIL_TOKEN_HMAC_SECRET` — exact same server-only HMAC secret as the web deployment.
 - `RESEND_API_KEY` — Resend API key.
 - `RESEND_FROM_EMAIL` — sender identity on the verified Resend domain.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` — Supabase function runtime credentials.
 
 Configure Supabase Auth SMTP separately for sign-up confirmation and password recovery (it may use the same verified Resend domain, but it is not the application outbox). Add the exact `/auth/callback` URL to the Supabase Auth redirect allowlist. Invitation and upload bearer tokens are placed in URL fragments so they are not sent in the initial HTTP request or normal server access logs; after confirming a new account email, the applicant reopens the original invitation email link.
 
-Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes). The worker claims jobs with a lease, sends via Resend and records success/failure with bounded retries.
+Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes). The worker derives one-time bearer tokens from random nonces using the shared HMAC secret, verifies each derived token against the stored SHA-256 hash, claims jobs with a lease, sends via Resend and records success/failure with bounded retries. Only token hashes and nonces are stored in PostgreSQL/outbox payloads; raw bearer tokens exist only transiently in the web action response or the Edge Function email body.
 
 **No Edge Function has been deployed and no email has been sent from this branch.** The connected Resend account previously had no verified sending domain.
 
