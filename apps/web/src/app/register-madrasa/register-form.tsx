@@ -2,12 +2,15 @@
 
 import React, { useActionState } from 'react';
 import { submitMadrasaApplication, type ApplicationResult } from '@/app/actions/applications';
-import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import ApplicationDocumentUploader from './application-document-uploader';
 
 const initialState: ApplicationResult = { success: false };
 
 export function RegisterForm() {
   const [state, formAction, pending] = useActionState(submitMadrasaApplication, initialState);
+  if (state.success && state.applicationId && state.uploadToken) return <div className="space-y-4"><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><div className="flex items-center gap-2 font-bold text-emerald-900"><CheckCircle2 className="h-5 w-5"/>Application submitted</div><p className="mt-1 text-xs leading-5 text-emerald-800">Your application ID: <span className="font-mono">{state.applicationId}</span>. Upload supporting documents below. You may close this page after uploading.</p></div><ApplicationDocumentUploader applicationId={state.applicationId} uploadToken={state.uploadToken}/></div>;
+
   return (
     <form action={formAction} className="space-y-5">
       {state.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{state.error}</div>}
