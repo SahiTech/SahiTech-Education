@@ -1,6 +1,6 @@
 'use server';
 
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 
 export type ApplicationResult = { success: boolean; error?: string; applicationId?: string; uploadToken?: string };
@@ -45,9 +45,18 @@ export async function submitMadrasaApplication(
 
   const uploadToken=randomBytes(32).toString('hex').toUpperCase();
   const tokenHash=createHash('sha256').update(uploadToken).digest('hex');
+  const applicationId=randomUUID();
+  const configuredSiteUrl=process.env.NEXT_PUBLIC_SITE_URL;
+  if(!configuredSiteUrl) return {success:false,error:'আবেদন জমার ইমেইল ও ডকুমেন্ট লিংকের জন্য সাইটের HTTPS URL কনফিগার করা প্রয়োজন।'};
+  let origin:string;
+  try { const parsed=new URL(configuredSiteUrl); if(parsed.protocol!=='https:'||parsed.pathname!=='/'||parsed.search||parsed.hash) throw new Error('invalid'); origin=parsed.origin; }
+  catch { return {success:false,error:'সাইটের HTTPS URL সঠিকভাবে কনফিগার করা হয়নি।'}; }
+  const uploadUrl=`${origin}/register-madrasa/documents?applicationId=${applicationId}#token=${uploadToken}`;
   const supabase=await createClient();
-  const {data:applicationId,error}=await (supabase.rpc as any)('submit_madrasa_application',{
+  const {data:createdApplicationId,error}=await (supabase.rpc as any)('submit_madrasa_application',{
+    p_application_id:applicationId,
     p_upload_token_hash:tokenHash,
+    p_upload_url:uploadUrl,
     p_application:{
       institution_name:institutionName,
       institution_name_bn:institutionNameBn||null,
@@ -67,10 +76,10 @@ export async function submitMadrasaApplication(
       application_note:applicationNote||null,
     }
   });
-  if(error||!applicationId){
+  if(error||!createdApplicationId){
     if(error?.message?.includes('application_rate_limit')) return {success:false,error:'এই ইমেইল থেকে ২৪ ঘণ্টায় সর্বোচ্চ ৩টি আবেদন জমা দেওয়া যাবে।'};
     if(error?.code==='23505') return {success:false,error:'প্রস্তাবিত প্রতিষ্ঠান কোড বা সাবডোমেইনটি আগে থেকেই ব্যবহৃত হয়েছে।'};
     return {success:false,error:'আবেদন জমা দেওয়া যায়নি। তথ্য যাচাই করে কিছুক্ষণ পর আবার চেষ্টা করুন।'};
   }
-  return {success:true,applicationId,uploadToken};
+  return {success:true,applicationId:createdApplicationId,uploadToken};
 }
