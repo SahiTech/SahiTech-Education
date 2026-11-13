@@ -18,16 +18,18 @@ async function requirePlatformOwner() {
 }
 
 export async function updateApplicationStatus(formData: FormData) {
-  const { supabase, user } = await requirePlatformOwner();
+  const { supabase } = await requirePlatformOwner();
   const id = String(formData.get('applicationId') || '');
   const status = String(formData.get('status') || '');
   const note = String(formData.get('reviewNote') || '').trim().slice(0, 2000);
   if (!/^[0-9a-f-]{36}$/i.test(id) || !['under_review','info_requested','rejected'].includes(status)) {
     throw new Error('Invalid application review request.');
   }
-  const { error } = await (supabase.from('madrasa_applications') as any).update({
-    status, review_note: note || null, reviewed_by: user.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-  }).eq('id', id);
+  const { error } = await (supabase.rpc as any)('owner_update_application_status', {
+    p_application_id: id,
+    p_status: status,
+    p_review_note: note || null,
+  });
   if (error) throw new Error('Could not update application review status.');
   revalidatePath('/platform');
 }
