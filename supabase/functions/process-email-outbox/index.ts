@@ -16,6 +16,42 @@ const escapeHtml = (value: string) =>
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[char] || char);
 
+const toHex = (bytes: Uint8Array) =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+async function deriveAndVerifyToken(
+  purpose: "upload" | "invitation",
+  applicationId: string,
+  nonce: string,
+  expectedHash: string,
+  secret: string,
+) {
+  if (!/^[0-9a-f-]{36}$/i.test(applicationId)
+      || !/^[0-9a-f]{64}$/.test(nonce)
+      || !/^[0-9a-f]{64}$/.test(expectedHash)
+      || secret.length < 32) {
+    throw new Error("email_token_material_invalid");
+  }
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`mdi-${purpose}:${applicationId}:${nonce}`),
+  );
+  const token = toHex(new Uint8Array(signature)).toUpperCase();
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const actualHash = toHex(new Uint8Array(digest));
+  if (actualHash !== expectedHash) throw new Error("email_token_hash_mismatch");
+  return token;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -29,9 +65,19 @@ Deno.serve(async (request: Request) => {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
   const publicSiteUrl = Deno.env.get("PUBLIC_SITE_URL");
+  const tokenHmacSecret = Deno.env.get("MDI_EMAIL_TOKEN_HMAC_SECRET");
 
-  if (!supabaseUrl || !serviceRoleKey || !resendApiKey || !fromEmail || !publicSiteUrl) {
-    return json({ error: "email_delivery_not_configured", detail: "Configure Supabase service role, Resend API key, verified sender address and the environment-specific public site origin before enabling delivery." }, 503);
+  if (!supabaseUrl || !serviceRoleKey || !resendApiKey || !fromEmail || !publicSiteUrl || !tokenHmacSecret || tokenHmacSecret.length < 32) {
+    return json({ error: "email_delivery_not_configured", detail: "Configure Supabase service role, Resend API key, verified sender, canonical HTTPS site origin and the shared MDI email-token HMAC secret." }, 503);
+  }
+
+  let origin: string;
+  try {
+    const site = new URL(publicSiteUrl);
+    if (site.protocol !== "https:" || site.pathname !== "/" || site.search || site.hash) throw new Error("invalid_public_site_origin");
+    origin = site.origin;
+  } catch {
+    return json({ error: "invalid_public_site_url" }, 503);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -44,27 +90,32 @@ Deno.serve(async (request: Request) => {
   for (const job of (jobs || []) as OutboxJob[]) {
     try {
       const institutionName = String(job.payload.institution_name || "your Madrasa");
+      const applicationId = String(job.payload.application_id || "");
       let subject: string;
       let textBody: string;
       let htmlBody: string;
 
       if (job.event_type === "madrasa_invitation") {
-        const invitationUrl = String(job.payload.invitation_url || "");
-        const parsed = new URL(invitationUrl);
-        const expected = new URL(publicSiteUrl);
-        if (parsed.protocol !== "https:" || parsed.origin !== expected.origin || !parsed.pathname.startsWith("/platform/accept")) {
-          throw new Error("invitation_url_origin_not_allowed");
-        }
+        const token = await deriveAndVerifyToken(
+          "invitation",
+          applicationId,
+          String(job.payload.token_nonce || ""),
+          String(job.payload.token_hash || ""),
+          tokenHmacSecret,
+        );
+        const invitationUrl = `${origin}/platform/accept#token=${token}`;
         subject = "Your SahiTech MDI Madrasa invitation";
         textBody = `Your application for ${institutionName} has been approved. Accept the secure invitation within 72 hours: ${invitationUrl}`;
         htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033;max-width:560px;margin:auto"><h2>SahiTech Education · MDI</h2><p>Your Madrasa application for <strong>${escapeHtml(institutionName)}</strong> has been approved.</p><p>Use the secure invitation below to create or access your Madrasa Admin account. The invitation expires in 72 hours and can be used only once.</p><p><a href="${escapeHtml(invitationUrl)}" style="display:inline-block;padding:12px 18px;background:#047857;color:#fff;text-decoration:none;border-radius:8px">Accept invitation</a></p><p>If you were not expecting this invitation, you can ignore this message.</p><p style="font-size:12px;color:#64748b">SahiTech Education · Madrasa Digitalization Initiative</p></div>`;
       } else if (job.event_type === "madrasa_application_received") {
-        const uploadUrl = String(job.payload.upload_url || "");
-        const parsed = new URL(uploadUrl);
-        const expected = new URL(publicSiteUrl);
-        if (parsed.protocol !== "https:" || parsed.origin !== expected.origin || !parsed.pathname.startsWith("/register-madrasa/documents")) {
-          throw new Error("application_upload_url_origin_not_allowed");
-        }
+        const token = await deriveAndVerifyToken(
+          "upload",
+          applicationId,
+          String(job.payload.upload_token_nonce || ""),
+          String(job.payload.upload_token_hash || ""),
+          tokenHmacSecret,
+        );
+        const uploadUrl = `${origin}/register-madrasa/documents?applicationId=${encodeURIComponent(applicationId)}#token=${token}`;
         const contact = escapeHtml(String(job.payload.contact_person_name || "Applicant"));
         subject = "MDI application received — SahiTech Education";
         textBody = `Dear ${contact}, we received the Madrasa application for ${institutionName}. Use this private link to upload or continue your supporting documents. The link expires in seven days: ${uploadUrl}`;
