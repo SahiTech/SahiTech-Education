@@ -1,6 +1,6 @@
 'use server';
 
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 
 export type ApplicationResult = { success: boolean; error?: string; applicationId?: string; uploadToken?: string };
@@ -43,20 +43,19 @@ export async function submitMadrasaApplication(
     catch { return {success:false,error:'ওয়েবসাইটের URL সঠিক নয়।'}; }
   }
 
-  const uploadToken=randomBytes(32).toString('hex').toUpperCase();
-  const tokenHash=createHash('sha256').update(uploadToken).digest('hex');
   const applicationId=randomUUID();
-  const configuredSiteUrl=process.env.NEXT_PUBLIC_SITE_URL;
-  if(!configuredSiteUrl) return {success:false,error:'আবেদন জমার ইমেইল ও ডকুমেন্ট লিংকের জন্য সাইটের HTTPS URL কনফিগার করা প্রয়োজন।'};
-  let origin:string;
-  try { const parsed=new URL(configuredSiteUrl); if(parsed.protocol!=='https:'||parsed.pathname!=='/'||parsed.search||parsed.hash) throw new Error('invalid'); origin=parsed.origin; }
-  catch { return {success:false,error:'সাইটের HTTPS URL সঠিকভাবে কনফিগার করা হয়নি।'}; }
-  const uploadUrl=`${origin}/register-madrasa/documents?applicationId=${applicationId}#token=${uploadToken}`;
+  const tokenNonce=randomBytes(32).toString('hex');
+  const hmacSecret=process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  if(!hmacSecret || Buffer.byteLength(hmacSecret,'utf8')<32) {
+    return {success:false,error:'নিরাপদ document link তৈরির server configuration সম্পূর্ণ নয়। অনুগ্রহ করে পরে আবার চেষ্টা করুন।'};
+  }
+  const uploadToken=createHmac('sha256',hmacSecret).update(`mdi-upload:${applicationId}:${tokenNonce}`).digest('hex').toUpperCase();
+  const tokenHash=createHash('sha256').update(uploadToken).digest('hex');
   const supabase=await createClient();
   const {data:createdApplicationId,error}=await (supabase.rpc as any)('submit_madrasa_application',{
     p_application_id:applicationId,
     p_upload_token_hash:tokenHash,
-    p_upload_url:uploadUrl,
+    p_upload_token_nonce:tokenNonce,
     p_application:{
       institution_name:institutionName,
       institution_name_bn:institutionNameBn||null,
