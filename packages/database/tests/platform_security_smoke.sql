@@ -63,6 +63,11 @@ BEGIN
      OR NOT has_table_privilege('authenticated','public.platform_audit_logs','SELECT') THEN
     RAISE EXCEPTION 'Platform audit table grants are incorrect';
   END IF;
+  IF has_table_privilege('authenticated','public.platform_audit_logs','INSERT')
+     OR has_table_privilege('authenticated','public.platform_audit_logs','UPDATE')
+     OR has_table_privilege('authenticated','public.platform_audit_logs','DELETE') THEN
+    RAISE EXCEPTION 'Platform audit log must be read-only to clients';
+  END IF;
   IF NOT EXISTS (
     SELECT 1 FROM pg_trigger t
     JOIN pg_class c ON c.oid=t.tgrelid
