@@ -51,7 +51,8 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
         code,
         subdomain,
         curriculum_type,
-        is_active
+        is_active,
+        platform_status
       )
     `)
     .eq('user_id', user.id)
@@ -71,7 +72,7 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
 
   const active = memberships[0];
   const tenantData = active.tenants as any;
-  if (!tenantData || tenantData.is_active !== true) return null;
+  if (!tenantData || (tenantData.is_active !== true && tenantData.platform_status !== 'pending_activation')) return null;
 
   return {
     userId: user.id,
