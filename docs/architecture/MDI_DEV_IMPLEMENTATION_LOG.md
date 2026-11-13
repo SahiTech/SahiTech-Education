@@ -26,7 +26,7 @@ Development has migrations `00001`–`00006` and `00008`–`00030` applied. Repo
 - `/register-madrasa` now submits a public application. It does not create a tenant or grant a role.
 - Application submission uses a validated RPC, per-email daily limit, strict field validation, and a private upload capability.
 - Applicants can upload supporting documents to a private Storage bucket. Accepted types are PDF/JPEG/PNG, maximum 10 MB each, up to 10 registered uploads.
-- `/platform/login` provides dedicated Global Owner email/password authentication and TOTP enrollment/challenge.
+- `/platform/login` provides dedicated Global Owner email/password authentication, first-time registration for the designated verified email, and TOTP enrollment/challenge.
 - `/platform` provides an AAL2-protected review dashboard, private document preview links, invitation issue/reissue, and final tenant activation.
 - Invitation acceptance supports new account creation and existing-account sign-in. Supabase email confirmation returns through `/auth/callback`.
 - Invitation acceptance requires a verified Auth email matching the invitation and provisions the tenant, Main Campus, academic year, default departments, and `madrasa_admin` membership in one database transaction.
