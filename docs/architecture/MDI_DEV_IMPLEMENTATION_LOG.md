@@ -12,14 +12,14 @@ The accepted architecture is recorded in `MDI_TARGET_ARCHITECTURE.md`. It define
 
 ## Development database migrations
 
-Development has migrations `00001`–`00006` and `00008`–`00020` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
+Development has migrations `00001`–`00006` and `00008`–`00021` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
 
 | Migration range | Implemented foundation |
 |---|---|
 | `00008`–`00011` | Restricted singleton owner record, AAL2-aware authorization, verified owner binding, public application base schema, invitation and email outbox tables, least-privilege grants |
 | `00012`–`00014` | Verified-email invitation acceptance, atomic initial tenant provisioning, pending-activation lifecycle, final owner activation, owner review access |
 | `00015`–`00017` | Private document bucket, expiring upload capability hashes, validated application submission RPC, document metadata registration, direct-table submission disabled, final activation constraints |
-| `00018`–`00020` | Resend outbox claim/completion RPCs, lease recovery, retry backoff, atomic application review/rejection, invitation revocation and replacement |
+| `00018`–`00021` | Resend outbox claim/completion RPCs, lease recovery, retry backoff, atomic application review/rejection, invitation revocation and replacement |
 
 ## Application changes
 
