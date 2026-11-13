@@ -84,8 +84,8 @@ The database smoke checks should confirm:
 
 ## 6. Current development state (2026-11-13)
 
-- Development migrations through `00036` are applied.
-- 37 public tables were observed and all 37 had RLS enabled. Migration `00036` makes operational tenant policies require `platform_status='active'` and grants pending tenants only narrowly scoped onboarding reads/writes.
+- Development migrations through `00037` are applied.
+- 37 public tables were observed and all 37 had RLS enabled. Migration `00036` makes operational tenant policies require `platform_status='active'` and grants pending tenants only narrowly scoped onboarding reads/writes. Migration `00037` adds indexes for the 14 uncovered foreign keys and fixes both Auth RLS initplan warnings on profile policies.
 - Application submission, upload capability and application-received outbox enqueue passed a rollback-only SQL smoke test.
 - No test records remained after that test.
 - GitHub Actions run #214 completed successfully: all 25 domain/database tests, TypeScript check, web lint and production build passed. A later documentation-only run is still in progress.
