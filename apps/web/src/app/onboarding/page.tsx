@@ -14,6 +14,29 @@ export default async function OnboardingPage() {
     redirect('/register-madrasa');
   }
 
+  if (state.tenant?.platform_status === 'pending_activation' && state.tenant?.onboarding_completed_at) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+        <div className="w-full max-w-xl rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+            <ShieldCheck className="h-8 w-8" />
+          </div>
+          <h1 className="mt-4 text-2xl font-black text-slate-900">অনবোর্ডিং সম্পন্ন হয়েছে</h1>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            আপনার মাদরাসার প্রাথমিক সেটআপ সফলভাবে সম্পন্ন হয়েছে। এখন SahiTech Education Global Platform Owner-এর চূড়ান্ত যাচাই ও activation-এর অপেক্ষায় রয়েছে।
+            অনুমোদনের আগে একাডেমিক, ভর্তি, উপস্থিতি ও আর্থিক কার্যক্রমের পোর্টাল বন্ধ থাকবে।
+          </p>
+          <div className="mt-6 rounded-lg bg-slate-50 p-4 text-left text-xs leading-6 text-slate-600">
+            <p><b>প্রতিষ্ঠান:</b> {state.tenant?.name}</p>
+            <p><b>কোড:</b> {state.tenant?.code}</p>
+            <p><b>স্ট্যাটাস:</b> Pending final activation</p>
+            <p><b>জমার তারিখ:</b> {new Date(state.tenant.onboarding_completed_at).toLocaleDateString('en-GB')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-6">
