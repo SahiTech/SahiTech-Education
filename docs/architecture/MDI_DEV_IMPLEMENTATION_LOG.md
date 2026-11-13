@@ -12,14 +12,14 @@ The accepted architecture is recorded in `MDI_TARGET_ARCHITECTURE.md`. It define
 
 ## Development database migrations
 
-Development has migrations `00001`–`00006` and `00008`–`00021` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
+Development has migrations `00001`–`00006` and `00008`–`00022` applied. Repository migration `00007_security_hardening.sql` was deliberately not applied because its legacy `super_admin` assumptions conflict with the accepted platform-owner separation.
 
 | Migration range | Implemented foundation |
 |---|---|
 | `00008`–`00011` | Restricted singleton owner record, AAL2-aware authorization, verified owner binding, public application base schema, invitation and email outbox tables, least-privilege grants |
 | `00012`–`00014` | Verified-email invitation acceptance, atomic initial tenant provisioning, pending-activation lifecycle, final owner activation, owner review access |
 | `00015`–`00017` | Private document bucket, expiring upload capability hashes, validated application submission RPC, document metadata registration, direct-table submission disabled, final activation constraints |
-| `00018`–`00021` | Resend outbox claim/completion RPCs, lease recovery, retry backoff, atomic application review/rejection, invitation revocation and replacement |
+| `00018`–`00022` | Resend outbox claim/completion RPCs, lease recovery, retry backoff, atomic application review/rejection, invitation revocation and replacement |
 
 ## Application changes
 
@@ -32,6 +32,8 @@ Development has migrations `00001`–`00006` and `00008`–`00021` applied. Repo
 - Invitation acceptance requires a verified Auth email matching the invitation and provisions the tenant, Main Campus, academic year, default departments, and `madrasa_admin` membership in one database transaction.
 - Newly provisioned tenants remain `pending_activation` and `is_active=false`. The tenant admin can complete onboarding, but activation and verification are deferred to a separate Global Owner action.
 - Legacy direct tenant provisioning has been disabled.
+- Legacy `super_admin` is no longer a tenant application role. New/updated memberships using that enum value are rejected, RLS helper functions exclude it, and the application RBAC type/permission map no longer grants it permissions. The database enum value is retained temporarily for compatibility; production membership audit is required before a later enum cleanup.
+- Database trigger guards prevent tenant administrators from setting platform lifecycle state to active/verified or rebinding the source application. Tenant admins can only submit the tenant into pending activation after onboarding.
 - Tenant context fails closed on invalid or ambiguous tenant selection.
 - Public Sanad verification fails closed, no longer falls back to direct table access, and omits student identity and the raw verification token.
 - Password recovery and reset routes are now present.
@@ -54,7 +56,7 @@ Development has migrations `00001`–`00006` and `00008`–`00021` applied. Repo
 - The email outbox is inaccessible to anon and authenticated roles.
 - Application upload capability validation and document bucket/policy presence were checked.
 - A smoke application and its upload capability were created and deleted inside a test block; no smoke rows remain.
-- The SQL assertions in `packages/database/tests/platform_security_smoke.sql` were executed successfully against development.
+- The SQL assertions in `packages/database/tests/platform_security_smoke.sql` were executed successfully against development, including the tenant lifecycle and legacy-role guard checks.
 - GitHub Actions run **MDI CI #38** completed successfully: dependency installation, domain/database tests, TypeScript check, web lint and Next.js production build all passed.
 - No production database migration, Auth change, deployment or merge was performed.
 
