@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {createClient} from '@/lib/supabase/client';
 
@@ -14,7 +14,7 @@ export default function AcceptInvitationForm({token}:{token:string}){
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
 
-  async function accept(e:React.FormEvent){
+  async function accept(e:FormEvent){
     e.preventDefault();setBusy(true);setError('');setMessage('');
     try{
       if(!/^[A-Fa-f0-9]{64}$/.test(token)) throw new Error('Invitation link is invalid or incomplete.');
