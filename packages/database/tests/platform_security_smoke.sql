@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00011.
+-- Run against an isolated MDI development database after migrations 00001-00020.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -12,12 +12,21 @@ BEGIN
     RAISE EXCEPTION 'Unsafe public guardian insert policy still exists';
   END IF;
   IF has_table_privilege('anon','public.madrasa_applications','SELECT')
-     OR NOT has_table_privilege('anon','public.madrasa_applications','INSERT') THEN
-    RAISE EXCEPTION 'Madrasa application anon grants are incorrect';
+     OR has_table_privilege('anon','public.madrasa_applications','INSERT') THEN
+    RAISE EXCEPTION 'Direct Madrasa application table access must be denied to anon';
+  END IF;
+  IF NOT has_function_privilege('anon','public.submit_madrasa_application(jsonb,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Validated public application submission RPC is not executable by anon';
   END IF;
   IF has_table_privilege('anon','public.madrasa_application_documents','SELECT')
      OR has_table_privilege('anon','public.madrasa_application_documents','INSERT') THEN
     RAISE EXCEPTION 'Application document metadata is exposed to anon';
+  END IF;
+  IF NOT has_function_privilege('anon','public.register_madrasa_application_document(uuid,text,text,text,text,text,bigint)','EXECUTE') THEN
+    RAISE EXCEPTION 'Capability-checked document registration RPC is not executable by anon';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id='madrasa-application-documents' AND public=false) THEN
+    RAISE EXCEPTION 'Private application document bucket is missing';
   END IF;
   IF has_table_privilege('authenticated','public.email_outbox','SELECT')
      OR has_table_privilege('authenticated','public.email_outbox','INSERT') THEN
