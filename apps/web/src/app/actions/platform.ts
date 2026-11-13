@@ -50,7 +50,7 @@ export async function issueApplicationInvitation(formData: FormData) {
   } catch {
     throw new Error('NEXT_PUBLIC_SITE_URL must be a canonical HTTPS origin.');
   }
-  const invitationUrl = `${origin}/platform/accept?token=${rawToken}`;
+  const invitationUrl = `${origin}/platform/accept#token=${rawToken}`;
   const { error } = await (supabase.rpc as any)('owner_issue_invitation', {
     p_application_id: applicationId,
     p_token_hash: tokenHash,
