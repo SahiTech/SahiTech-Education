@@ -50,7 +50,7 @@ Development has migrations `00001`–`00006` and `00008`–`00023` applied. Repo
 
 - Development project is `ACTIVE_HEALTHY`, PostgreSQL 17.11.
 - Migrations `00001`–`00006` and `00008`–`00020` are present in development migration history.
-- All 36 public tables have RLS enabled.
+- All 37 public tables have RLS enabled.
 - The unrestricted public `student_guardians` INSERT policy is absent.
 - Direct anonymous INSERT on `madrasa_applications` is revoked; the validated submission RPC remains callable.
 - Anonymous users cannot read application records or document metadata.
