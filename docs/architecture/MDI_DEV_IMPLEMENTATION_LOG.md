@@ -67,7 +67,7 @@ Development has migrations `00001`–`00006` and `00008`–`00023` applied. Repo
 2. Verify the real application submission, file upload, owner review, email delivery, invitation acceptance and onboarding flows end-to-end in a browser with real test accounts.
 3. Configure and verify the Resend sender domain, set Edge Function secrets, deploy the outbox worker, and schedule authenticated invocations.
 4. Review remaining legacy SECURITY DEFINER warnings function by function. Current warnings include legacy tenant helper RPCs used by RLS, public Sanad verification, and intentionally restricted platform workflow functions.
-5. Review remaining performance advisor findings: 55 unindexed foreign keys, 2 Auth RLS initplan warnings, 4 unused-index warnings, and 150 multiple-permissive-policy findings. These are not automatically vulnerabilities and require workload-aware review.
+5. Review remaining performance advisor findings: 56 unindexed foreign keys, 2 Auth RLS initplan warnings, 5 unused-index warnings, and 150 multiple-permissive-policy findings. These are not automatically vulnerabilities and require workload-aware review.
 6. Add full RLS cross-tenant integration tests and browser E2E tests for invitation and activation lifecycles.
 7. Keep the PR draft until real Auth/MFA and browser integration checks are completed.
 
