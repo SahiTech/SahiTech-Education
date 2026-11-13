@@ -33,7 +33,7 @@ export default async function PlatformOwnerDashboard() {
   const documentsByApplication = new Map<string,any[]>();
   for (const doc of documentsWithLinks) documentsByApplication.set(doc.application_id,[...(documentsByApplication.get(doc.application_id)||[]),doc]);
   const invitationByApplication = new Map((invitations || []).map((item:any)=>[item.application_id,item]));
-  const pending = (applications || []).filter((app:any)=>['pending','under_review','info_requested'].includes(app.status));
+  const pending = (applications || []).filter((app:any)=>['pending','under_review','info_requested'].includes(app.status) || (app.status==='approved' && invitationByApplication.get(app.id) && (invitationByApplication.get(app.id) as any).status!=='accepted'));
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
@@ -69,7 +69,7 @@ export default async function PlatformOwnerDashboard() {
                   {app.review_note && <p className="text-xs text-amber-700">Previous note: {app.review_note}</p>}
                 </div>
                 <div className="flex w-full flex-col gap-2 lg:max-w-xs">
-                  <form action={issueApplicationInvitation}><input type="hidden" name="applicationId" value={app.id}/><button disabled={!app.requested_code||!app.requested_subdomain} className="w-full rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Approve & issue invitation</button></form>
+                  <form action={issueApplicationInvitation}><input type="hidden" name="applicationId" value={app.id}/><button disabled={!app.requested_code||!app.requested_subdomain||((invitationByApplication.get(app.id) as any)?.status==='accepted')} className="w-full rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{(invitationByApplication.get(app.id) as any)?.status==='pending'?'Reissue invitation':app.status==='approved'?'Issue invitation':'Approve & issue invitation'}</button></form>
                   <form action={updateApplicationStatus} className="space-y-2"><input type="hidden" name="applicationId" value={app.id}/><select name="status" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"><option value="under_review">Under review</option><option value="info_requested">Request more information</option><option value="rejected">Reject application</option></select><input name="reviewNote" placeholder="Review note / reason" maxLength={2000} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs"/><button className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Save review decision</button></form>
                   {invitationByApplication.has(app.id) && <p className="text-[11px] text-slate-500">Invitation: {(invitationByApplication.get(app.id) as any).status} · {(invitationByApplication.get(app.id) as any).invitee_email}</p>}
                 </div>
