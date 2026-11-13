@@ -85,78 +85,42 @@ export async function issueDigitalSanad(input: IssueSanadInput) {
 }
 
 export async function verifySanadPublic(verificationToken: string) {
+  const token = verificationToken.trim().toUpperCase();
+  if (!/^[A-F0-9]{64}$/.test(token)) {
+    return { verified: false, error: 'প্রদত্ত টোকেনটি সঠিক ফরম্যাটে নেই।' };
+  }
+
   try {
     const supabase = await createClient();
-
-    // Primary: use security definer RPC for public verification without exposing sensitive student data
-    const { data: rpcRows, error: rpcError } = await (supabase.rpc as any)('verify_sanad_public', {
-      p_token: verificationToken.trim().toUpperCase(),
+    const { data: rpcRows, error } = await (supabase.rpc as any)('verify_sanad_public', {
+      p_token: token,
     });
 
-    if (!rpcError && rpcRows && rpcRows.length > 0) {
-      const row = rpcRows[0];
-      return {
-        verified: true,
-        sanad: {
-          id: row.id,
-          sanad_serial_no: row.sanad_serial_no,
-          title_bn: row.title_bn,
-          title_en: row.title_en,
-          title_ar: row.title_ar,
-          marhala_name_ar: row.marhala_name_ar,
-          result_dharja: row.result_dharja,
-          gpa: row.gpa,
-          issue_date: row.issue_date,
-          verification_hash: row.verification_hash,
-          status: row.status,
-          signatory_muhtamim: row.signatory_muhtamim,
-          signatory_dean: row.signatory_dean,
-          tenants: {
-            name: row.madrasa_name,
-            code: row.madrasa_code,
-          },
-          students: {
-            full_name_bn: row.student_name_bn,
-            full_name_en: row.student_name_en,
-            admission_no: row.student_admission_no,
-          },
-        },
-      };
-    }
-
-    // Secondary fallback
-    const { data: sanad, error } = await supabase
-      .from('sanads')
-      .select(`
-        id,
-        sanad_serial_no,
-        title_bn,
-        title_en,
-        title_ar,
-        marhala_name_ar,
-        result_dharja,
-        gpa,
-        issue_date,
-        verification_hash,
-        status,
-        signatory_muhtamim,
-        signatory_dean,
-        tenants:tenant_id (name, code),
-        students:student_id (full_name_bn, full_name_en, admission_no)
-      `)
-      .eq('verification_hash', verificationToken.trim().toUpperCase())
-      .eq('status', 'issued')
-      .maybeSingle();
-
-    if (error || !sanad) {
+    // Fail closed: never fall back to direct table access for public verification.
+    if (error || !rpcRows || rpcRows.length === 0) {
       return { verified: false, error: 'প্রদত্ত টোকেনে কোনো বৈধ বা সক্রিয় সনদ পাওয়া যায়নি।' };
     }
 
+    const row = rpcRows[0];
     return {
       verified: true,
-      sanad,
+      sanad: {
+        sanad_serial_no: row.sanad_serial_no,
+        title_bn: row.title_bn,
+        title_en: row.title_en,
+        title_ar: row.title_ar,
+        marhala_name_ar: row.marhala_name_ar,
+        result_dharja: row.result_dharja,
+        gpa: row.gpa,
+        issue_date: row.issue_date,
+        status: row.status,
+        tenants: {
+          name: row.madrasa_name,
+          code: row.madrasa_code,
+        },
+      },
     };
-  } catch (err: any) {
+  } catch {
     return { verified: false, error: 'যাচাই প্রক্রিয়া ব্যর্থ হয়েছে।' };
   }
 }
