@@ -1,4 +1,4 @@
--- Run against an isolated MDI development database after migrations 00001-00022.
+-- Run against an isolated MDI development database after migrations 00001-00023.
 -- This file is read-only and intentionally contains no fixtures or persistent writes.
 DO $$
 BEGIN
@@ -58,6 +58,19 @@ BEGIN
       AND t.tgname='reject_legacy_super_admin_membership' AND NOT t.tgisinternal
   ) THEN
     RAISE EXCEPTION 'Legacy tenant role guard trigger is missing';
+  END IF;
+  IF has_table_privilege('anon','public.platform_audit_logs','SELECT')
+     OR NOT has_table_privilege('authenticated','public.platform_audit_logs','SELECT') THEN
+    RAISE EXCEPTION 'Platform audit table grants are incorrect';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger t
+    JOIN pg_class c ON c.oid=t.tgrelid
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relname='platform_audit_logs'
+      AND t.tgname='platform_audit_logs_immutable' AND NOT t.tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'Append-only platform audit guard is missing';
   END IF;
   IF public.is_platform_owner() THEN
     RAISE EXCEPTION 'Owner authorization unexpectedly granted without an authenticated AAL2 session';
