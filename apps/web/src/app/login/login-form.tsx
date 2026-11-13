@@ -64,7 +64,7 @@ export function LoginForm() {
           <input type="checkbox" className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
           মনে রাখুন (Remember)
         </label>
-        <a href="#" className="font-semibold text-emerald-700 hover:text-emerald-900">
+        <a href="/forgot-password" className="font-semibold text-emerald-700 hover:text-emerald-900">
           পাসওয়ার্ড ভুলে গেছেন?
         </a>
       </div>
