@@ -3,23 +3,23 @@ import type { ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { issueApplicationInvitation, updateApplicationStatus, activateTenant, reviewApplicationDocument } from '@/app/actions/platform';
 
-const OWNER_EMAIL = 'helpline.sahitech@gmail.com';
-
 export const dynamic = 'force-dynamic';
 
 export default async function PlatformOwnerDashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email?.toLowerCase() !== OWNER_EMAIL) redirect('/platform/login');
+  if (!user) redirect('/platform/login');
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal?.currentLevel !== 'aal2') redirect('/platform/login');
-  const { data: isOwner } = await (supabase.rpc as any)('is_platform_owner');
-  if (isOwner !== true) redirect('/platform/login');
+  const { data: isOwner, error: ownerError } = await (supabase.rpc as any)('is_platform_owner');
+  if (ownerError || isOwner !== true) redirect('/platform/login');
 
+  const applicationColumns = 'id,institution_name,institution_name_bn,institution_type,board_affiliation,registration_number,contact_person_name,contact_email,contact_phone,district,address,application_note,requested_code,requested_subdomain,status,review_note,submitted_at';
+  const documentColumns = 'id,application_id,document_type,storage_object_path,original_file_name,mime_type,file_size_bytes,uploaded_at,verification_status,review_note';
   const [{ data: applications }, { data: tenants }, { data: auditLogs }] = await Promise.all([
-    (supabase.from('madrasa_applications') as any).select('*').order('submitted_at', { ascending: false }).limit(100),
+    (supabase.from('madrasa_applications') as any).select(applicationColumns).order('submitted_at', { ascending: false }).limit(100),
     (supabase.from('tenants') as any).select('id,name,code,subdomain,onboarding_step,onboarding_completed_at,platform_status,source_application_id').eq('platform_status','pending_activation').not('onboarding_completed_at','is',null).order('onboarding_completed_at',{ascending:true}),
-    (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,before_state,after_state,created_at').order('created_at',{ascending:false}).limit(40),
+    (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,created_at').order('created_at',{ascending:false}).limit(40),
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
@@ -27,8 +27,9 @@ export default async function PlatformOwnerDashboard() {
     ? await (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
     : { data: [] as any[] };
   const { data: documentRows } = applicationIds.length
-    ? await (supabase.from('madrasa_application_documents') as any).select('*').in('application_id',applicationIds).order('uploaded_at',{ascending:false})
+    ? await (supabase.from('madrasa_application_documents') as any).select(documentColumns).in('application_id',applicationIds).order('uploaded_at',{ascending:false})
     : { data: [] as any[] };
+
   const documentsWithLinks = await Promise.all((documentRows || []).map(async (doc:any) => {
     const { data } = await supabase.storage.from('madrasa-application-documents').createSignedUrl(doc.storage_object_path, 300);
     return { ...doc, signedUrl: data?.signedUrl || null };
@@ -42,26 +43,25 @@ export default async function PlatformOwnerDashboard() {
   const pending = (applications || []).filter((app:any) => {
     if (['pending','under_review','info_requested'].includes(app.status)) return true;
     if (app.status !== 'approved') return false;
-    const invitation = invitationByApplication.get(app.id);
-    return invitation?.status !== 'accepted';
+    return invitationByApplication.get(app.id)?.status !== 'accepted';
   });
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="flex flex-col gap-3 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">SahiTech Education · MDI</p><h1 className="mt-1 text-3xl font-black text-slate-900">Global Platform Owner</h1><p className="mt-1 text-sm text-slate-500">Authenticated as {user.email} · MFA verified</p></div>
+          <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">SahiTech Education · MDI</p><h1 className="mt-1 text-3xl font-black text-slate-900">Global Platform Owner</h1><p className="mt-1 text-sm text-slate-500">Secure session · MFA verified</p></div>
           <form action={async()=>{'use server'; const client=await createClient(); await client.auth.signOut(); redirect('/platform/login');}}><button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Sign out</button></form>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-3">
-          <Metric label="Total applications" value={(applications||[]).length}/>
+          <Metric label="Total applications (latest 100)" value={(applications||[]).length}/>
           <Metric label="Awaiting review" value={pending.length}/>
           <Metric label="Ready for activation" value={(tenants||[]).length}/>
         </section>
 
         <section className="space-y-4">
-          <div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents outside this dashboard before issuing an invitation. No tenant is created at approval time.</p></div>
+          <div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents before issuing an invitation. Approval alone does not create a tenant.</p></div>
           {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : pending.map((app:any)=>(
             <article key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -76,15 +76,11 @@ export default async function PlatformOwnerDashboard() {
                   <div className="space-y-2 border-t border-slate-100 pt-3">
                     <p className="text-xs font-bold text-slate-700">Supporting documents ({(documentsByApplication.get(app.id)||[]).length})</p>
                     {(documentsByApplication.get(app.id)||[]).map((doc:any)=><div key={doc.id} className="rounded-lg border border-slate-200 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-slate-800">{doc.original_file_name}</span>
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{doc.verification_status}</span>
-                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-800">{doc.original_file_name}</span><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{doc.verification_status}</span></div>
                       <p className="mt-1 text-[10px] text-slate-500">{doc.document_type} · {(doc.file_size_bytes/1024/1024).toFixed(2)} MB</p>
                       {doc.signedUrl&&<a href={doc.signedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold text-blue-700 underline">Open private document</a>}
                       <form action={reviewApplicationDocument} className="mt-2 flex flex-wrap gap-2">
-                        <input type="hidden" name="documentId" value={doc.id}/>
-                        <input name="reviewNote" placeholder="Review note (optional)" maxLength={2000} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-[11px]"/>
+                        <input type="hidden" name="documentId" value={doc.id}/><input name="reviewNote" placeholder="Review note (optional)" maxLength={2000} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-[11px]"/>
                         <button name="status" value="verified" className="rounded bg-emerald-700 px-2 py-1 text-[11px] font-bold text-white">Verify</button>
                         <button name="status" value="rejected" className="rounded border border-red-300 px-2 py-1 text-[11px] font-bold text-red-700">Reject</button>
                       </form>
