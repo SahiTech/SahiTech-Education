@@ -40,8 +40,8 @@ export const ar: Translations = {
     pending: 'قيد الانتظار',
   },
   nav: {
-    brandName: 'صحيح تك للتعليم',
-    brandTagline: 'مبادرة رقمنة المدارس الإسلامية',
+    brandName: 'SahiTech Education',
+    brandTagline: 'Madrasa Digitalization Initiative',
     overview: 'لوحة التحكم',
     wizard: 'معالج التهيئة',
     admissions: 'طلبات القبول',
@@ -70,7 +70,7 @@ export const ar: Translations = {
     tenantRlsActive: 'أمان العزل المؤسسي مفعّل',
   },
   home: {
-    heroTag: 'صحيح تك للتعليم · مبادرة رقمنة المدارس الإسلامية',
+    heroTag: 'SahiTech Education · Madrasa Digitalization Initiative',
     heroTitle: 'نظام تشغيل رقمي متكامل وشامل',
     heroTitleHighlight: 'للمدارس القومية والأهلية والعالية',
     heroSubtitle: 'من مرحلة دورة الحديث الشريف والإفتاء وحفظ القرآن الكريم إلى معايير مجالس التعليم المعتمدة. منصة سحابية آمنة للمناهج والطلاب والامتحانات والإسكان وصناديق الزكاة الشرعية.',
