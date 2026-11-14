@@ -40,8 +40,8 @@ export const bn: Translations = {
     pending: 'বিবেচনাধীন',
   },
   nav: {
-    brandName: 'সহিহটেক এডুকেশন',
-    brandTagline: 'মাদরাসা ডিজিটালাইজেশন ইনিশিয়েটিভ',
+    brandName: 'SahiTech Education',
+    brandTagline: 'Madrasa Digitalization Initiative',
     overview: 'ড্যাশবোর্ড',
     wizard: 'সেটআপ উইজার্ড',
     admissions: 'ভর্তি আবেদন',
@@ -70,7 +70,7 @@ export const bn: Translations = {
     tenantRlsActive: 'টেন্যান্ট নিরাপত্তা সক্রিয়',
   },
   home: {
-    heroTag: 'সহিহটেক এডুকেশন · মাদরাসা ডিজিটালাইজেশন ইনিশিয়েটিভ',
+    heroTag: 'SahiTech Education · Madrasa Digitalization Initiative',
     heroTitle: 'কওমি ও আলিয়া মাদরাসার',
     heroTitleHighlight: 'আধুনিক পূর্ণাঙ্গ ডিজিটাল অপারেটিং সিস্টেম',
     heroSubtitle: 'দাওরায়ে হাদীস, ইফতা ও হিফজুল কুরআন থেকে শুরু করে আলিয়া শিক্ষা বোর্ডের সকল স্তরের শিক্ষার্থী, পাঠ্যসূচি, হাজিরা, পরীক্ষা ও লিল্লাহ ফান্ডের নিরাপদ ক্লাউড প্ল্যাটফর্ম।',
