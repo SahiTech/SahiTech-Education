@@ -1,9 +1,11 @@
 # MDI Global Platform Owner & Release Operations Runbook
 
-**Status:** Draft for development and controlled release  
+**Status:** Draft — development implementation; Production release NOT READY  
 **Owner identity:** `helpline.sahitech@gmail.com`  
 **Development project:** `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`)  
-**Production project:** `sahitech-mdi` (`xbswamfmslhliayoowlo`)
+**Production project:** `sahitech-mdi` (`xbswamfmslhliayoowlo`)  
+**Feature branch:** `feat/mdi-production-hardening`  
+**Pull request:** https://github.com/SahiTech/SahiTech-Education/pull/1
 
 ## 1. Security boundaries
 
@@ -12,7 +14,7 @@
 - All Global Owner database authorization requires the bound Auth user and AAL2 (verified MFA).
 - Never place passwords, service-role keys, Resend API keys, cron secrets or database credentials in Git, tickets, chat messages or browser-visible environment variables.
 - Do not apply repository migration `00007_security_hardening.sql`; it contains legacy `super_admin` assumptions and is excluded from this target architecture.
-- Do not deploy or merge this branch to production until the release gates in section 7 are met.
+- Do not merge or deploy this branch to Production until the release gates in section 8 are met.
 
 ## 2. Initial Global Owner account setup
 
@@ -37,7 +39,12 @@
 
 ## 4. Resend and email outbox setup
 
-Email delivery is **not ready** until a sender domain is verified in Resend and all required secrets are configured.
+Email delivery is **blocked** until a sender domain owned by the organization is verified in Resend and all required secrets are configured.
+
+- The account currently has no Resend sending domains.
+- The user confirmed there is no other owned domain available. Resend rejected the attempted `notify.sahitech.dpdns.org` sender domain because free public/dynamic DNS domains are not accepted as owned sending domains.
+- The website domain `sahitech.dpdns.org` is verified on Vercel, but that does not make it an eligible owned email-sending domain.
+- No email has been sent from this branch. Do not invent a sender address or try another subdomain of the same free DNS domain.
 
 ### Web deployment environment
 
@@ -57,11 +64,11 @@ Configure these in the **development** Supabase project using its secret-managem
 - `RESEND_FROM_EMAIL` — sender identity on the verified Resend domain.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` — Supabase function runtime credentials.
 
-Configure Supabase Auth SMTP separately for sign-up confirmation and password recovery (it may use the same verified Resend domain, but it is not the application outbox). Add the exact `/auth/callback` URL to the Supabase Auth redirect allowlist. Invitation and upload bearer tokens are placed in URL fragments so they are not sent in the initial HTTP request or normal server access logs; after confirming a new account email, the applicant reopens the original invitation email link.
+Configure Supabase Auth SMTP separately for sign-up confirmation and password recovery. Add the exact `/auth/callback` URL to the Supabase Auth redirect allowlist.
 
-Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes). The worker derives one-time bearer tokens from random nonces using the shared HMAC secret, verifies each derived token against the stored SHA-256 hash, claims jobs with a lease, sends via Resend and records success/failure with bounded retries. Only token hashes and nonces are stored in PostgreSQL/outbox payloads; raw bearer tokens exist only transiently in the web action response or the Edge Function email body.
+Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes).
 
-**No Edge Function has been deployed and no email has been sent from this branch.** The connected Resend account previously had no verified sending domain.
+**No Edge Function has been deployed in either Supabase project.** Do not mark email or invitation delivery as end-to-end tested until a verified sender domain exists and a real test email is received.
 
 ## 5. Development validation
 
@@ -86,26 +93,42 @@ The database smoke checks should confirm:
 - Tenant activation requires an accepted invitation and completed onboarding.
 - No test tenant, application, document or outbox row remains after rollback-only tests.
 
-## 6. Current development state (2026-11-13)
+## 6. Verified implementation and CI state (2026-11-14)
 
-- Development migrations through `00040` are applied.
-- 37 public tables were observed and all 37 had RLS enabled. Migration `00036` makes operational tenant policies require `platform_status='active'` and grants pending tenants only narrowly scoped onboarding reads/writes. Migration `00037` adds indexes for the 14 uncovered foreign keys and fixes both Auth RLS initplan warnings on profile policies.
-- Application submission, HMAC-derived upload capability, application-received outbox enqueue, private Storage object policy, document metadata registration and append-only document-review audit event passed rollback-only SQL smoke tests. The outbox stores only token hashes and nonces, never raw bearer tokens. No test Auth users, tenants, application rows, document metadata, Storage objects or outbox rows remained afterward.
-- No test records remained after that test.
-- GitHub Actions run #238 completed successfully after the hash-only token/outbox changes: all 25 domain/database tests, TypeScript check, web lint and production build passed.
-- Production project was not modified.
+- Feature branch head at review: `a876b48558e95c2d29e6a0aeaa55ac8e3ae73ba7`.
+- Pull request #1 is **OPEN, DRAFT, mergeable, NOT MERGED**. It contains 178 commits and 76 changed files (+5,398 / -569).
+- GitHub Actions workflow `MDI CI` run **#243** for the current PR head completed successfully. The previously recorded run #239 is no longer the latest run for this exact head.
+- Development migrations through `00040` are applied. Production migration history contains only the six baseline migrations.
+- Development snapshot: 37 public tables were observed and all 37 had RLS enabled; 37 tenant-aware composite foreign keys were added. Rollback-only SQL smoke tests passed for the documented owner/tenant lifecycle and upload/outbox flows, leaving no test records.
+- Production database has not been modified by this release work.
+- Repository migration `00007_security_hardening.sql` remains intentionally excluded because it assumes legacy `super_admin` tenant privileges. A reviewed replacement/bridge migration sequence must be designed and rehearsed against a Production clone/restore before any Production schema change.
+- Latest Vercel Preview deployment for `feat/mdi-production-hardening` is READY, but it serves commit `485e4cb8305cb9304132108a0035494cad49149a`, not the current PR head `a876b48558e95c2d29e6a0aeaa55ac8e3ae73ba7`. Therefore the current PR head has not yet been confirmed deployed to Preview.
+- Vercel Preview environment-variable query for this feature branch returned no branch-specific variables. The Production environment query showed only five public frontend configuration variables and no hidden Production variables; no server-only MDI release secret was verified there. Never expose or copy encrypted values.
+- `sahitech.dpdns.org` is verified on Vercel and currently points to the existing Production deployment from `main`; it does not serve this feature branch. No DNS change is needed merely to retain the existing website domain.
+- The Vercel project has SSO protection configured except for custom domains. Custom-domain access therefore requires application-level authentication to be verified before routing the domain to a new deployment.
+- Production Supabase advisors report four anon-callable and four authenticated-callable SECURITY DEFINER functions in the baseline schema. Development advisors report seven anon-callable and fifteen authenticated-callable SECURITY DEFINER functions. Review each function body, search_path and ACL individually; do not blanket-revoke.
+- Neither Supabase project has the outbox Edge Function deployed. Resend has no eligible sending domain, and the user has confirmed no other owned domain is available.
+- Configuration-template note: `.env.example` currently repeats the `MDI_EMAIL_TOKEN_HMAC_SECRET` entry. Clean up this duplicate during the next documentation/configuration pass.
 
-## 7. Release gates
+## 7. Current release assessment
 
-Do not merge or deploy until all of the following are true:
+**NOT READY FOR PRODUCTION.** CI success proves the checked code passed the configured automated checks; it does not prove Production schema compatibility, live authentication, email delivery, custom-domain behavior or browser E2E.
 
-- [ ] Latest GitHub Actions run passes domain tests, TypeScript, lint and production build.
-- [ ] Global Owner Auth account is verified, bound and protected by TOTP MFA (AAL2).
-- [ ] Browser E2E covers application submission, private document upload, owner review, invitation email, verified-email acceptance, onboarding and final activation.
-- [ ] Resend sender domain is verified and test delivery succeeds from the development environment.
-- [ ] Add a production-grade public application abuse control (e.g. Turnstile plus server-side verification and/or edge IP rate limiting); the current honeypot and per-email cap alone are not sufficient for a high-traffic public launch.
-- [ ] Edge Function is deployed and scheduled in development with secrets configured.
-- [ ] RLS, grants, Storage policies, tenant lifecycle and audit controls are rechecked.
-- [ ] Production migration plan is reviewed separately, including a redesigned replacement for excluded migration 00007.
-- [ ] Explicit approval is obtained for production migration/deployment.
+The existing Production website and database should remain unchanged while the handoff reviewer performs the remaining checks. A Preview deployment being READY is not equivalent to a Production release.
 
+## 8. Production release gates — NOT CLEARED
+
+Do not merge or deploy until all applicable items are completed and evidenced:
+
+- [ ] Deploy the current PR head to Preview and confirm its exact commit SHA.
+- [ ] Reconcile the Production migration path against the actual six-migration baseline. Do not apply legacy migration 00007; design and test an explicit replacement/bridge migration sequence against a Production clone/restore.
+- [ ] Re-run and review Security, Performance and Health advisors after migration rehearsal. Verify intended caller, function body, search_path and grants individually for SECURITY DEFINER RPCs.
+- [ ] Configure and verify the designated Global Owner Auth identity and TOTP MFA (AAL2) in Development.
+- [ ] Complete browser E2E with real test accounts: public application, private document upload, owner review, invitation delivery, verified-email acceptance, tenant provisioning, sequential onboarding, pending-activation lockout and owner activation.
+- [ ] Obtain an eligible owned email-sending domain, verify it in Resend, configure Supabase Auth SMTP and outbox secrets, deploy/schedule the Edge Function in Development, and pass an end-to-end delivery test. Until then email delivery is an acknowledged blocker.
+- [ ] Add production-grade public abuse controls (e.g. Turnstile with server-side verification and/or edge IP rate limiting); honeypot and per-email cap are insufficient alone for public launch.
+- [ ] Verify canonical HTTPS origin, callback/redirect allowlists, cookie/session behavior, custom-domain routing, TLS certificate and login/authorization behavior on the custom domain.
+- [ ] Verify Vercel environment variables for the intended target without exposing values; set only the required secrets through the secure dashboard.
+- [ ] Produce a Production backup/restore and rollback plan, then obtain explicit approval for the Production database migration and deployment.
+
+**Handoff recommendation:** the reviewer may inspect the Draft PR and current Preview deployment, run additional tests in Development/Preview, and prepare a written Production migration/deployment plan. They must not merge the PR, change the custom-domain alias, apply Production migrations or deploy to Production until the release gates are signed off and the owner explicitly approves the Production change.
