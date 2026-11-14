@@ -1,7 +1,7 @@
 {
   "brand": {
-    "parent": "صحي تك",
-    "division": "صحي تك للتعليم",
+    "parent": "SahiTech",
+    "division": "SahiTech Education",
     "initiative": "مبادرة رقمنة المدارس الإسلامية (MDI)"
   },
   "navigation": {
@@ -20,4 +20,3 @@
     "hybrid": "المنهج المشترك"
   }
 }
-
