@@ -132,7 +132,7 @@ export const en: Translations = {
     newsletterPlaceholder: "Enter your email address",
     newsletterButton: "Subscribe",
     newsletterConsent: "Email confirmation is required to activate your subscription. You can unsubscribe at any time.",
-    newsletterSuccess: "Your request has been saved. Your subscription will remain pending until your email is confirmed.",
+    newsletterSuccess: "Your request has been received. The subscription becomes active only after email confirmation. A confirmation message will be sent once email delivery is configured.",
     newsletterError: "We could not process your subscription request. Please try again shortly.",
     newsletterConfirmTitle: "Email subscription",
     newsletterConfirmSuccess: "Your email address has been confirmed. You are subscribed to MDI updates.",
