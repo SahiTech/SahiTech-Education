@@ -19,6 +19,35 @@ const escapeHtml = (value: string) =>
 const toHex = (bytes: Uint8Array) =>
   Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
+async function deriveNewsletterToken(
+  nonce: string,
+  expectedHash: string,
+  secret: string,
+) {
+  if (!/^[0-9a-f]{64}$/.test(nonce)
+      || !/^[0-9a-f]{64}$/.test(expectedHash)
+      || secret.length < 32) {
+    throw new Error("newsletter_token_material_invalid");
+  }
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`mdi-newsletter-confirm:${nonce}`),
+  );
+  const token = toHex(new Uint8Array(signature)).toUpperCase();
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const actualHash = toHex(new Uint8Array(digest));
+  if (actualHash !== expectedHash) throw new Error("newsletter_token_hash_mismatch");
+  return token;
+}
+
 async function deriveAndVerifyToken(
   purpose: "upload" | "invitation",
   applicationId: string,
@@ -120,6 +149,43 @@ Deno.serve(async (request: Request) => {
         subject = "MDI application received — SahiTech Education";
         textBody = `Dear ${contact}, we received the Madrasa application for ${institutionName}. Use this private link to upload or continue your supporting documents. The link expires in seven days: ${uploadUrl}`;
         htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033;max-width:560px;margin:auto"><h2>Application received</h2><p>Dear ${contact},</p><p>We have received the Madrasa application for <strong>${escapeHtml(institutionName)}</strong>.</p><p>The application will be reviewed by the SahiTech Education Global Platform Owner. No tenant workspace or active account is created until verification and approval are complete.</p><p><a href="${escapeHtml(uploadUrl)}" style="display:inline-block;padding:12px 18px;background:#047857;color:#fff;text-decoration:none;border-radius:8px">Upload / continue documents</a></p><p>This private upload link expires in seven days. Keep it confidential.</p><p>SahiTech Education · MDI</p></div>`;
+      } else if (job.event_type === "newsletter_confirmation") {
+        const locale = String(job.payload.locale || "bn");
+        const token = await deriveNewsletterToken(
+          String(job.payload.confirmation_token_nonce || ""),
+          String(job.payload.confirmation_token_hash || ""),
+          tokenHmacSecret,
+        );
+        const confirmationUrl = `${origin}/newsletter/confirm?token=${encodeURIComponent(token)}`;
+        const copy = locale === "ar"
+          ? {
+              subject: "تأكيد اشتراك تحديثات SahiTech Education",
+              title: "تأكيد عنوان بريدك الإلكتروني",
+              message: "لقد طلبت الاشتراك في إعلانات MDI والمقالات والتحديثات الجديدة. اضغط على الزر أدناه لتأكيد عنوان بريدك الإلكتروني.",
+              button: "تأكيد الاشتراك",
+              expiry: "تنتهي صلاحية هذا الرابط خلال 48 ساعة. إذا لم تطلب الاشتراك، يمكنك تجاهل هذه الرسالة.",
+              footer: "SahiTech Education · Madrasa Digitalization Initiative (MDI)",
+            }
+          : locale === "en"
+            ? {
+                subject: "Confirm your SahiTech Education newsletter subscription",
+                title: "Confirm your email address",
+                message: "You requested updates about MDI announcements, articles and new posts. Confirm your email address using the button below.",
+                button: "Confirm subscription",
+                expiry: "This link expires in 48 hours. If you did not request this subscription, you can ignore this email.",
+                footer: "SahiTech Education · Madrasa Digitalization Initiative (MDI)",
+              }
+            : {
+                subject: "SahiTech Education নিউজলেটার সাবস্ক্রিপশন নিশ্চিত করুন",
+                title: "আপনার ইমেইল ঠিকানা নিশ্চিত করুন",
+                message: "আপনি MDI-এর ঘোষণা, প্রবন্ধ ও নতুন আপডেট পেতে সাবস্ক্রাইব করার অনুরোধ করেছেন। নিচের বাটনে চাপ দিয়ে ইমেইল ঠিকানা নিশ্চিত করুন।",
+                button: "সাবস্ক্রিপশন নিশ্চিত করুন",
+                expiry: "এই লিংকের মেয়াদ ৪৮ ঘণ্টা। আপনি অনুরোধটি না করলে এই ইমেইল উপেক্ষা করতে পারেন।",
+                footer: "SahiTech Education · Madrasa Digitalization Initiative (MDI)",
+              };
+        subject = copy.subject;
+        textBody = `${copy.title}\n\n${copy.message}\n\n${confirmationUrl}\n\n${copy.expiry}\n\n${copy.footer}`;
+        htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.7;color:#202b27;max-width:560px;margin:auto;padding:24px"><p style="color:#987640;font-weight:bold">SahiTech Education</p><h2 style="color:#123d32">${escapeHtml(copy.title)}</h2><p>${escapeHtml(copy.message)}</p><p><a href="${escapeHtml(confirmationUrl)}" style="display:inline-block;padding:13px 20px;background:#123d32;color:#fff;text-decoration:none;border-radius:9px">${escapeHtml(copy.button)}</a></p><p style="font-size:13px;color:#69736e">${escapeHtml(copy.expiry)}</p><p style="font-size:12px;color:#69736e;border-top:1px solid #e6dfd1;padding-top:14px">${escapeHtml(copy.footer)}</p></div>`;
       } else {
         throw new Error("unsupported_email_event");
       }
