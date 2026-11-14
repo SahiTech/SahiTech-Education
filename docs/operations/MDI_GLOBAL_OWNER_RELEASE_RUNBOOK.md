@@ -4,8 +4,8 @@
 **Owner identity:** `helpline.sahitech@gmail.com`  
 **Development project:** `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`)  
 **Production project:** `sahitech-mdi` (`xbswamfmslhliayoowlo`)  
-**Feature branch:** `feat/mdi-production-hardening`  
-**Pull request:** https://github.com/SahiTech/SahiTech-Education/pull/1
+**Feature branch:** `feat/global-owner-login-hardening`  
+**Pull request:** https://github.com/SahiTech/SahiTech-Education/pull/4
 
 ## 1. Security boundaries
 
@@ -18,12 +18,12 @@
 
 ## 2. Initial Global Owner account setup
 
-1. In the **development** Supabase project, create the Auth user using the exact designated email `helpline.sahitech@gmail.com`.
-2. Complete the email verification flow. The database trigger `private.bind_verified_platform_owner()` binds the verified account to the singleton owner record. The login action also calls the guarded owner-binding RPC, which is idempotent for the same account.
-3. Open `/platform/login` on the development web deployment and sign in with that account.
-4. On first login, scan the TOTP QR code with an authenticator app and verify the six-digit code. Store recovery material securely outside the application.
-5. Confirm the owner dashboard opens and that a non-owner account cannot open `/platform`.
-6. Do not create a second Global Owner or grant `madrasa_admin`/other tenant roles to the Global Owner as a substitute.
+1. The designated Auth account already exists in Development and is verified. Its UUID is already bound to the singleton `private.platform_owner` record.
+2. Owner binding is no longer performed by the browser, a public RPC, or an Auth trigger. Migration `00042_retire_legacy_owner_binding.sql` removes those legacy paths after verifying the trusted binding exists.
+3. Open `/platform/login` on the branch-specific Development Preview and sign in with the existing designated account.
+4. The login flow checks the authenticated UUID against the trusted singleton binding before it permits TOTP enrollment. On first successful sign-in, scan the QR code with an authenticator app and verify the six-digit code.
+5. After MFA verification, `private.is_platform_owner()` requires both the bound UUID and AAL2. Dashboard and every server action re-check that authorization.
+6. Confirm the owner dashboard opens and that a non-owner account cannot open `/platform`. Do not create a second Global Owner or grant tenant roles as a substitute.
 
 ## 3. Madrasa application lifecycle
 
@@ -68,7 +68,7 @@ Configure Supabase Auth SMTP separately for sign-up confirmation and password re
 
 Deploy `supabase/functions/process-email-outbox/index.ts` with JWT verification disabled only because the function validates `Authorization: Bearer <CRON_SECRET>` itself. Configure an external scheduler or Supabase Cron to POST to the function endpoint at a short interval (for example, every five minutes).
 
-**No Edge Function has been deployed in either Supabase project.** Do not mark email or invitation delivery as end-to-end tested until a verified sender domain exists and a real test email is received.
+**Current deployment state:** `process-email-outbox` is ACTIVE in Production (version 1); no Edge Function is deployed in Development. This does not make email delivery ready: there is still no eligible verified sender domain, and no end-to-end email delivery test has been completed. Do not mark application/invitation email delivery as operational until a verified sender and a real received test email are evidenced.
 
 ## 5. Development validation
 
@@ -95,20 +95,21 @@ The database smoke checks should confirm:
 
 ## 6. Verified implementation and CI state (2026-11-14)
 
-- Feature branch head at review: `a876b48558e95c2d29e6a0aeaa55ac8e3ae73ba7`.
-- Pull request #1 is **OPEN, DRAFT, mergeable, NOT MERGED**. It contains 178 commits and 76 changed files (+5,398 / -569).
-- GitHub Actions workflow `MDI CI` run **#243** for the current PR head completed successfully. The previously recorded run #239 is no longer the latest run for this exact head.
-- Development migrations through `00040` are applied. Production migration history contains only the six baseline migrations.
+- Current Owner hardening branch head at this runbook update: `a1417d69044020c21bd71d39dedf02ae62e5772f`.
+- Pull request #4 is **OPEN, DRAFT, NOT MERGED**: https://github.com/SahiTech/SahiTech-Education/pull/4.
+- GitHub Actions `MDI CI` run #247 passed for commit `b0a8eb41a488c57ff49151c3e22a48b261f3b997`; run #248 is running for the latest head `a1417d69044020c21bd71d39dedf02ae62e5772f`.
+- Development migrations through `00042` are applied. Production migration history still contains only the six baseline migrations.
 - Development snapshot: 37 public tables were observed and all 37 had RLS enabled; 37 tenant-aware composite foreign keys were added. Rollback-only SQL smoke tests passed for the documented owner/tenant lifecycle and upload/outbox flows, leaving no test records.
-- Production database has not been modified by this release work.
+- Production database has not been modified by this release work. The Owner hardening migrations `00041` and `00042` were applied only to Development.
 - Repository migration `00007_security_hardening.sql` remains intentionally excluded because it assumes legacy `super_admin` tenant privileges. A reviewed replacement/bridge migration sequence must be designed and rehearsed against a Production clone/restore before any Production schema change.
-- Latest Vercel Preview deployment for `feat/mdi-production-hardening` is READY, but it serves commit `485e4cb8305cb9304132108a0035494cad49149a`, not the current PR head `a876b48558e95c2d29e6a0aeaa55ac8e3ae73ba7`. Therefore the current PR head has not yet been confirmed deployed to Preview.
-- Vercel Preview environment-variable query for this feature branch returned no branch-specific variables. The Production environment query showed only five public frontend configuration variables and no hidden Production variables; no server-only MDI release secret was verified there. Never expose or copy encrypted values.
+- A Vercel Preview deployment for the Owner hardening branch is queued for commit `a1417d69044020c21bd71d39dedf02ae62e5772f`; it is not yet confirmed READY or browser-tested.
+- Five branch-specific Preview variables have been configured for this feature branch, pointing only to `sahitech-mdi-dev` and its publishable key. No Production variables were changed. No server-only release secrets were added to Preview.
 - `sahitech.dpdns.org` is verified on Vercel and currently points to the existing Production deployment from `main`; it does not serve this feature branch. No DNS change is needed merely to retain the existing website domain.
 - The Vercel project has SSO protection configured except for custom domains. Custom-domain access therefore requires application-level authentication to be verified before routing the domain to a new deployment.
-- Production Supabase advisors report four anon-callable and four authenticated-callable SECURITY DEFINER functions in the baseline schema. Development advisors report seven anon-callable and fifteen authenticated-callable SECURITY DEFINER functions. Review each function body, search_path and ACL individually; do not blanket-revoke.
-- Neither Supabase project has the outbox Edge Function deployed. Resend has no eligible sending domain, and the user has confirmed no other owned domain is available.
-- Configuration-template note: `.env.example` currently repeats the `MDI_EMAIL_TOKEN_HMAC_SECRET` entry. Clean up this duplicate during the next documentation/configuration pass.
+- Production Supabase advisors report four anon-callable and four authenticated-callable SECURITY DEFINER functions in the baseline schema. Development advisors after migration 00042 report seven anon-callable and fourteen authenticated-callable SECURITY DEFINER functions. The removed authenticated-callable warning was the legacy `bind_platform_owner()` RPC. Remaining warnings must be reviewed individually; do not blanket-revoke.
+- Development Owner identity is bound, but there are currently no registered TOTP factors for it. The Owner must complete the first-time authenticator enrollment through the Development Preview.
+- Production has `process-email-outbox` ACTIVE (version 1); Development has no Edge Function. Resend still has no eligible sending domain.
+- Development leaked-password protection remains disabled according to Supabase Security Advisor; enable it in project Auth settings if the plan supports it.
 
 ## 7. Current release assessment
 
@@ -123,9 +124,9 @@ Do not merge or deploy until all applicable items are completed and evidenced:
 - [ ] Deploy the current PR head to Preview and confirm its exact commit SHA.
 - [ ] Reconcile the Production migration path against the actual six-migration baseline. Do not apply legacy migration 00007; design and test an explicit replacement/bridge migration sequence against a Production clone/restore.
 - [ ] Re-run and review Security, Performance and Health advisors after migration rehearsal. Verify intended caller, function body, search_path and grants individually for SECURITY DEFINER RPCs.
-- [ ] Configure and verify the designated Global Owner Auth identity and TOTP MFA (AAL2) in Development.
+- [ ] Complete the designated Global Owner's first TOTP enrollment in Development Preview and verify AAL2 access; test non-owner rejection.
 - [ ] Complete browser E2E with real test accounts: public application, private document upload, owner review, invitation delivery, verified-email acceptance, tenant provisioning, sequential onboarding, pending-activation lockout and owner activation.
-- [ ] Obtain an eligible owned email-sending domain, verify it in Resend, configure Supabase Auth SMTP and outbox secrets, deploy/schedule the Edge Function in Development, and pass an end-to-end delivery test. Until then email delivery is an acknowledged blocker.
+- [ ] Obtain an eligible owned email-sending domain, verify it in Resend, configure Supabase Auth SMTP and outbox secrets, deploy/schedule the Edge Function in Development, and pass an end-to-end delivery test. Email remains a separate MDI workflow blocker and is not required for Owner login.
 - [ ] Add production-grade public abuse controls (e.g. Turnstile with server-side verification and/or edge IP rate limiting); honeypot and per-email cap are insufficient alone for public launch.
 - [ ] Verify canonical HTTPS origin, callback/redirect allowlists, cookie/session behavior, custom-domain routing, TLS certificate and login/authorization behavior on the custom domain.
 - [ ] Verify Vercel environment variables for the intended target without exposing values; set only the required secrets through the secure dashboard.
