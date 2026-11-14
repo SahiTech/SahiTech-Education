@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock3, MapPin, RefreshCw } from 'lucide-react';
 
 type Timings = Record<'Fajr' | 'Sunrise' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha', string>;
@@ -70,7 +70,7 @@ export function PrayerTimesWidget({ locale, labels }: { locale: 'bn' | 'en' | 'a
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(Date.now());
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
     try {
@@ -84,11 +84,11 @@ export function PrayerTimesWidget({ locale, labels }: { locale: 'bn' | 'en' | 'a
     } finally {
       setLoading(false);
     }
-  }
+  }, [city]);
 
   useEffect(() => {
     void load();
-  }, [city]);
+  }, [load]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
