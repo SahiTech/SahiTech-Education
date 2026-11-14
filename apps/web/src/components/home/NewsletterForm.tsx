@@ -25,11 +25,12 @@ export function NewsletterForm({ locale, labels }: { locale: 'bn' | 'en' | 'ar';
     setBusy(true);
     setMessage('');
     setSuccess(false);
+    const website = String(new FormData(event.currentTarget).get('website') || '');
     try {
       const response = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, locale, consent, website: '' }),
+        body: JSON.stringify({ email, locale, consent, website }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result?.success !== true) throw new Error('newsletter_request_failed');
