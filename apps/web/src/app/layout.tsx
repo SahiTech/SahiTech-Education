@@ -8,9 +8,9 @@ import { Analytics } from '@vercel/analytics/next';
 export const metadata: Metadata = {
   title: {
     template: '%s | SahiTech MDI',
-    default: 'SahiTech MDI — Madrasa Digitalization Initiative',
+    default: 'SahiTech Education — Madrasa Digitalization Initiative (MDI)',
   },
-  description: 'Enterprise Hybrid Multi-Tenant Management Operating System for Qawmi & Alia Madrasas by SahiTech Education. Dars-e-Nizami, Befaqul Madaris & BMEB Board curriculum, Shariah fund segregation, attendance, examinations, and cryptographic digital Sanad.',
+  description: 'A digital initiative by SahiTech Education, an education division of SahiTech, supporting academic and institutional management for Qawmi and Alia Madrasas.',
   keywords: [
     'Madrasa Management System',
     'Dars-e-Nizami',
@@ -23,15 +23,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'SahiTech Education' }],
   creator: 'SahiTech Education',
-  metadataBase: new URL('https://sahitech-edu.com'),
+  metadataBase: new URL('https://sahitech.dpdns.org'),
   openGraph: {
     type: 'website',
     locale: 'bn_BD',
     alternateLocale: ['en_US', 'ar_SA'],
-    url: 'https://sahitech-edu.com',
-    siteName: 'SahiTech Education MDI',
-    title: 'SahiTech MDI — Madrasa Digitalization Initiative',
-    description: 'International-Standard Islamic Education Operating System for Qawmi & Alia Madrasas.',
+    url: 'https://sahitech.dpdns.org',
+    siteName: 'SahiTech Education',
+    title: 'SahiTech Education — Madrasa Digitalization Initiative (MDI)',
+    description: 'An initiative by SahiTech Education for the academic and institutional management of Islamic educational institutions.',
     images: [
       {
         url: '/images/hero-campus.jpg',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
-    themeColor: '#047857',
+    themeColor: '#123D32',
   };
 
   export default async function RootLayout({
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
 
     return (
           <html lang={locale} dir={direction} suppressHydrationWarning>
-            <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+            <body className="min-h-screen bg-[#F7F4EC] text-[#202B27] antialiased flex flex-col selection:bg-[#123D32] selection:text-white">
               <I18nProvider initialLocale={locale}>
                 <Navbar />
                 <main className="flex-1">{children}</main>
