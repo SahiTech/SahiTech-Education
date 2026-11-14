@@ -8,7 +8,6 @@ import {
   Building2,
   ClipboardList,
   GraduationCap,
-  HeartHandshake,
   ShieldCheck,
   Users,
   Wallet,
