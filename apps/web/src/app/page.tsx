@@ -34,15 +34,22 @@ import { getServerDictionary, getServerLocale, getServerDirection } from '@/lib/
                       alt="Islamic Campus Architecture"
                       fill
                       priority
+                      fetchPriority="high"
+                      quality={65}
                       sizes="100vw"
-                      className="object-cover object-center scale-105 transform duration-1000 ease-out"
+                      className="object-cover object-center"
                     />
                   </div>
 
-                  {/* Arabesque geometric texture overlay */}
+                  {/* Lightweight CSS-only geometric texture; avoids a 911 KB background image */}
                   <div
-                    className="absolute inset-0 z-1 opacity-20 bg-repeat pointer-events-none"
-                    style={{ backgroundImage: "url('/images/islamic-pattern.jpg')", backgroundSize: '320px 320px' }}
+                    aria-hidden="true"
+                    className="absolute inset-0 z-[1] pointer-events-none opacity-[0.12]"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.45) 1px, transparent 0)',
+                      backgroundSize: '24px 24px',
+                    }}
                   />
 
                   {/* Deep emerald-to-slate gradient mask */}
