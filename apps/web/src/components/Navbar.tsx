@@ -39,7 +39,7 @@ interface NavbarProps {
                     </div>
                     <div>
                       <span className="text-lg font-black tracking-tight text-slate-900 block leading-tight">
-                        SahiTech <span className="text-emerald-700">MDI</span>
+                        SahiTech Education
                       </span>
                         <span className="text-[11px] text-slate-500 font-medium block leading-none">
                           {t.nav.brandTagline}
@@ -127,6 +127,8 @@ interface NavbarProps {
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="lg:hidden inline-flex items-center justify-center rounded-xl p-2 text-slate-700 hover:bg-slate-100 transition"
                             aria-label="Toggle mobile menu"
+                            aria-expanded={mobileMenuOpen}
+                            aria-controls="public-mobile-navigation"
                           >
                             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                           </button>
@@ -135,7 +137,7 @@ interface NavbarProps {
 
                       {/* Mobile Drawer Navigation */}
                       {mobileMenuOpen && (
-                        <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-lg">
+                        <div id="public-mobile-navigation" className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-lg">
                           <div className="flex flex-col space-y-1">
                             {navLinks.map((link) => (
                               <Link
