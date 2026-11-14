@@ -3,6 +3,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { getServerLocale, getServerDirection } from '@/lib/i18n/server';
 import { I18nProvider } from '@/lib/i18n';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: {
@@ -68,6 +69,7 @@ export const metadata: Metadata = {
                 <Navbar />
                 <main className="flex-1">{children}</main>
               </I18nProvider>
+              <Analytics />
             </body>
           </html>
           );
