@@ -27,7 +27,7 @@ export default async function HomePage() {
     {
       icon: GraduationCap,
       title: dict.home.aliaTitle,
-      description: dict.home.aliaDesc,
+      description: dict.home.certificatePathwayDesc,
       tone: 'bg-sky-50 text-sky-800',
     },
     {
@@ -41,8 +41,8 @@ export default async function HomePage() {
   const pathways = [
     {
       icon: HeartHandshake,
-      title: dict.home.liveStatsStudents,
-      description: dict.home.qawmiDesc,
+      title: dict.home.studentPathwayTitle,
+      description: dict.home.studentPathwayDesc,
     },
     {
       icon: Award,
@@ -52,7 +52,7 @@ export default async function HomePage() {
     {
       icon: Building2,
       title: dict.home.publicSiteCta,
-      description: dict.home.featuresSubtitle,
+      description: dict.home.websitePathwayDesc,
     },
   ];
 
@@ -69,7 +69,7 @@ export default async function HomePage() {
             className="object-cover object-center"
           />
         </div>
-        <div className="absolute inset-0 -z-20 bg-gradient-to-r from-[#052c27]/95 via-[#073b32]/85 to-[#092f2b]/65" />
+        <div className="absolute inset-0 -z-20 bg-gradient-to-r rtl:bg-gradient-to-l from-[#052c27]/95 via-[#073b32]/85 to-[#092f2b]/65" />
         <div
           className="absolute inset-0 -z-10 opacity-[0.12]"
           style={{
@@ -136,7 +136,7 @@ export default async function HomePage() {
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#e7dcc5] bg-[#f3eee2] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#80663b]">
             <BookOpen className="h-4 w-4" />
-            SahiTech Education
+            {dict.home.capabilitiesEyebrow}
           </span>
           <h2 className="mt-5 text-3xl font-bold tracking-tight text-[#153d32] sm:text-4xl">{dict.home.featuresTitle}</h2>
           <p className="mt-4 text-base leading-7 text-slate-600">{dict.home.featuresSubtitle}</p>
@@ -151,10 +151,6 @@ export default async function HomePage() {
               <h3 className="mt-6 text-xl font-bold text-[#173d32]">{title}</h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
               <div className="mt-6 h-px w-full bg-[#eee9df]" />
-              <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#8a7042]">
-                {dict.common.view}
-                <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
-              </span>
             </article>
           ))}
         </div>
@@ -164,7 +160,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8a7042]">Madrasa Digitalization Initiative</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8a7042]">{dict.home.pathwaysEyebrow}</p>
               <h2 className="mt-4 text-3xl font-bold leading-tight text-[#153d32]">{dict.home.heroTitleHighlight}</h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">{dict.home.heroSubtitle}</p>
               <Link href="/register-madrasa" className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#174c3d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0d3b30]">
