@@ -52,7 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getServerDirection(),
     createClient(),
   ]);
-  const { data: { user } } = await supabase.auth.getUser();
+  // The navbar only needs a display hint. Keep authoritative getUser() checks in protected routes/actions.
+  // getSession() reads the cookie-backed session locally and avoids an auth network round-trip on every route.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   return (
     <html lang={locale} dir={direction} suppressHydrationWarning>

@@ -12,13 +12,8 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   const pageSize = 20;
   const requestedPage = Math.max(1, Number.parseInt(params.page || '1', 10) || 1);
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/platform/login');
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel !== 'aal2') redirect('/platform/login');
-  const { data: isOwner, error: ownerError } = await (supabase.rpc as any)('is_platform_owner');
-  if (ownerError || isOwner !== true) redirect('/platform/login');
-
+  // The parent platform layout already enforces authenticated Owner + AAL2 access.
+  // Avoid repeating the same three auth/RPC round-trips on every dashboard navigation.
   const applicationColumns = 'id,institution_name,institution_name_bn,institution_type,board_affiliation,registration_number,contact_person_name,contact_email,contact_phone,district,address,application_note,requested_code,requested_subdomain,status,review_note,submitted_at';
   const documentColumns = 'id,application_id,document_type,storage_object_path,original_file_name,mime_type,file_size_bytes,uploaded_at,verification_status,review_note';
   const [{ data: applications }, { data: tenants }, { data: auditLogs }] = await Promise.all([
