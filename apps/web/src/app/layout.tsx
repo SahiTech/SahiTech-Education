@@ -4,13 +4,14 @@ import { Navbar } from '@/components/Navbar';
 import { getServerLocale, getServerDirection } from '@/lib/i18n/server';
 import { I18nProvider } from '@/lib/i18n';
 import { Analytics } from '@vercel/analytics/next';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | SahiTech MDI',
-    default: 'SahiTech MDI — Madrasa Digitalization Initiative',
+    template: '%s | SahiTech Education',
+    default: 'SahiTech Education | Madrasa Digitalization Initiative',
   },
-  description: 'Enterprise Hybrid Multi-Tenant Management Operating System for Qawmi & Alia Madrasas by SahiTech Education. Dars-e-Nizami, Befaqul Madaris & BMEB Board curriculum, Shariah fund segregation, attendance, examinations, and cryptographic digital Sanad.',
+  description: 'A digital institutional platform by SahiTech Education supporting Qawmi and Alia madrasa administration, academic workflows, student records, and digital Sanad verification.',
   keywords: [
     'Madrasa Management System',
     'Dars-e-Nizami',
@@ -18,59 +19,50 @@ export const metadata: Metadata = {
     'Qawmi Madrasa Software',
     'Alia Madrasa Software',
     'Islamic Education ERP',
-    'SahiTech MDI',
+    'SahiTech Education',
     'Digital Sanad Verification'
   ],
   authors: [{ name: 'SahiTech Education' }],
   creator: 'SahiTech Education',
-  metadataBase: new URL('https://sahitech-edu.com'),
+  metadataBase: new URL('https://sahitech.dpdns.org'),
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'bn_BD',
     alternateLocale: ['en_US', 'ar_SA'],
-    url: 'https://sahitech-edu.com',
-    siteName: 'SahiTech Education MDI',
-    title: 'SahiTech MDI — Madrasa Digitalization Initiative',
-    description: 'International-Standard Islamic Education Operating System for Qawmi & Alia Madrasas.',
-    images: [
-      {
-        url: '/images/hero-campus.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'SahiTech Education MDI Campus',
-      },
-    ],
+    url: 'https://sahitech.dpdns.org',
+    siteName: 'SahiTech Education',
+    title: 'SahiTech Education | Madrasa Digitalization Initiative',
+    description: 'A digital institutional platform supporting Qawmi and Alia madrasa administration and academic workflows.',
+    images: [{ url: '/images/hero-campus.jpg', width: 1200, height: 630, alt: 'SahiTech Education MDI Campus' }],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
-  export const viewport: Viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    themeColor: '#047857',
-  };
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#174c3d',
+};
 
-  export default async function RootLayout({
-    children,
-  }: {
-    children: React.ReactNode;
-  }) {
-    const locale = await getServerLocale();
-    const direction = await getServerDirection();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [locale, direction, supabase] = await Promise.all([
+    getServerLocale(),
+    getServerDirection(),
+    createClient(),
+  ]);
+  const { data: { user } } = await supabase.auth.getUser();
 
-    return (
-          <html lang={locale} dir={direction} suppressHydrationWarning>
-            <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
-              <I18nProvider initialLocale={locale}>
-                <Navbar />
-                <main className="flex-1">{children}</main>
-              </I18nProvider>
-              <Analytics />
-            </body>
-          </html>
-          );
+  return (
+    <html lang={locale} dir={direction} suppressHydrationWarning>
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+        <I18nProvider initialLocale={locale}>
+          <Navbar user={user ? { email: user.email || undefined } : null} />
+          <main className="flex-1">{children}</main>
+        </I18nProvider>
+        <Analytics />
+      </body>
+    </html>
+  );
 }
