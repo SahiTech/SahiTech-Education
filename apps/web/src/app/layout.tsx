@@ -7,10 +7,10 @@ import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | SahiTech MDI',
-    default: 'SahiTech MDI — Madrasa Digitalization Initiative',
+    template: '%s | SahiTech Education',
+    default: 'SahiTech Education | Madrasa Digitalization Initiative',
   },
-  description: 'Enterprise Hybrid Multi-Tenant Management Operating System for Qawmi & Alia Madrasas by SahiTech Education. Dars-e-Nizami, Befaqul Madaris & BMEB Board curriculum, Shariah fund segregation, attendance, examinations, and cryptographic digital Sanad.',
+  description: 'A digital institutional platform by SahiTech Education supporting Qawmi and Alia madrasa administration, academic workflows, student records, and digital Sanad verification.',
   keywords: [
     'Madrasa Management System',
     'Dars-e-Nizami',
@@ -18,20 +18,20 @@ export const metadata: Metadata = {
     'Qawmi Madrasa Software',
     'Alia Madrasa Software',
     'Islamic Education ERP',
-    'SahiTech MDI',
+    'SahiTech Education',
     'Digital Sanad Verification'
   ],
   authors: [{ name: 'SahiTech Education' }],
   creator: 'SahiTech Education',
-  metadataBase: new URL('https://sahitech-edu.com'),
+  metadataBase: new URL('https://sahitech.dpdns.org'),
   openGraph: {
     type: 'website',
     locale: 'bn_BD',
     alternateLocale: ['en_US', 'ar_SA'],
-    url: 'https://sahitech-edu.com',
-    siteName: 'SahiTech Education MDI',
-    title: 'SahiTech MDI — Madrasa Digitalization Initiative',
-    description: 'International-Standard Islamic Education Operating System for Qawmi & Alia Madrasas.',
+    url: 'https://sahitech.dpdns.org',
+    siteName: 'SahiTech Education',
+    title: 'SahiTech Education | Madrasa Digitalization Initiative',
+    description: 'A digital institutional platform supporting Qawmi and Alia madrasa administration and academic workflows.',
     images: [
       {
         url: '/images/hero-campus.jpg',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
-    themeColor: '#047857',
+    themeColor: '#174c3d',
   };
 
   export default async function RootLayout({
