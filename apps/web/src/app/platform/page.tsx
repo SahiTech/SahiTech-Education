@@ -5,10 +5,12 @@ import { issueApplicationInvitation, updateApplicationStatus, activateTenant, re
 
 export const dynamic = 'force-dynamic';
 
-export default async function PlatformOwnerDashboard({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+export default async function PlatformOwnerDashboard({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; page?: string }> }) {
   const params = await searchParams;
   const searchQuery = (params.q || '').trim().toLocaleLowerCase();
   const statusFilter = params.status || 'action_required';
+  const pageSize = 20;
+  const requestedPage = Math.max(1, Number.parseInt(params.page || '1', 10) || 1);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/platform/login');
@@ -22,23 +24,14 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   const [{ data: applications }, { data: tenants }, { data: auditLogs }] = await Promise.all([
     (supabase.from('madrasa_applications') as any).select(applicationColumns).order('submitted_at', { ascending: false }).limit(100),
     (supabase.from('tenants') as any).select('id,name,code,subdomain,onboarding_step,onboarding_completed_at,platform_status,source_application_id').eq('platform_status','pending_activation').not('onboarding_completed_at','is',null).order('onboarding_completed_at',{ascending:true}),
-    (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,created_at').order('created_at',{ascending:false}).limit(40),
+    (supabase.from('platform_audit_logs') as any).select('id,actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,created_at').order('created_at',{ascending:false}).limit(20),
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
   const { data: invitations } = applicationIds.length
     ? await (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
     : { data: [] as any[] };
-  const { data: documentRows } = applicationIds.length
-    ? await (supabase.from('madrasa_application_documents') as any).select(documentColumns).in('application_id',applicationIds).order('uploaded_at',{ascending:false})
-    : { data: [] as any[] };
 
-  const documentsWithLinks = await Promise.all((documentRows || []).map(async (doc:any) => {
-    const { data } = await supabase.storage.from('madrasa-application-documents').createSignedUrl(doc.storage_object_path, 300);
-    return { ...doc, signedUrl: data?.signedUrl || null };
-  }));
-  const documentsByApplication = new Map<string,any[]>();
-  for (const doc of documentsWithLinks) documentsByApplication.set(doc.application_id,[...(documentsByApplication.get(doc.application_id)||[]),doc]);
   const invitationByApplication = new Map<string, any>();
   for (const item of (invitations || [])) {
     if (!invitationByApplication.has(item.application_id)) invitationByApplication.set(item.application_id, item);
@@ -48,22 +41,39 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
     if (app.status !== 'approved') return false;
     return invitationByApplication.get(app.id)?.status !== 'accepted';
   });
-  const visiblePending = pending.filter((app:any) => {
+  // "All review queue" must include every application, not only pending items.
+  const statusSource = statusFilter === 'all'
+    ? (applications || [])
+    : statusFilter === 'action_required'
+      ? pending
+      : (applications || []).filter((app:any) => app.status === statusFilter);
+  const filteredApplications = statusSource.filter((app:any) => {
     const matchesQuery = !searchQuery || [
-      app.institution_name,
-      app.institution_name_bn,
-      app.contact_person_name,
-      app.contact_email,
-      app.contact_phone,
-      app.district,
-      app.requested_code,
+      app.institution_name, app.institution_name_bn, app.contact_person_name,
+      app.contact_email, app.contact_phone, app.district, app.requested_code,
       app.requested_subdomain,
     ].some((value:any) => String(value || '').toLocaleLowerCase().includes(searchQuery));
-    const matchesStatus = statusFilter === 'all'
-      || statusFilter === 'action_required'
-      || app.status === statusFilter;
-    return matchesQuery && matchesStatus;
+    return matchesQuery;
   });
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const visiblePending = filteredApplications.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Load documents and create short-lived private links only for the visible page.
+  // This avoids signing every document for all 100 applications on every request.
+  const visibleIds = visiblePending.map((app:any) => app.id);
+  const { data: documentRows } = visibleIds.length
+    ? await (supabase.from('madrasa_application_documents') as any)
+        .select(documentColumns).in('application_id', visibleIds).order('uploaded_at', { ascending: false })
+    : { data: [] as any[] };
+  const documentsWithLinks = await Promise.all((documentRows || []).map(async (doc:any) => {
+    const { data } = await supabase.storage.from('madrasa-application-documents').createSignedUrl(doc.storage_object_path, 300);
+    return { ...doc, signedUrl: data?.signedUrl || null };
+  }));
+  const documentsByApplication = new Map<string,any[]>();
+  for (const doc of documentsWithLinks) {
+    documentsByApplication.set(doc.application_id, [...(documentsByApplication.get(doc.application_id) || []), doc]);
+  }
 
   return (
     <div className="min-h-screen px-0 py-0">
@@ -89,7 +99,7 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
             <button className="rounded-xl bg-[#174c3d] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#10392f]">Apply filters</button>
             <a href="/platform#applications" className="rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</a>
           </form>
-          <p className="text-xs text-slate-500">Showing {visiblePending.length} of {pending.length} applications requiring attention. Search covers the latest 100 received applications.</p>
+          <p className="text-xs text-slate-500">Showing {visiblePending.length} of {filteredApplications.length} matching applications · page {currentPage} of {totalPages}. Search covers the latest 100 received applications.</p>
           {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : visiblePending.length===0 ? <Empty>No applications match these filters. Try another search or reset the filters.</Empty> : visiblePending.map((app:any)=>(
             <article key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -126,6 +136,13 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
               </div>
             </article>
           ))}
+          {totalPages > 1 && <nav aria-label="Application pages" className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <span className="text-xs text-slate-500">Page {currentPage} / {totalPages}</span>
+            <div className="flex gap-2">
+              {currentPage > 1 && <a className="rounded-lg border px-3 py-2 text-xs font-semibold" href={`/platform?q=${encodeURIComponent(params.q || '')}&status=${encodeURIComponent(statusFilter)}&page=${currentPage - 1}#applications`}>Previous</a>}
+              {currentPage < totalPages && <a className="rounded-lg border px-3 py-2 text-xs font-semibold" href={`/platform?q=${encodeURIComponent(params.q || '')}&status=${encodeURIComponent(statusFilter)}&page=${currentPage + 1}#applications`}>Next</a>}
+            </div>
+          </nav>}
         </section>
 
         <section id="institutions" className="scroll-mt-28 space-y-4">
