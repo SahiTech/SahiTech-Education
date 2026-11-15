@@ -5,7 +5,10 @@ import { issueApplicationInvitation, updateApplicationStatus, activateTenant, re
 
 export const dynamic = 'force-dynamic';
 
-export default async function PlatformOwnerDashboard() {
+export default async function PlatformOwnerDashboard({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+  const params = await searchParams;
+  const searchQuery = (params.q || '').trim().toLocaleLowerCase();
+  const statusFilter = params.status || 'action_required';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/platform/login');
@@ -59,8 +62,19 @@ export default async function PlatformOwnerDashboard() {
           <Metric label="Ready for activation" value={(tenants||[]).length}/>
         </section>
         <section id="applications" className="scroll-mt-28 space-y-4">
-          <div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents before issuing an invitation. Approval alone does not create a tenant.</p></div>
-          {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : pending.map((app:any)=>(
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents before issuing an invitation. Approval alone does not create a tenant.</p></div><span className="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">{pending.length} require attention</span></div>
+          <form method="get" className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[minmax(0,1fr)_210px_auto_auto] sm:items-center">
+            <label className="sr-only" htmlFor="application-search">Search applications</label>
+            <input id="application-search" name="q" defaultValue={params.q || ''} placeholder="Search institution, contact, email, district or code…" className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100"/>
+            <label className="sr-only" htmlFor="application-status">Filter by status</label>
+            <select id="application-status" name="status" defaultValue={statusFilter} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+              <option value="action_required">Action required</option><option value="all">All review queue</option><option value="pending">Pending</option><option value="under_review">Under review</option><option value="info_requested">Information requested</option><option value="approved">Approved / invitation pending</option>
+            </select>
+            <button className="rounded-xl bg-[#174c3d] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#10392f]">Apply filters</button>
+            <a href="/platform#applications" className="rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</a>
+          </form>
+          <p className="text-xs text-slate-500">Showing {visiblePending.length} of {pending.length} applications requiring attention. Search covers the latest 100 received applications.</p>
+          {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : visiblePending.length===0 ? <Empty>No applications match these filters. Try another search or reset the filters.</Empty> : visiblePending.map((app:any)=>(
             <article key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1 space-y-2">
