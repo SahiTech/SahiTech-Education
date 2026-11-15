@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { Locale } from '@/lib/i18n/types';
-import { BookOpen, Globe, User, PlusCircle, Menu, X } from 'lucide-react';
+import { BookOpen, Globe, User, PlusCircle, Menu, X, LayoutDashboard } from 'lucide-react';
 
 interface NavbarProps {
   user?: { email?: string } | null;
@@ -15,7 +15,11 @@ export function Navbar({ user }: NavbarProps) {
   const { locale, setLocale, t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const isPlatformRoute = pathname === '/platform' || pathname.startsWith('/platform/');
   const isWorkspaceExperience = ['/dashboard', '/portals', '/public-site'].some((route) => pathname === route || pathname.startsWith(route + '/'));
+
+  // The Global Platform Owner has a dedicated restricted shell, not the public navbar.
+  if (isPlatformRoute) return null;
 
   const portalLinks = [
     { name: t.nav.overview, href: '/dashboard' },
@@ -29,6 +33,10 @@ export function Navbar({ user }: NavbarProps) {
     { name: t.nav.verifySanad, href: '/verify' },
   ];
   const navLinks = isWorkspaceExperience ? portalLinks : publicLinks;
+  const destination = user ? '/dashboard' : '/login';
+  const destinationLabel = user
+    ? (locale === 'bn' ? 'ড্যাশবোর্ড' : locale === 'ar' ? 'لوحة التحكم' : 'Workspace')
+    : t.nav.login;
 
   const handleLocaleChange = (newLocale: Locale) => setLocale(newLocale);
   const closeMenu = () => setMobileMenuOpen(false);
@@ -52,10 +60,10 @@ export function Navbar({ user }: NavbarProps) {
               {link.name}
             </Link>
           ))}
-          <Link href="/register-madrasa" className="inline-flex items-center gap-2 rounded-lg bg-[#174c3d] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0d3b30]">
+          {!user && <Link href="/register-madrasa" className="inline-flex items-center gap-2 rounded-lg bg-[#174c3d] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0d3b30]">
             <PlusCircle className="h-4 w-4" />
             {t.nav.registerMadrasa}
-          </Link>
+          </Link>}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -67,9 +75,9 @@ export function Navbar({ user }: NavbarProps) {
               </button>
             ))}
           </div>
-          <Link href="/login" className="hidden min-h-10 items-center gap-2 rounded-lg border border-[#d8e2dc] px-3 py-2 text-xs font-semibold text-[#174c3d] transition hover:bg-[#edf4ef] sm:inline-flex">
-            <User className="h-3.5 w-3.5" />
-            {t.nav.login}
+          <Link href={destination} className="hidden min-h-10 items-center gap-2 rounded-lg border border-[#d8e2dc] px-3 py-2 text-xs font-semibold text-[#174c3d] transition hover:bg-[#edf4ef] sm:inline-flex">
+            {user ? <LayoutDashboard className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+            {destinationLabel}
           </Link>
           <button type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 transition hover:bg-[#eeeade] lg:hidden" aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen} aria-controls="site-mobile-navigation">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -85,11 +93,11 @@ export function Navbar({ user }: NavbarProps) {
                 {link.name}
               </Link>
             ))}
-            <Link href="/register-madrasa" onClick={closeMenu} className="mt-2 rounded-lg bg-[#174c3d] px-3 py-3 text-sm font-bold text-white">
+            {!user && <Link href="/register-madrasa" onClick={closeMenu} className="mt-2 rounded-lg bg-[#174c3d] px-3 py-3 text-sm font-bold text-white">
               {t.nav.registerMadrasa}
-            </Link>
-            <Link href="/login" onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-semibold text-[#174c3d]">
-              {t.nav.login}
+            </Link>}
+            <Link href={destination} onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-semibold text-[#174c3d]">
+              {destinationLabel}
             </Link>
           </nav>
         </div>
