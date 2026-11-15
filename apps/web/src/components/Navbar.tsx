@@ -15,7 +15,7 @@ export function Navbar({ user }: NavbarProps) {
   const { locale, setLocale, t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isPublicExperience = pathname === '/' || pathname === '/verify' || pathname === '/register-madrasa';
+  const isWorkspaceExperience = ['/dashboard', '/portals', '/public-site'].some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   const portalLinks = [
     { name: t.nav.overview, href: '/dashboard' },
@@ -28,7 +28,7 @@ export function Navbar({ user }: NavbarProps) {
     { name: t.home.featuresTitle, href: '/#capabilities' },
     { name: t.nav.verifySanad, href: '/verify' },
   ];
-  const navLinks = isPublicExperience ? publicLinks : portalLinks;
+  const navLinks = isWorkspaceExperience ? portalLinks : publicLinks;
 
   const handleLocaleChange = (newLocale: Locale) => setLocale(newLocale);
   const closeMenu = () => setMobileMenuOpen(false);
@@ -46,7 +46,7 @@ export function Navbar({ user }: NavbarProps) {
           </span>
         </Link>
 
-        <nav aria-label={isPublicExperience ? 'Public navigation' : 'Workspace navigation'} className="hidden items-center gap-6 text-sm font-medium lg:flex">
+        <nav aria-label={isWorkspaceExperience ? 'Workspace navigation' : 'Public navigation'} className="hidden items-center gap-6 text-sm font-medium lg:flex">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className={`py-2 transition-colors ${pathname === link.href ? 'font-bold text-[#17604b]' : 'text-slate-600 hover:text-[#17604b]'}`}>
               {link.name}
