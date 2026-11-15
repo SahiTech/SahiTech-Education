@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { createHmac } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { issueApplicationInvitation, updateApplicationStatus, activateTenant, reviewApplicationDocument } from '@/app/actions/platform';
 
@@ -26,6 +27,26 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   const { data: invitations } = applicationIds.length
     ? await (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
     : { data: [] as any[] };
+
+  const { data: outboxRows } = applicationIds.length
+    ? await (supabase.from('email_outbox') as any)
+        .select('payload')
+        .eq('event_type', 'madrasa_invitation')
+        .order('created_at', { ascending: false })
+    : { data: [] as any[] };
+
+  const inviteLinkByApp = new Map<string, string>();
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  for (const row of (outboxRows || [])) {
+    const p = row.payload;
+    if (p?.application_id && p?.token_nonce && !inviteLinkByApp.has(p.application_id)) {
+      const rawToken = createHmac('sha256', hmacSecret)
+        .update(`mdi-invitation:${p.application_id}:${p.token_nonce}`)
+        .digest('hex')
+        .toUpperCase();
+      inviteLinkByApp.set(p.application_id, `/platform/accept#token=${rawToken}`);
+    }
+  }
 
   const invitationByApplication = new Map<string, any>();
   for (const item of (invitations || [])) {
@@ -130,6 +151,22 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
                   {!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ? <p className="text-[10px] text-amber-700">At least one supporting document must be verified.</p> : (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending') ? <p className="text-[10px] text-amber-700">Review all pending document uploads before invitation.</p> : null}
                   <form action={updateApplicationStatus} className="space-y-2"><input type="hidden" name="applicationId" value={app.id}/><select name="status" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"><option value="under_review">Under review</option><option value="info_requested">Request more information</option><option value="rejected">Reject application</option></select><input name="reviewNote" placeholder="Review note / reason" maxLength={2000} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs"/><button className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Save review decision</button></form>
                   {invitationByApplication.has(app.id) && <p className="text-[11px] text-slate-500">Invitation: {(invitationByApplication.get(app.id) as any).status} · {(invitationByApplication.get(app.id) as any).invitee_email}</p>}
+                  {inviteLinkByApp.has(app.id) && ((invitationByApplication.get(app.id) as any)?.status === 'pending' || (invitationByApplication.get(app.id) as any)?.status === 'sent') && (
+                    <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-3 space-y-1.5 shadow-xs">
+                      <span className="text-[11px] font-bold text-emerald-950 block">মাদরাসা অনবোর্ডিং একসেপ্ট লিংক:</span>
+                      <a
+                        href={inviteLinkByApp.get(app.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition"
+                      >
+                        ইনভাইটেশন পেইজ ওপেন করুন →
+                      </a>
+                      <p className="text-[10px] text-emerald-800 leading-tight">
+                        আবেদনকারীকে এই লিংকটিতে গিয়ে তার পাসওয়ার্ড সেট করে মাদরাসা অনবোর্ডিং সম্পন্ন করতে হবে।
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </article>
