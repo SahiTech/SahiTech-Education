@@ -87,7 +87,7 @@ BEGIN
     );
 
     INSERT INTO auth.identities (
-      id, user_id, identity_data, provider, provider_id, email,
+      id, user_id, identity_data, provider, provider_id,
       last_sign_in_at, created_at, updated_at
     ) VALUES (
       gen_random_uuid(),
@@ -100,7 +100,6 @@ BEGIN
       ),
       'email',
       v_user_id::text,
-      v_app.contact_email,
       now(),
       now(),
       now()
