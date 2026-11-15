@@ -48,6 +48,22 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
     if (app.status !== 'approved') return false;
     return invitationByApplication.get(app.id)?.status !== 'accepted';
   });
+  const visiblePending = pending.filter((app:any) => {
+    const matchesQuery = !searchQuery || [
+      app.institution_name,
+      app.institution_name_bn,
+      app.contact_person_name,
+      app.contact_email,
+      app.contact_phone,
+      app.district,
+      app.requested_code,
+      app.requested_subdomain,
+    ].some((value:any) => String(value || '').toLocaleLowerCase().includes(searchQuery));
+    const matchesStatus = statusFilter === 'all'
+      || statusFilter === 'action_required'
+      || app.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
 
   return (
     <div className="min-h-screen px-0 py-0">
