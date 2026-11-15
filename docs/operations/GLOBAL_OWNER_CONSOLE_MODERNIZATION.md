@@ -4,7 +4,7 @@
 **Production origin:** https://sahitech.dpdns.org  
 **Route:** `/platform`  
 **Working branch:** `feat/global-owner-console-modernization`  
-**Status:** Baseline mapped; first navigation/session improvements in progress.
+**Status:** Owner shell, session-aware navigation, overview styling, application search/status filters and operational mapping are implemented on the feature branch; Preview validation is in progress.
 
 ## 1. Access model and credential clarification
 
@@ -92,11 +92,11 @@
 
 1. **Session-aware navigation:** resolve user in root server layout; hide Login after sign-in; keep platform routes out of the public navigation shell.
 2. **Dedicated Owner shell:** restricted sidebar/topbar and mobile navigation; keep existing server-side authorization.
-3. **Overview redesign:** operational summary, attention queue, activation queue, recent audit events.
-4. **Applications workspace:** filters/search/status tabs and clear document review flow, without changing business rules.
+3. **Overview redesign:** initial visual hierarchy, attention count, activation queue and recent audit events implemented; deeper service-health widgets remain pending verified data sources.
+4. **Applications workspace:** server-rendered search and status filters added for the latest 100 applications; existing document review and invitation actions retained without changing business rules.
 5. **Institution and invitation views:** lifecycle visibility and action prerequisites.
 6. **Audit and operations views:** read-only system health, email delivery readiness and deployment/database status.
-7. **Validation:** typecheck, lint, build, route access checks, mobile/desktop review. Deploy only after separate approval.
+7. **Validation:** Preview build reached READY for the current branch commit. Authenticated Owner route checks and responsive visual review still require a signed-in browser session. Deploy only after separate approval.
 
 ## 8. Baseline environment findings (2026-11-15)
 
@@ -118,3 +118,14 @@
 - No production environment variable changes.
 - No real invitation issuance, application approval, or tenant activation during UI validation.
 - No production deployment until the user explicitly approves the reviewed result.
+
+
+## 10. Current feature-branch progress
+
+- Dedicated Global Owner shell with desktop sidebar and mobile navigation is in place; the shell repeats server-side user, AAL2 and Owner checks before rendering.
+- Public navbar now receives the authenticated Supabase user from the root server layout, switches the Login destination to Workspace when signed in, and is hidden across the restricted `/platform/*` route family.
+- Owner overview has a branded operational header and KPI cards for the latest 100 applications, applications requiring attention, and tenants ready for activation.
+- Application queue now supports server-rendered text search across institution name (English/Bangla), contact name/email/phone, district, requested code and subdomain, plus status filtering. Search is intentionally scoped to the current latest-100 review set.
+- Existing owner server actions, MFA/AAL2 checks, invitation rules, document verification, tenant activation and audit reads are retained.
+- Latest observed Vercel Preview for commit `16a26bc121a47e8deb2e1952ea97616b9c8d3813` reached `READY`. A newer commit containing application filters is being built; check its deployment separately before treating it as validated.
+- This feature branch is not merged and has not been promoted to production.
