@@ -21,23 +21,24 @@ export async function getAuthUser() {
 }
 
 export async function getActiveTenantContext(): Promise<TenantContext | null> {
-  const user = await getAuthUser();
-  if (!user) return null;
-
+  // Validate the user once, then resolve profile and membership concurrently.
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return null;
 
-  // 1. Fetch user's profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name_en, full_name_bn, phone')
-    .eq('id', user.id)
-    .single();
+  const [profileResult, cookieStore, headerStore] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('full_name_en, full_name_bn, phone')
+      .eq('id', user.id)
+      .maybeSingle(),
+    cookies(),
+    headers(),
+  ]);
 
-  // 2. Resolve exactly one explicitly selected tenant, or the sole membership.
+  // Resolve exactly one explicitly selected tenant, or the sole membership.
   // An invalid tenant cookie must fail closed; never fall back to another tenant.
-  const cookieStore = await cookies();
   const activeTenantCookie = cookieStore.get('m_active_tenant')?.value;
-  const headerStore = await headers();
   const subdomainHeader = headerStore.get('x-tenant-subdomain');
 
   let tenantQuery = supabase
@@ -76,6 +77,7 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
   if (active.role === 'super_admin') return null;
   if (!tenantData || (tenantData.is_active !== true && tenantData.platform_status !== 'pending_activation')) return null;
 
+  const profile = profileResult.data;
   return {
     userId: user.id,
     userEmail: user.email || '',
