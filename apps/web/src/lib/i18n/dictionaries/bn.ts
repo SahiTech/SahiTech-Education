@@ -90,7 +90,7 @@ export const bn: Translations = {
     aliaTitle: 'আলিয়া মাদ্রাসা বোর্ড ইঞ্জিন',
     aliaDesc: 'ইবতেদায়ি, দাখিল, আলিম ও কামিল স্তরের বিএমইবি কারিকুলাম, জিপিএ গ্রেডিং এবং বোর্ড রেজিস্ট্রেশন ট্র্যাকিং।',
     securityTitle: 'নিরাপদ হাইব্রিড মাল্টি-টেন্যান্সি',
-    securityDesc: 'PostgreSQL Row Level Security (RLS) ব্যবহার করে প্রতিষ্ঠানভিত্তিক তথ্যের প্রবেশাধিকার নিয়ন্ত্রণে সহায়তা করে।'
+    securityDesc: 'PostgreSQL Row Level Security (RLS) ব্যবহার করে প্রতিষ্ঠানভিত্তিক তথ্যের প্রবেশাধিকার নিয়ন্ত্রণে সহায়তা করে।',
     liveStatsInstitutions: 'নিবন্ধিত মাদরাসা',
     liveStatsStudents: 'সক্রিয় তালিবুল ইলম',
     liveStatsTeachers: 'আসতিযায়ে কিরাম',
