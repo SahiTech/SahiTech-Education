@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { createHmac } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { issueApplicationInvitation, updateApplicationStatus, activateTenant, reviewApplicationDocument } from '@/app/actions/platform';
+import { DirectProvisionForm } from './direct-provision-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +25,21 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
-  const { data: invitations } = applicationIds.length
-    ? await (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
-    : { data: [] as any[] };
+  const [{ data: invitations }, { data: allTenantsForApps }] = await Promise.all([
+    applicationIds.length
+      ? (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
+      : Promise.resolve({ data: [] as any[] }),
+    applicationIds.length
+      ? (supabase.from('tenants') as any).select('id,name,code,subdomain,platform_status,is_active,is_verified,source_application_id').in('source_application_id',applicationIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const tenantByAppId = new Map<string, any>();
+  for (const t of (allTenantsForApps || [])) {
+    if (t.source_application_id) {
+      tenantByAppId.set(t.source_application_id, t);
+    }
+  }
 
   const { data: outboxRows } = applicationIds.length
     ? await (supabase.from('email_outbox') as any)
@@ -55,6 +68,8 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   const pending = (applications || []).filter((app:any) => {
     if (['pending','under_review','info_requested'].includes(app.status)) return true;
     if (app.status !== 'approved') return false;
+    const existingTenant = tenantByAppId.get(app.id);
+    if (existingTenant?.is_active) return false;
     return invitationByApplication.get(app.id)?.status !== 'accepted';
   });
   // "All review queue" must include every application, not only pending items.
@@ -146,27 +161,103 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
                   </div>
                   {app.review_note && <p className="text-xs text-amber-700">Previous note: {app.review_note}</p>}
                 </div>
-                <div className="flex w-full flex-col gap-2 lg:max-w-xs">
-                  <form action={issueApplicationInvitation}><input type="hidden" name="applicationId" value={app.id}/><button disabled={!app.requested_code||!app.requested_subdomain||!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified')||(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending')||((invitationByApplication.get(app.id) as any)?.status==='accepted')} className="w-full rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{(invitationByApplication.get(app.id) as any)?.status==='pending'?'Reissue invitation':app.status==='approved'?'Issue invitation':'Approve & issue invitation'}</button></form>
-                  {!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ? <p className="text-[10px] text-amber-700">At least one supporting document must be verified.</p> : (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending') ? <p className="text-[10px] text-amber-700">Review all pending document uploads before invitation.</p> : null}
-                  <form action={updateApplicationStatus} className="space-y-2"><input type="hidden" name="applicationId" value={app.id}/><select name="status" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"><option value="under_review">Under review</option><option value="info_requested">Request more information</option><option value="rejected">Reject application</option></select><input name="reviewNote" placeholder="Review note / reason" maxLength={2000} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs"/><button className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Save review decision</button></form>
-                  {invitationByApplication.has(app.id) && <p className="text-[11px] text-slate-500">Invitation: {(invitationByApplication.get(app.id) as any).status} · {(invitationByApplication.get(app.id) as any).invitee_email}</p>}
-                  {inviteLinkByApp.has(app.id) && ((invitationByApplication.get(app.id) as any)?.status === 'pending' || (invitationByApplication.get(app.id) as any)?.status === 'sent') && (
-                    <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-3 space-y-1.5 shadow-xs">
-                      <span className="text-[11px] font-bold text-emerald-950 block">মাদরাসা অনবোর্ডিং একসেপ্ট লিংক:</span>
-                      <a
-                        href={inviteLinkByApp.get(app.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition"
-                      >
-                        ইনভাইটেশন পেইজ ওপেন করুন →
-                      </a>
-                      <p className="text-[10px] text-emerald-800 leading-tight">
-                        আবেদনকারীকে এই লিংকটিতে গিয়ে তার পাসওয়ার্ড সেট করে মাদরাসা অনবোর্ডিং সম্পন্ন করতে হবে।
+                <div className="flex w-full flex-col gap-2.5 lg:max-w-xs">
+                  {tenantByAppId.has(app.id) && (
+                    <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-3 space-y-1">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                        <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                        মাদরাসা অ্যাকাউন্ট সক্রিয় (Active Tenant)
+                      </span>
+                      <p className="text-[11px] text-emerald-800">
+                        কোড: <b>{tenantByAppId.get(app.id)?.code}</b> · সাবডোমেইন: <b>{tenantByAppId.get(app.id)?.subdomain}</b>
                       </p>
+                      <a
+                        href="/login"
+                        target="_blank"
+                        className="mt-0.5 inline-block text-[11px] font-bold text-emerald-700 underline"
+                      >
+                        লগইন পোর্টাল লিঙ্ক খুলুন →
+                      </a>
                     </div>
                   )}
+
+                  {/* System 2: Super Admin Direct Account Setup */}
+                  <DirectProvisionForm
+                    applicationId={app.id}
+                    institutionName={app.institution_name}
+                    contactEmail={app.contact_email}
+                    isAlreadyProvisioned={tenantByAppId.has(app.id)}
+                    tenantCode={tenantByAppId.get(app.id)?.code}
+                    tenantSubdomain={tenantByAppId.get(app.id)?.subdomain}
+                  />
+
+                  {/* System 1: Self-Service Invitation Flow */}
+                  <div className="border-t border-slate-200/80 pt-2 space-y-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                      অথবা সেলফ-সার্ভিস আমন্ত্রণ লিঙ্ক:
+                    </span>
+                    <form action={issueApplicationInvitation}>
+                      <input type="hidden" name="applicationId" value={app.id}/>
+                      <button
+                        disabled={
+                          !app.requested_code ||
+                          !app.requested_subdomain ||
+                          !(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ||
+                          (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending') ||
+                          tenantByAppId.has(app.id)
+                        }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {tenantByAppId.has(app.id)
+                          ? 'অ্যাকাউন্ট ইতিমধ্যে সক্রিয়'
+                          : (invitationByApplication.get(app.id) as any)?.status==='pending'
+                            ? 'আমন্ত্রণ লিঙ্ক পুনরায় তৈরি (Reissue)'
+                            : app.status==='approved'
+                              ? 'আমন্ত্রণ লিঙ্ক ইস্যু করুন'
+                              : 'অনুমোদন ও আমন্ত্রণ লিঙ্ক পাঠান'}
+                      </button>
+                    </form>
+
+                    {!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ? (
+                      <p className="text-[10px] text-amber-700">At least one supporting document must be verified.</p>
+                    ) : (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending') ? (
+                      <p className="text-[10px] text-amber-700">Review all pending document uploads before invitation.</p>
+                    ) : null}
+
+                    {invitationByApplication.has(app.id) && (
+                      <p className="text-[11px] text-slate-500">
+                        Invitation: {(invitationByApplication.get(app.id) as any).status} · {(invitationByApplication.get(app.id) as any).invitee_email}
+                      </p>
+                    )}
+
+                    {inviteLinkByApp.has(app.id) && ((invitationByApplication.get(app.id) as any)?.status === 'pending' || (invitationByApplication.get(app.id) as any)?.status === 'sent') && (
+                      <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-3 space-y-1.5 shadow-xs">
+                        <span className="text-[11px] font-bold text-emerald-950 block">মাদরাসা অনবোর্ডিং একসেপ্ট লিংক:</span>
+                        <a
+                          href={inviteLinkByApp.get(app.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition"
+                        >
+                          ইনভাইটেশন পেইজ ওপেন করুন →
+                        </a>
+                        <p className="text-[10px] text-emerald-800 leading-tight">
+                          আবেদনকারীকে এই লিংকটিতে গিয়ে তার পাসওয়ার্ড সেট করে মাদরাসা অনবোর্ডিং সম্পন্ন করতে হবে।
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <form action={updateApplicationStatus} className="space-y-2 pt-2 border-t border-slate-100">
+                    <input type="hidden" name="applicationId" value={app.id}/>
+                    <select name="status" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs">
+                      <option value="under_review">Under review</option>
+                      <option value="info_requested">Request more information</option>
+                      <option value="rejected">Reject application</option>
+                    </select>
+                    <input name="reviewNote" placeholder="Review note / reason" maxLength={2000} className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs"/>
+                    <button className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">Save review decision</button>
+                  </form>
                 </div>
               </div>
             </article>

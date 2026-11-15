@@ -72,3 +72,51 @@ export async function reviewApplicationDocument(formData: FormData) {
   if (error) throw new Error('Could not save document verification decision.');
   revalidatePath('/platform');
 }
+
+export type DirectProvisionResult = {
+  success: boolean;
+  error?: string;
+  data?: {
+    tenant_id: string;
+    user_id: string;
+    email: string;
+    institution_name: string;
+    subdomain: string;
+    is_new_user: boolean;
+    activated: boolean;
+    password_used: string | null;
+  };
+};
+
+export async function directProvisionTenant(params: {
+  applicationId: string;
+  initialPassword?: string;
+  activateImmediately?: boolean;
+}): Promise<DirectProvisionResult> {
+  try {
+    const { supabase } = await requirePlatformOwner();
+    const { applicationId, initialPassword, activateImmediately = true } = params;
+
+    if (!/^[0-9a-f-]{36}$/i.test(applicationId)) {
+      return { success: false, error: 'অবৈধ আবেদন সনাক্তকারী (Invalid application ID)।' };
+    }
+
+    const { data, error } = await (supabase.rpc as any)('owner_direct_setup_madrasa_admin', {
+      p_application_id: applicationId,
+      p_initial_password: initialPassword?.trim() || null,
+      p_activate_immediately: activateImmediately,
+    });
+
+    if (error) {
+      console.error('owner_direct_setup_madrasa_admin error:', error);
+      return { success: false, error: error.message || 'অ্যাকাউন্ট সরাসরি সেটআপ করা যায়নি।' };
+    }
+
+    revalidatePath('/platform');
+    return { success: true, data };
+  } catch (err: any) {
+    console.error('directProvisionTenant failed:', err);
+    return { success: false, error: err?.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।' };
+  }
+}
+
