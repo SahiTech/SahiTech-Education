@@ -47,19 +47,17 @@ export default async function PlatformOwnerDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-3 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">SahiTech Education · MDI</p><h1 className="mt-1 text-3xl font-black text-slate-900">Global Platform Owner</h1><p className="mt-1 text-sm text-slate-500">Secure session · MFA verified</p></div>
-          <form action={async()=>{'use server'; const client=await createClient(); await client.auth.signOut(); redirect('/platform/login');}}><button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Sign out</button></form>
+    <div className="min-h-screen px-0 py-0">
+      <div className="mx-auto max-w-[1500px] space-y-8">
+        <header id="overview" className="flex flex-col gap-5 rounded-3xl bg-gradient-to-br from-[#123b32] via-[#174c3d] to-[#24664f] p-6 text-white shadow-xl shadow-emerald-950/10 sm:p-8 xl:flex-row xl:items-end xl:justify-between">
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-100/70">SahiTech Education · MDI</p><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Global Owner Console</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/75">A single control centre for institutional onboarding, document verification, tenant activation and platform governance.</p><div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-50"><span className="h-2 w-2 rounded-full bg-emerald-300"/> Secure session · MFA verified</div></div>
+          <form action={async()=>{'use server'; const client=await createClient(); await client.auth.signOut(); redirect('/platform/login');}}><button className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15">Sign out</button></form>
         </header>
-
         <section className="grid gap-4 sm:grid-cols-3">
-          <Metric label="Total applications (latest 100)" value={(applications||[]).length}/>
-          <Metric label="Awaiting review" value={pending.length}/>
+          <Metric label="Total applications · latest 100" value={(applications||[]).length}/>
+          <Metric label="Awaiting owner review" value={pending.length}/>
           <Metric label="Ready for activation" value={(tenants||[]).length}/>
         </section>
-
         <section className="space-y-4">
           <div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents before issuing an invitation. Approval alone does not create a tenant.</p></div>
           {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : pending.map((app:any)=>(
