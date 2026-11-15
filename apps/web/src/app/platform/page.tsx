@@ -58,7 +58,7 @@ export default async function PlatformOwnerDashboard() {
           <Metric label="Awaiting owner review" value={pending.length}/>
           <Metric label="Ready for activation" value={(tenants||[]).length}/>
         </section>
-        <section className="space-y-4">
+        <section id="applications" className="scroll-mt-28 space-y-4">
           <div><h2 className="text-xl font-bold text-slate-900">Madrasa applications</h2><p className="text-sm text-slate-500">Verify documents before issuing an invitation. Approval alone does not create a tenant.</p></div>
           {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : pending.map((app:any)=>(
             <article key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -98,7 +98,7 @@ export default async function PlatformOwnerDashboard() {
           ))}
         </section>
 
-        <section className="space-y-4">
+        <section id="institutions" className="scroll-mt-28 space-y-4">
           <div><h2 className="text-xl font-bold text-slate-900">Final tenant activation</h2><p className="text-sm text-slate-500">Only fully onboarded tenants appear here. Activation is a separate owner decision.</p></div>
           {(tenants||[]).length===0 ? <Empty>No tenants are waiting for final activation.</Empty> : (tenants||[]).map((tenant:any)=>(
             <article key={tenant.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -108,7 +108,7 @@ export default async function PlatformOwnerDashboard() {
           ))}
         </section>
 
-        <section className="space-y-4">
+        <section id="audit" className="scroll-mt-28 space-y-4">
           <div><h2 className="text-xl font-bold text-slate-900">Platform audit trail</h2><p className="text-sm text-slate-500">Append-only lifecycle events. Visible only to the verified Global Platform Owner.</p></div>
           {(auditLogs||[]).length===0 ? <Empty>No platform lifecycle events recorded yet.</Empty> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             {(auditLogs||[]).map((event:any)=><div key={event.id} className="flex flex-col gap-1 border-b border-slate-100 px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
