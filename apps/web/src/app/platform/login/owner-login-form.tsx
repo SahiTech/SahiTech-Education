@@ -127,7 +127,12 @@ export default function OwnerLoginForm() {
       {step === 'enroll' && (
         <form onSubmit={verifyCode} className="space-y-4">
           <p className="text-sm font-semibold text-slate-800">Set up your authenticator app</p>
-          {qr && <div className="flex justify-center rounded-lg bg-white p-3"><img src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`} alt="Authenticator QR code" className="h-48 w-48" /></div>}
+          {qr && (
+            <div className="flex justify-center rounded-lg bg-white p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`} alt="Authenticator QR code" className="h-48 w-48" />
+            </div>
+          )}
           <div className="rounded-lg bg-slate-50 p-3">
             <p className="text-[11px] font-bold text-slate-500">Manual setup key</p>
             <p className="mt-1 break-all font-mono text-sm text-slate-900">{secret}</p>

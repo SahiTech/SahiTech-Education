@@ -114,6 +114,11 @@ ${institutionName}-এর MDI ডিজিটাল এডুকেশন প্
               <p className="mt-1 text-[11px] text-emerald-900/80 leading-relaxed">
                 মাদরাসা শিক্ষককে ইমেইল ভেরিফিকেশন বা টোকেনের ঝামেলা ছাড়া সরাসরি অ্যাকাউন্ট ও পাসওয়ার্ড বুঝিয়ে দিন।
               </p>
+              {isAlreadyProvisioned && tenantCode && (
+                <p className="mt-1 font-mono text-[10px] text-emerald-900 font-bold">
+                  প্রতিষ্ঠান কোড: {tenantCode} {tenantSubdomain ? `· সাবডোমেইন: ${tenantSubdomain}` : ''}
+                </p>
+              )}
             </div>
             <button
               type="button"

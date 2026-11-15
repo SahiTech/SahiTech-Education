@@ -25,12 +25,15 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
-  const [{ data: invitations }, { data: allTenantsForApps }] = await Promise.all([
+  const [{ data: invitations }, { data: allTenantsForApps }, { data: outboxRows }] = await Promise.all([
     applicationIds.length
       ? (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
       : Promise.resolve({ data: [] as any[] }),
     applicationIds.length
       ? (supabase.from('tenants') as any).select('id,name,code,subdomain,platform_status,is_active,is_verified,source_application_id').in('source_application_id',applicationIds)
+      : Promise.resolve({ data: [] as any[] }),
+    applicationIds.length
+      ? (supabase.from('email_outbox') as any).select('payload').eq('event_type', 'madrasa_invitation').order('created_at', { ascending: false })
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
@@ -40,13 +43,6 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
       tenantByAppId.set(t.source_application_id, t);
     }
   }
-
-  const { data: outboxRows } = applicationIds.length
-    ? await (supabase.from('email_outbox') as any)
-        .select('payload')
-        .eq('event_type', 'madrasa_invitation')
-        .order('created_at', { ascending: false })
-    : { data: [] as any[] };
 
   const inviteLinkByApp = new Map<string, string>();
   const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
