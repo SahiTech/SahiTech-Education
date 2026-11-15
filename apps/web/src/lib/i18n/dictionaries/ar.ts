@@ -90,7 +90,7 @@ export const ar: Translations = {
     aliaTitle: 'محرك مجلس التعليم العالي',
     aliaDesc: 'مناهج مجلس التعليم المعتمدة عبر المراحل الابتداية والداخل والعالم والفاضل والكامل مع نظام المعدل التراكمي.',
     securityTitle: 'عزل مؤسسي سحابي فائق الأمان',
-    securityDesc: 'يستخدم PostgreSQL Row Level Security (RLS) للمساعدة في ضبط صلاحيات الوصول إلى بيانات كل مؤسسة.'
+    securityDesc: 'يستخدم PostgreSQL Row Level Security (RLS) للمساعدة في ضبط صلاحيات الوصول إلى بيانات كل مؤسسة.',
     liveStatsInstitutions: 'المدارس المسجلة',
     liveStatsStudents: 'طلاب العلم النشطون',
     liveStatsTeachers: 'الأساتذة والعلماء',
