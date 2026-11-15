@@ -74,7 +74,7 @@ export default function RegisterMadrasaPage() {
         </div>
 
         {/* Wizard Form Card */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl p-5 sm:p-8 lg:p-10 shadow-2xl text-slate-900">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl p-5 sm:p-8 lg:p-10 shadow-2xl text-slate-100">
           <RegisterForm />
         </div>
 

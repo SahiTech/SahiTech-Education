@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useActionState } from 'react';
 import { submitMadrasaApplication, type ApplicationResult } from '@/app/actions/applications';
+import { useI18n } from '@/lib/i18n';
 import {
   Building2,
   BookOpen,
@@ -218,7 +219,8 @@ const BOARDS_LIST = [
 ];
 
 export function RegisterForm() {
-  const [lang, setLang] = useState<Lang>('bn');
+  const { locale } = useI18n();
+  const lang: Lang = (locale === 'en' || locale === 'ar') ? locale : 'bn';
   const t = DICT[lang];
   const isRTL = lang === 'ar';
 
@@ -354,7 +356,7 @@ export function RegisterForm() {
   if (state.success && state.applicationId && state.uploadToken) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
-        <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900 to-slate-950 p-6 sm:p-8 text-white shadow-xl">
+        <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950 to-slate-950 p-6 sm:p-8 text-white shadow-xl">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-slate-950 shadow-md">
               <CheckCircle2 className="h-7 w-7" />
@@ -381,7 +383,7 @@ export function RegisterForm() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-sm">
           <ApplicationDocumentUpload applicationId={state.applicationId} uploadToken={state.uploadToken} />
         </div>
       </div>
@@ -390,48 +392,20 @@ export function RegisterForm() {
 
   return (
     <div className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Sleek Floating Language Selector */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* Streamlined Card Header without duplicate translation buttons */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold text-slate-600">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
             {lang === 'bn' ? 'অফিসিয়াল রেজিস্ট্রেশন উইজার্ড' : lang === 'en' ? 'Official Registration Wizard' : 'معالج التسجيل الرسمي'}
           </span>
         </div>
-
-        {/* Minimal Modern Language Tabs */}
-        <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 p-1 text-xs">
-          <button
-            type="button"
-            onClick={() => setLang('bn')}
-            className={`rounded-full px-3 py-1 font-semibold transition ${
-              lang === 'bn' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            বাংলা
-          </button>
-          <button
-            type="button"
-            onClick={() => setLang('en')}
-            className={`rounded-full px-3 py-1 font-semibold transition ${
-              lang === 'en' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            English
-          </button>
-          <button
-            type="button"
-            onClick={() => setLang('ar')}
-            className={`rounded-full px-3 py-1 font-semibold font-serif transition ${
-              lang === 'ar' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            العربية
-          </button>
-        </div>
+        <span className="text-xs font-semibold text-slate-400">
+          {lang === 'bn' ? `ধাপ ${step} / ৩` : lang === 'en' ? `Step ${step} of 3` : `الخطوة ${step} من 3`}
+        </span>
       </div>
 
-      {/* Human 3-Step Clean Stepper */}
+      {/* Human 3-Step Clean Stepper with High-Contrast Islamic Theme */}
       <div className="relative">
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -449,21 +423,21 @@ export function RegisterForm() {
                 onClick={() => {
                   if (s.num < step || validateStep(step)) setStep(s.num);
                 }}
-                className={`flex items-center gap-2 rounded-xl p-3 text-left transition border ${
+                className={`flex items-center gap-2.5 rounded-xl p-3 text-left transition border ${
                   isCurrent
-                    ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold shadow-xs'
+                    ? 'border-emerald-500 bg-emerald-950/80 text-white font-bold shadow-sm ring-1 ring-emerald-500/40'
                     : isDone
-                    ? 'border-slate-200 bg-white text-emerald-800 hover:bg-slate-50'
-                    : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'
+                    ? 'border-emerald-800/60 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-950/50'
+                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                 }`}
               >
                 <div
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                     isCurrent
-                      ? 'bg-emerald-700 text-white'
+                      ? 'bg-emerald-500 text-slate-950'
                       : isDone
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-500'
+                      ? 'bg-emerald-900 text-emerald-300'
+                      : 'bg-slate-800 text-slate-400'
                   }`}
                 >
                   {isDone ? <Check className="h-4 w-4" /> : s.num}
@@ -478,8 +452,8 @@ export function RegisterForm() {
       {/* Main Form */}
       <form action={formAction} className="space-y-6">
         {state.error && (
-          <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+          <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-950/40 p-4 text-xs font-semibold text-red-200">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
             <span>{state.error}</span>
           </div>
         )}
@@ -507,9 +481,10 @@ export function RegisterForm() {
         {step === 1 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div className="grid gap-4 sm:grid-cols-2">
+              {/* Official Name (English) - High Contrast Visible Label */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.instNameLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.instNameLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -517,15 +492,16 @@ export function RegisterForm() {
                   value={formData.institutionName}
                   onChange={e => handleNameChange(e.target.value)}
                   placeholder={t.instNamePlaceholder}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                    errors.institutionName ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                    errors.institutionName ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                   }`}
                 />
-                {errors.institutionName && <p className="text-xs text-red-600 mt-1">{errors.institutionName}</p>}
+                {errors.institutionName && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.institutionName}</p>}
               </div>
 
+              {/* Name in Native Language (Bangla / Arabic) */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.instNameBnLabel}
                 </label>
                 <input
@@ -533,14 +509,14 @@ export function RegisterForm() {
                   value={formData.institutionNameBn}
                   onChange={e => setFormData({ ...formData, institutionNameBn: e.target.value })}
                   placeholder={t.instNameBnPlaceholder}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 />
               </div>
 
-              {/* Simplified Clean Segmented Institution Type */}
+              {/* Institution Type Stream */}
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="block text-xs font-bold text-slate-800">
-                  {t.instTypeLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100">
+                  {t.instTypeLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
@@ -554,25 +530,26 @@ export function RegisterForm() {
                       onClick={() => setFormData({ ...formData, institutionType: item.id })}
                       className={`flex items-center justify-between rounded-xl px-3.5 py-3 border text-xs font-bold transition ${
                         formData.institutionType === item.id
-                          ? 'border-emerald-600 bg-emerald-50 text-emerald-950 shadow-2xs'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          ? 'border-emerald-500 bg-emerald-950/80 text-white ring-1 ring-emerald-500/50 shadow-xs'
+                          : 'border-slate-700 bg-slate-800/70 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
                       }`}
                     >
                       <span>{item.title}</span>
-                      {formData.institutionType === item.id && <Check className="h-4 w-4 text-emerald-700 shrink-0" />}
+                      {formData.institutionType === item.id && <Check className="h-4 w-4 text-emerald-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Board Affiliation */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.boardLabel}
                 </label>
                 <select
                   value={formData.boardAffiliation}
                   onChange={e => setFormData({ ...formData, boardAffiliation: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 >
                   {BOARDS_LIST.map(b => (
                     <option key={b} value={b}>{b}</option>
@@ -580,8 +557,9 @@ export function RegisterForm() {
                 </select>
               </div>
 
+              {/* Registration Number */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.regNumLabel}
                 </label>
                 <input
@@ -589,12 +567,13 @@ export function RegisterForm() {
                   value={formData.registrationNumber}
                   onChange={e => setFormData({ ...formData, registrationNumber: e.target.value })}
                   placeholder="রেজিস্ট্রেশন বা স্মারক নং"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 />
               </div>
 
+              {/* Established Year */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.estYearLabel}
                 </label>
                 <input
@@ -604,7 +583,7 @@ export function RegisterForm() {
                   value={formData.establishedYear}
                   onChange={e => setFormData({ ...formData, establishedYear: e.target.value })}
                   placeholder="যেমন: 1985"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 />
               </div>
             </div>
@@ -614,15 +593,15 @@ export function RegisterForm() {
         {/* STEP 2: Campus Location & Focal Leadership Contact */}
         {step === 2 && (
           <div className="space-y-5 animate-in fade-in duration-200">
-            {/* Location Scope */}
-            <div className="flex items-center gap-2 pb-1">
-              <span className="text-xs font-bold text-slate-700">{t.scopeLabel}:</span>
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs">
+            {/* Location Scope Toggle */}
+            <div className="flex items-center gap-3 pb-1">
+              <span className="text-xs font-bold text-slate-100">{t.scopeLabel}:</span>
+              <div className="inline-flex rounded-lg border border-slate-700 bg-slate-950/80 p-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, locationScope: 'domestic' })}
-                  className={`rounded-md px-3 py-1 font-semibold transition ${
-                    formData.locationScope === 'domestic' ? 'bg-white text-emerald-900 shadow-2xs' : 'text-slate-500'
+                  className={`rounded-md px-3 py-1 font-bold transition ${
+                    formData.locationScope === 'domestic' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {t.scopeBD}
@@ -630,8 +609,8 @@ export function RegisterForm() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, locationScope: 'intl' })}
-                  className={`rounded-md px-3 py-1 font-semibold transition ${
-                    formData.locationScope === 'intl' ? 'bg-white text-emerald-900 shadow-2xs' : 'text-slate-500'
+                  className={`rounded-md px-3 py-1 font-bold transition ${
+                    formData.locationScope === 'intl' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {t.scopeIntl}
@@ -642,8 +621,8 @@ export function RegisterForm() {
             {formData.locationScope === 'domestic' ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    {t.divisionLabel} <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                    {t.divisionLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                   </label>
                   <select
                     value={formData.division}
@@ -652,7 +631,7 @@ export function RegisterForm() {
                       const firstDist = BD_DIVISIONS[div]?.[0] || '';
                       setFormData({ ...formData, division: div, district: firstDist });
                     }}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                   >
                     {Object.keys(BD_DIVISIONS).map(div => (
                       <option key={div} value={div}>{div}</option>
@@ -661,13 +640,13 @@ export function RegisterForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    {t.districtLabel} <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                    {t.districtLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                   </label>
                   <select
                     value={formData.district}
                     onChange={e => setFormData({ ...formData, district: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                   >
                     {(BD_DIVISIONS[formData.division] || []).map(dist => (
                       <option key={dist} value={dist}>{dist}</option>
@@ -677,8 +656,8 @@ export function RegisterForm() {
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.countryLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.countryLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -686,14 +665,14 @@ export function RegisterForm() {
                   value={formData.country}
                   onChange={e => setFormData({ ...formData, country: e.target.value })}
                   placeholder="United Kingdom, India, Saudi Arabia..."
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1">
-                {t.addressLabel} <span className="text-red-500">*</span>
+              <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                {t.addressLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
               </label>
               <input
                 type="text"
@@ -701,17 +680,17 @@ export function RegisterForm() {
                 value={formData.address}
                 onChange={e => setFormData({ ...formData, address: e.target.value })}
                 placeholder={t.addressPlaceholder}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                  errors.address ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                  errors.address ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                 }`}
               />
-              {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
+              {errors.address && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.address}</p>}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-slate-100">
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-slate-800">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.contactPersonLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.contactPersonLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -719,16 +698,16 @@ export function RegisterForm() {
                   value={formData.contactPersonName}
                   onChange={e => setFormData({ ...formData, contactPersonName: e.target.value })}
                   placeholder={t.contactPersonPlaceholder}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                    errors.contactPersonName ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                    errors.contactPersonName ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                   }`}
                 />
-                {errors.contactPersonName && <p className="text-xs text-red-600 mt-1">{errors.contactPersonName}</p>}
+                {errors.contactPersonName && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.contactPersonName}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.contactEmailLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.contactEmailLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="email"
@@ -736,17 +715,17 @@ export function RegisterForm() {
                   value={formData.contactEmail}
                   onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
                   placeholder="contact@institution.edu"
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                    errors.contactEmail ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                    errors.contactEmail ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                   }`}
                 />
-                {errors.contactEmail && <p className="text-xs text-red-600 mt-1">{errors.contactEmail}</p>}
-                <p className="text-[11px] text-slate-400 mt-1">{t.contactEmailHelper}</p>
+                {errors.contactEmail && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.contactEmail}</p>}
+                <p className="text-[11px] text-emerald-300/80 mt-1 font-medium">{t.contactEmailHelper}</p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.contactPhoneLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.contactPhoneLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="tel"
@@ -754,15 +733,15 @@ export function RegisterForm() {
                   value={formData.contactPhone}
                   onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
                   placeholder="+8801700000000"
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                    errors.contactPhone ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                    errors.contactPhone ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                   }`}
                 />
-                {errors.contactPhone && <p className="text-xs text-red-600 mt-1">{errors.contactPhone}</p>}
+                {errors.contactPhone && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.contactPhone}</p>}
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.websiteLabel}
                 </label>
                 <input
@@ -770,11 +749,11 @@ export function RegisterForm() {
                   value={formData.websiteUrl}
                   onChange={e => setFormData({ ...formData, websiteUrl: e.target.value })}
                   placeholder="https://..."
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition ${
-                    errors.websiteUrl ? 'border-red-400 bg-red-50/20' : 'border-slate-300 focus:border-emerald-600'
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium ${
+                    errors.websiteUrl ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-300'
                   }`}
                 />
-                {errors.websiteUrl && <p className="text-xs text-red-600 mt-1">{errors.websiteUrl}</p>}
+                {errors.websiteUrl && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.websiteUrl}</p>}
               </div>
             </div>
           </div>
@@ -820,31 +799,31 @@ export function RegisterForm() {
               </div>
             </div>
 
-            {/* Customization Inputs */}
+            {/* Customization Inputs with High-Contrast Labels */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.subdomainLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.subdomainLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
-                <div className="flex overflow-hidden rounded-xl border border-slate-300 focus-within:border-emerald-600">
+                <div className="flex overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20">
                   <input
                     type="text"
                     required
                     value={formData.requestedSubdomain}
                     onChange={e => setFormData({ ...formData, requestedSubdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                     placeholder="jamia-madania"
-                    className="min-w-0 flex-1 px-3.5 py-2.5 text-sm outline-none font-mono"
+                    className="min-w-0 flex-1 px-3.5 py-2.5 text-sm text-slate-900 outline-none font-mono"
                   />
-                  <span className="flex items-center border-l bg-slate-50 px-2.5 text-xs text-slate-500 font-mono">
+                  <span className="flex items-center border-l bg-slate-100 px-2.5 text-xs text-slate-700 font-mono font-semibold">
                     {t.subdomainSuffix}
                   </span>
                 </div>
-                {errors.requestedSubdomain && <p className="text-xs text-red-600 mt-1">{errors.requestedSubdomain}</p>}
+                {errors.requestedSubdomain && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.requestedSubdomain}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {t.codeLabel} <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
+                  {t.codeLabel} <span className="text-rose-400 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -852,13 +831,13 @@ export function RegisterForm() {
                   value={formData.requestedCode}
                   onChange={e => setFormData({ ...formData, requestedCode: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') })}
                   placeholder="JAMIA-01"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none font-mono uppercase focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-mono uppercase outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-bold"
                 />
-                {errors.requestedCode && <p className="text-xs text-red-600 mt-1">{errors.requestedCode}</p>}
+                {errors.requestedCode && <p className="text-xs text-rose-400 mt-1 font-medium">{errors.requestedCode}</p>}
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-bold text-slate-100 mb-1.5">
                   {t.noteLabel}
                 </label>
                 <textarea
@@ -867,26 +846,26 @@ export function RegisterForm() {
                   value={formData.applicationNote}
                   onChange={e => setFormData({ ...formData, applicationNote: e.target.value })}
                   placeholder={t.notePlaceholder}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-emerald-600"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 border border-slate-200">
-              <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0" />
+            <div className="flex items-center gap-2.5 rounded-xl bg-slate-950/70 p-3 text-xs text-slate-300 border border-slate-800">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>{t.termsText}</span>
             </div>
           </div>
         )}
 
         {/* Wizard Navigation Action Buttons */}
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800">
           {step > 1 ? (
             <button
               type="button"
               onClick={handlePrev}
               disabled={pending}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-5 py-2.5 text-xs font-bold text-slate-200 transition"
             >
               <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
               <span>{t.back}</span>
@@ -899,7 +878,7 @@ export function RegisterForm() {
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition"
             >
               <span>{t.next}</span>
               <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
@@ -908,7 +887,7 @@ export function RegisterForm() {
             <button
               type="submit"
               disabled={pending}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 px-7 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/20 disabled:opacity-50 transition"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-7 py-3 text-xs font-bold text-white shadow-md shadow-emerald-950/40 disabled:opacity-50 transition"
             >
               {pending ? (
                 <>
@@ -926,26 +905,26 @@ export function RegisterForm() {
         </div>
       </form>
 
-      {/* Clean Support Focal Strip */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <span className="text-slate-600 font-medium text-center sm:text-left">
-          আবেদন সম্পন্ন করতে কোনো কারিগরি সহায়তার প্রয়োজন হলে আমাদের সাথে সরাসরি কথা বলুন:
+      {/* Clean Support Focal Strip with High Contrast */}
+      <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <span className="text-slate-300 font-medium text-center sm:text-left">
+          আবেদন সম্পন্ন করতে কোনো কারিগরি সহায়তার প্রয়োজন হলে আমাদের সাথে সরাসরি যোগাযোগ করুন:
         </span>
         <div className="flex items-center gap-4 shrink-0">
           <a
             href={`tel:${SUPPORT_PHONE}`}
-            className="inline-flex items-center gap-1.5 font-bold text-emerald-800 hover:text-emerald-700"
+            className="inline-flex items-center gap-1.5 font-bold text-emerald-400 hover:text-emerald-300 transition"
           >
-            <Phone className="h-3.5 w-3.5 text-emerald-700" />
+            <Phone className="h-3.5 w-3.5 text-emerald-400" />
             <span>{SUPPORT_PHONE}</span>
           </a>
           <a
             href={`https://wa.me/${SUPPORT_PHONE.replace(/[^0-9]/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-bold text-emerald-800 hover:text-emerald-700"
+            className="inline-flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 transition"
           >
-            <MessageCircle className="h-3.5 w-3.5 text-emerald-700" />
+            <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
             <span>WhatsApp</span>
           </a>
         </div>
