@@ -80,6 +80,12 @@ export interface Translations {
     publicSiteCta: string;
     featuresTitle: string;
     featuresSubtitle: string;
+    capabilitiesEyebrow: string;
+    pathwaysEyebrow: string;
+    studentPathwayTitle: string;
+    studentPathwayDesc: string;
+    certificatePathwayDesc: string;
+    websitePathwayDesc: string;
     qawmiTitle: string;
     qawmiDesc: string;
     aliaTitle: string;
