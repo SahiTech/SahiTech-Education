@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'SahiTech Education' }],
   creator: 'SahiTech Education',
   metadataBase: new URL('https://sahitech.dpdns.org'),
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'bn_BD',
