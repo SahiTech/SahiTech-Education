@@ -4,6 +4,7 @@ import { Navbar } from '@/components/Navbar';
 import { getServerLocale, getServerDirection } from '@/lib/i18n/server';
 import { I18nProvider } from '@/lib/i18n';
 import { Analytics } from '@vercel/analytics/next';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: {
@@ -33,45 +34,35 @@ export const metadata: Metadata = {
     siteName: 'SahiTech Education',
     title: 'SahiTech Education | Madrasa Digitalization Initiative',
     description: 'A digital institutional platform supporting Qawmi and Alia madrasa administration and academic workflows.',
-    images: [
-      {
-        url: '/images/hero-campus.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'SahiTech Education MDI Campus',
-      },
-    ],
+    images: [{ url: '/images/hero-campus.jpg', width: 1200, height: 630, alt: 'SahiTech Education MDI Campus' }],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
-  export const viewport: Viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    themeColor: '#174c3d',
-  };
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#174c3d',
+};
 
-  export default async function RootLayout({
-    children,
-  }: {
-    children: React.ReactNode;
-  }) {
-    const locale = await getServerLocale();
-    const direction = await getServerDirection();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [locale, direction, supabase] = await Promise.all([
+    getServerLocale(),
+    getServerDirection(),
+    createClient(),
+  ]);
+  const { data: { user } } = await supabase.auth.getUser();
 
-    return (
-          <html lang={locale} dir={direction} suppressHydrationWarning>
-            <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
-              <I18nProvider initialLocale={locale}>
-                <Navbar />
-                <main className="flex-1">{children}</main>
-              </I18nProvider>
-              <Analytics />
-            </body>
-          </html>
-          );
+  return (
+    <html lang={locale} dir={direction} suppressHydrationWarning>
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+        <I18nProvider initialLocale={locale}>
+          <Navbar user={user ? { email: user.email || undefined } : null} />
+          <main className="flex-1">{children}</main>
+        </I18nProvider>
+        <Analytics />
+      </body>
+    </html>
+  );
 }
