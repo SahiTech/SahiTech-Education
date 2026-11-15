@@ -76,6 +76,7 @@ export function Sidebar() {
                           <Link
                             key={item.href}
                             href={item.href}
+                            prefetch={false}
                       className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition min-h-[40px] ${isActive
                             ? 'bg-emerald-700 text-white font-bold shadow-sm shadow-emerald-800/10'
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -102,6 +103,7 @@ export function Sidebar() {
                             <Link
                               key={item.href}
                               href={item.href}
+                            prefetch={false}
                         className={`flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs font-medium transition min-h-[36px] ${isActive
                             ? 'bg-emerald-100 text-emerald-900 font-bold'
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -128,6 +130,7 @@ export function Sidebar() {
                               <Link
                                 key={item.href}
                                 href={item.href}
+                            prefetch={false}
                           className={`flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs font-medium transition min-h-[36px] ${isActive
                               ? 'bg-emerald-100 text-emerald-900 font-bold'
                               : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
