@@ -90,7 +90,7 @@ export const en: Translations = {
     aliaTitle: 'Alia Madrasa Board Engine',
     aliaDesc: 'Bangladesh Madrasa Education Board (BMEB) curriculum across Ebtedayee, Dakhil, Alim, and Kamil tiers with GPA grading and board compliance.',
     securityTitle: 'Secure Hybrid Multi-Tenancy',
-    securityDesc: 'Uses PostgreSQL Row Level Security (RLS) to help control institution-scoped access to records.'
+    securityDesc: 'Uses PostgreSQL Row Level Security (RLS) to help control institution-scoped access to records.',
     liveStatsInstitutions: 'Registered Madrasas',
     liveStatsStudents: 'Active Students',
     liveStatsTeachers: 'Scholars & Faculty',
