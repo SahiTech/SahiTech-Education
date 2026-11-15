@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { issueApplicationInvitation, updateApplicationStatus, activateTenant, reviewApplicationDocument } from '@/app/actions/platform';
