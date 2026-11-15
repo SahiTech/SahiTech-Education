@@ -46,7 +46,9 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
     ? (applications || [])
     : statusFilter === 'action_required'
       ? pending
-      : (applications || []).filter((app:any) => app.status === statusFilter);
+      : statusFilter === 'approved'
+        ? (applications || []).filter((app:any) => app.status === 'approved' && invitationByApplication.get(app.id)?.status !== 'accepted')
+        : (applications || []).filter((app:any) => app.status === statusFilter);
   const filteredApplications = statusSource.filter((app:any) => {
     const matchesQuery = !searchQuery || [
       app.institution_name, app.institution_name_bn, app.contact_person_name,
@@ -100,7 +102,7 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
             <a href="/platform#applications" className="rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</a>
           </form>
           <p className="text-xs text-slate-500">Showing {visiblePending.length} of {filteredApplications.length} matching applications · page {currentPage} of {totalPages}. Search covers the latest 100 received applications.</p>
-          {pending.length===0 ? <Empty>No applications are waiting for review.</Empty> : visiblePending.length===0 ? <Empty>No applications match these filters. Try another search or reset the filters.</Empty> : visiblePending.map((app:any)=>(
+          {filteredApplications.length===0 ? <Empty>{statusFilter === 'action_required' ? 'No applications are waiting for review.' : 'No applications match these filters. Try another search or reset the filters.'}</Empty> : visiblePending.map((app:any)=>(
             <article key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1 space-y-2">
@@ -129,8 +131,8 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
                   {app.review_note && <p className="text-xs text-amber-700">Previous note: {app.review_note}</p>}
                 </div>
                 <div className="flex w-full flex-col gap-2 lg:max-w-xs">
-                  <form action={issueApplicationInvitation}><input type="hidden" name="applicationId" value={app.id}/><button disabled={!app.requested_code||!app.requested_subdomain||!(documentsByApplication.get(app.id)||[]).length||(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status!=='verified')||((invitationByApplication.get(app.id) as any)?.status==='accepted')} className="w-full rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{(invitationByApplication.get(app.id) as any)?.status==='pending'?'Reissue invitation':app.status==='approved'?'Issue invitation':'Approve & issue invitation'}</button></form>
-                  {!(documentsByApplication.get(app.id)||[]).length ? <p className="text-[10px] text-amber-700">Upload supporting documents before invitation.</p> : (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status!=='verified') ? <p className="text-[10px] text-amber-700">Verify all supporting documents before invitation.</p> : null}
+                  <form action={issueApplicationInvitation}><input type="hidden" name="applicationId" value={app.id}/><button disabled={!app.requested_code||!app.requested_subdomain||!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified')||(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending')||((invitationByApplication.get(app.id) as any)?.status==='accepted')} className="w-full rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{(invitationByApplication.get(app.id) as any)?.status==='pending'?'Reissue invitation':app.status==='approved'?'Issue invitation':'Approve & issue invitation'}</button></form>
+                  {!(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ? <p className="text-[10px] text-amber-700">At least one supporting document must be verified.</p> : (documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='pending') ? <p className="text-[10px] text-amber-700">Review all pending document uploads before invitation.</p> : null}
                   <form action={updateApplicationStatus} className="space-y-2"><input type="hidden" name="applicationId" value={app.id}/><select name="status" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"><option value="under_review">Under review</option><option value="info_requested">Request more information</option><option value="rejected">Reject application</option></select><input name="reviewNote" placeholder="Review note / reason" maxLength={2000} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs"/><button className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Save review decision</button></form>
                   {invitationByApplication.has(app.id) && <p className="text-[11px] text-slate-500">Invitation: {(invitationByApplication.get(app.id) as any).status} · {(invitationByApplication.get(app.id) as any).invitee_email}</p>}
                 </div>
