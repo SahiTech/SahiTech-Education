@@ -51,8 +51,8 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 
 ## Migration order and safety
 
-- Apply migrations in repository order: `00045`, `00046`, `00047`, then `00048`.
-- Migration `00045` replaces the previously unsafe direct-password migration; `00046` establishes reservation-based provisioning and the database-backed password-change gate; `00047` records initial contact verification, flags manual tenants, and restricts recovery to manual accounts; `00048` adds the Owner-bound, atomic single-use credential handoff nonce.
+- For a fresh environment, apply `00046` first (it creates the reservation tables), then `00045` (transitional verification columns and AAL2-guarded compatibility RPCs), then `00047` (it removes the transitional RPCs and tightens recovery), followed by `00048` and `00049`. The Development ledger was verified in that actual order: `00046`, `00045`, `00047`, `00048`, `00049`.
+- Migration `00046` establishes reservation-based provisioning and the database-backed password-change gate; `00045` adds the transitional contact-verification fields and AAL2-guarded compatibility RPCs; `00047` records the attestation on reservation records, flags manual tenants, and drops the transitional RPCs while restricting recovery to manual accounts; `00048` adds the Owner-bound, atomic single-use credential handoff nonce; `00049` hardens all five active Owner provisioning/recovery RPCs with a database-level AAL2 check.
 - Inspect each target environment's migration ledger before applying. Do not rewrite an already-applied migration.
 - Do not apply this change to Production until the Development workflow has passed database smoke checks and real Supabase Auth create/login/password-change/recovery tests.
 
