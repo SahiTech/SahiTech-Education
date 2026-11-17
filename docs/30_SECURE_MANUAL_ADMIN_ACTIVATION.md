@@ -49,9 +49,19 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 4. Configure `MDI_EMAIL_TOKEN_HMAC_SECRET` as a server-only high-entropy key for public application upload-capability token signing. Manual activation itself does not depend on SMTP, but public application intake/upload does.
 5. Before release, verify that the connected Supabase Auth configuration accepts the generated `.invalid` sign-in alias and that the application allows password sign-in for this identity.
 
+## Emergency Production mitigation — 2026-11-17
+
+The Production audit found the legacy `public.owner_direct_setup_madrasa_admin(UUID,TEXT,BOOLEAN)` function still exposed to `anon` and capable of using a hardcoded fallback password, directly writing to `auth.users`/`auth.identities`, and returning a `password_used` field. This was a critical legacy vulnerability.
+
+- Emergency migration `00051_emergency_retire_legacy_direct_admin_setup.sql` has been applied to both Production and Development.
+- A read-only SQL verification confirmed the legacy function no longer exists in Production.
+- Production remains otherwise at migration `00044`; migrations `00045`–`00050` have not been applied there.
+- The old Production Owner UI still references the retired RPC until the secure application release is deployed. Direct manual provisioning through that old UI is therefore intentionally unavailable rather than falling back to the insecure routine.
+- Do not recreate or re-grant the legacy function. Complete the secure release sequence below before restoring manual admin provisioning.
+
 ## Migration order and safety
 
-- For a fresh environment, apply `00046` first (it creates the reservation tables), then `00045` (transitional verification columns and AAL2-guarded compatibility RPCs), then `00047` (it removes the transitional RPCs and tightens recovery), followed by `00048`, `00049`, and `00050`. The Development ledger was verified in that actual order: `00046`, `00045`, `00047`, `00048`, `00049`.
+- For a fresh environment (or Production after the emergency `00051` retirement), apply `00046` first (it creates the reservation tables), then `00045` (transitional verification columns and AAL2-guarded compatibility RPCs), then `00047` (it removes the transitional RPCs and tightens recovery), followed by `00048`, `00049`, and `00050`. The Development ledger was verified in that actual order: `00046`, `00045`, `00047`, `00048`, `00049`.
 - Migration `00046` establishes reservation-based provisioning and the database-backed password-change gate; `00045` adds the transitional contact-verification fields and AAL2-guarded compatibility RPCs; `00047` records the attestation on reservation records, flags manual tenants, and drops the transitional RPCs while restricting recovery to manual accounts; `00048` adds the Owner-bound, atomic single-use credential handoff nonce; `00049` hardens all five active Owner provisioning/recovery RPCs with a database-level AAL2 check; `00050` adds an Owner-level handoff rate limit and an index for the credential-handoff audit window.
 - Inspect each target environment's migration ledger before applying. Do not rewrite an already-applied migration.
 - Do not apply this change to Production until the Development workflow has passed database smoke checks and real Supabase Auth create/login/password-change/recovery tests.
