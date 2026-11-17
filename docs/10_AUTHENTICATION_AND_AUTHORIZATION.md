@@ -67,7 +67,7 @@ Email-independent Madrasa Admin activation is implemented as a separate Owner-ap
 
 Temporary credentials are generated server-side, encrypted with AES-256-GCM in a 90-second HttpOnly cookie, and shown only after the MFA-verified Owner atomically consumes a one-time database nonce. Plaintext passwords are never returned by RPCs/JSON or persisted in database tables/logs. The first-login password-change gate is enforced at middleware, server context and database-policy levels.
 
-Migrations `00046`, `00045`, `00047`, `00048`, `00049`, `00050`, `00051` and `00052` form the reviewed Development sequence. Migration `00051` is an emergency retirement already applied to Production and Development; `00052` removes the unused legacy `owner_direct_provision_tenant` RPC and adds database AAL2 guards to the existing lifecycle Owner RPCs. Inspect the actual target ledger and follow the dependency order in the runbook before any Production rollout. The transitional compatibility RPCs created in `00045` are dropped by `00047`. Never restore the retired direct-password or direct-tenant provisioning routines.
+Migrations 00046, 00045, 00047, 00048, 00049, 00050, 00051 and 00052 form the reviewed Development sequence. Production has emergency 00051 and independent security hotfix 00052; 00052 removes the unused legacy owner_direct_provision_tenant RPC and hardens four existing lifecycle Owner RPCs. Production feature migrations 00045–00050 remain pending. Inspect the actual target ledger and follow the dependency order in the runbook before any Production rollout. The transitional compatibility RPCs created in `00045` are dropped by `00047`. Never restore the retired direct-password or direct-tenant provisioning routines.
 
 ## 7. Verification expectations
 
