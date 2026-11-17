@@ -130,3 +130,11 @@ export async function changeInitialMadrasaAdminPassword(
   revalidatePath('/', 'layout');
   return { success: true, redirectTo: '/dashboard' };
 }
+
+// Backward-compatible Server Action name used by the initial password-change route.
+export async function completeInitialPasswordChange(
+  previousState: InitialPasswordChangeState,
+  formData: FormData,
+): Promise<InitialPasswordChangeState> {
+  return changeInitialMadrasaAdminPassword(previousState, formData);
+}
