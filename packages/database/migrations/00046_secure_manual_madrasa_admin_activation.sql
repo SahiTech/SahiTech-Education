@@ -216,6 +216,7 @@ DECLARE
   v_res private.manual_admin_provisionings%ROWTYPE;
   v_app public.madrasa_applications%ROWTYPE;
   v_auth_email TEXT;
+  v_auth_email_confirmed_at TIMESTAMPTZ;
   v_auth_app_metadata JSONB;
   v_tenant_id UUID;
   v_branch_id UUID;
@@ -239,12 +240,13 @@ BEGIN
     RAISE EXCEPTION 'manual_provisioning_reservation_invalid_or_expired';
   END IF;
 
-  SELECT email, raw_app_meta_data
-  INTO v_auth_email, v_auth_app_metadata
+  SELECT email, email_confirmed_at, raw_app_meta_data
+  INTO v_auth_email, v_auth_email_confirmed_at, v_auth_app_metadata
   FROM auth.users
   WHERE id = p_auth_user_id;
 
   IF NOT FOUND
+     OR v_auth_email_confirmed_at IS NULL
      OR lower(v_auth_email) <> lower(v_res.login_identifier)
      OR v_auth_app_metadata->>'mdi_manual_madrasa_admin' <> 'true'
      OR v_auth_app_metadata->>'mdi_force_password_change' <> 'true'
