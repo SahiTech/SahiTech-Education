@@ -6,7 +6,7 @@
 
 ## 1. Schema source of truth
 
-The ordered SQL migrations are the schema change source of truth. The reviewed repository contains migration files through `00045`. That count describes tracked migration files only; it must not be confused with the latest migration applied to development or production.
+The ordered SQL migrations are the schema change source of truth. The current manual-admin security branch contains migration files through `00052`. This is a repository/source statement only; it must not be confused with the migration ledger in any particular Development or Production database.
 
 Before changing the schema:
 1. Read the complete relevant migration history and current branch head.
@@ -51,7 +51,7 @@ RLS is necessary but not sufficient. Review together:
 - Storage bucket visibility and object policies;
 - privileged service-role usage and server authorization.
 
-The recent migration sequence includes private-schema RLS helper implementations and public SECURITY INVOKER wrappers. Confirm the exact deployed definitions and grants before relying on that pattern.
+The recent migration sequence includes private-schema RLS helper implementations and public SECURITY INVOKER wrappers. The Owner lifecycle RPC surface is separately protected with database-level AAL2 checks; migration `00052` removes the unused legacy direct-tenant provisioning RPC and hardens invitation, document-review, application-status and final-activation RPCs. Confirm exact deployed definitions and grants before relying on source behavior.
 
 ## 5. Financial integrity
 
@@ -67,6 +67,6 @@ Required production design:
 
 ## 6. Database test coverage
 
-`packages/database/tests/platform_security_smoke.sql` is a separate SQL test file with checks and rollback-only probes. Its header describes a historical schema expectation through migrations 00001–00030. It is not a current full-schema test by definition and is not invoked by the current database package's placeholder `test` script or the inspected CI workflow.
+`packages/database/tests/platform_security_smoke.sql` is a separate historical SQL test file; its table-count/header assumptions describe an older schema and it is not a current full-schema test. A targeted read-only regression script, `packages/database/tests/owner_rpc_aal2_security_smoke.sql`, verifies that the legacy direct-provision RPC is absent and all reviewed privileged Owner RPCs contain a database AAL2 guard. It was executed successfully against the isolated Development project on 2026-11-17. The repository database package's placeholder test script remains distinct from executing these SQL checks.
 
-Update the test assumptions when the schema evolves. Run it only against an isolated database with matching fixtures/schema, and record exact environment and result. Never point a destructive or fixture-creating test at production.
+Run targeted SQL checks only against the intended isolated database and record exact environment/result. Never point destructive or fixture-creating tests at production.
