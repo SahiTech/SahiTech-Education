@@ -51,10 +51,11 @@ export async function updateSession(request: NextRequest) {
 
   // Route protection
   const pathname = request.nextUrl.pathname;
+  // Read the database-backed gate for every authenticated session. This also
+  // catches Owner-assisted resets where an older JWT may not contain the new
+  // manual-admin app_metadata yet. The RPC reveals only this caller's own boolean.
   let requiresInitialPasswordChange = false;
-  if (user?.app_metadata?.mdi_manual_madrasa_admin === true) {
-    // Use the database as the source of truth because Auth access tokens may carry
-    // stale app_metadata until refresh. Fail closed for manual accounts on RPC errors.
+  if (user) {
     const { data: passwordChangeRequired, error: passwordGateError } =
       await (supabase.rpc as any)('mdi_manual_password_change_required');
     requiresInitialPasswordChange = passwordGateError
