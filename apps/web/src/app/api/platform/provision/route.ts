@@ -20,8 +20,8 @@ function json(body: Record<string, unknown>, status = 200) {
 
 async function requireOwner() {
   const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return null;
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
 
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal?.currentLevel !== 'aal2') return null;
@@ -30,6 +30,25 @@ async function requireOwner() {
   if (ownerError || isOwner !== true) return null;
 
   return { supabase, user };
+}
+
+function cleanText(value: unknown, max: number) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function publicProvisioningError(message?: string) {
+  const known: Array<[string, string]> = [
+    ['at_least_one_application_document_must_be_verified', 'অন্তত একটি প্রয়োজনীয় ডকুমেন্ট Verify করতে হবে।'],
+    ['application_documents_not_fully_reviewed', 'সব আবেদনপত্রের ডকুমেন্ট Review সম্পন্ন করুন।'],
+    ['tenant_identifier_already_in_use', 'প্রতিষ্ঠানের Code বা Subdomain আগে থেকেই ব্যবহৃত হচ্ছে।'],
+    ['application_already_provisioned', 'এই আবেদন থেকে মাদ্রাসার Admin Account ইতিমধ্যে তৈরি হয়েছে।'],
+    ['manual_provisioning_already_in_progress', 'এই আবেদনের Account Setup ইতিমধ্যে চলছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।'],
+    ['manual_provisioning_rate_limited', 'নিরাপত্তার কারণে এই আবেদনের Setup Attempt সীমিত করা হয়েছে।'],
+    ['manual_contact_verification_required', 'আবেদনকারীর পরিচয় যাচাইয়ের পদ্ধতি ও নোট আবশ্যক।'],
+    ['application_missing_tenant_identifiers', 'আবেদনে Institution Code বা Subdomain অনুপস্থিত।'],
+  ];
+  return known.find(([code]) => message?.includes(code))?.[1]
+    || 'নিরাপদভাবে অ্যাকাউন্ট তৈরি করা যায়নি। আবেদন, ডকুমেন্ট ও Audit Trail যাচাই করুন।';
 }
 
 export async function POST(request: NextRequest) {
@@ -47,101 +66,124 @@ export async function POST(request: NextRequest) {
     return json({ error: 'অনুরোধের তথ্য সঠিক নয়।' }, 400);
   }
 
-  const applicationId = String(body?.applicationId || '');
+  const applicationId = cleanText(body?.applicationId, 64);
+  const verificationMethod = cleanText(body?.verificationMethod, 32);
+  const verificationNote = cleanText(body?.verificationNote, 500);
   const activateImmediately = body?.activateImmediately === true;
-  const verificationMethod = String(body?.verificationMethod || '');
+
   if (!/^[0-9a-f-]{36}$/i.test(applicationId)) {
     return json({ error: 'আবেদনের পরিচিতি সঠিক নয়।' }, 400);
   }
-  if (body?.manualContactVerified !== true ||
-      !['phone_call', 'whatsapp', 'in_person'].includes(verificationMethod)) {
-    return json({ error: 'অ্যাকাউন্ট তৈরির আগে আবেদনকারীর সঙ্গে যোগাযোগ করে পরিচয় যাচাই করতে হবে।' }, 400);
+  if (!['phone_call', 'whatsapp', 'in_person', 'signed_authorization'].includes(verificationMethod)
+      || verificationNote.length < 20) {
+    return json({ error: 'প্রথমে আবেদনকারীর পরিচয় ফোন, WhatsApp, সরাসরি সাক্ষাৎ বা স্বাক্ষরিত অনুমোদনের মাধ্যমে যাচাই করুন এবং ২০–৫০০ অক্ষরের নোট দিন।' }, 400);
   }
 
-  const { data: application, error: applicationError } = await owner.supabase
-    .from('madrasa_applications')
-    .select('id,institution_name,contact_person_name,contact_email,contact_phone,status')
-    .eq('id', applicationId)
-    .maybeSingle();
+  let reservationId: string | null = null;
+  let authUserId: string | null = null;
+  let admin: ReturnType<typeof createAdminClient> | null = null;
 
-  if (applicationError || !application) {
-    return json({ error: 'আবেদনটি পাওয়া যায়নি অথবা দেখার অনুমতি নেই।' }, 404);
-  }
-
-  const loginIdentifier = `mdi-${randomBytes(12).toString('hex')}@accounts.sahitech.invalid`;
-  const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
-
-  let adminUserId: string | null = null;
   try {
-    const admin = createAdminClient();
+    // Reservation is committed before creating an Auth identity. This prevents
+    // concurrent Owner clicks from creating multiple accounts for one application.
+    admin = createAdminClient();
+    const loginIdentifier = `mdi-${randomBytes(16).toString('hex')}@login.sahitech.invalid`;
 
-    // The only confirmed address is a platform-generated, non-deliverable
-    // login alias. The applicant's real contact_email is never auto-confirmed.
+    const { data: reservation, error: reserveError } = await owner.supabase.rpc(
+      'owner_reserve_manual_admin_provisioning',
+      {
+        p_application_id: applicationId,
+        p_login_identifier: loginIdentifier,
+        p_activate_immediately: activateImmediately,
+        p_contact_verification_method: verificationMethod,
+        p_contact_verification_note: verificationNote,
+      },
+    );
+
+    if (reserveError || !reservation?.reservation_id) {
+      return json({ error: publicProvisioningError(reserveError?.message) }, 409);
+    }
+    reservationId = reservation.reservation_id;
+
+    // Cryptographic 256-bit temporary credential; it is never written to SQL/logs.
+    const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
+
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email: loginIdentifier,
       password: temporaryPassword,
-      email_confirm: true,
+      email_confirm: true, // Confirms only the non-routable platform-issued login alias.
       app_metadata: {
-        mdi_manual_provisioning: true,
+        mdi_manual_madrasa_admin: true,
         mdi_force_password_change: true,
-        mdi_contact_email: application.contact_email,
+        mdi_application_id: applicationId,
+        mdi_provisioning_reservation_id: reservationId,
+        mdi_contact_email: reservation.contact_email,
         mdi_contact_email_verified: false,
-        mdi_login_type: 'owner_issued_alias',
       },
       user_metadata: {
-        full_name_en: application.contact_person_name,
+        full_name_en: reservation.contact_person_name || reservation.institution_name,
       },
     });
 
     if (createError || !created.user) {
-      return json({ error: 'নিরাপদ লগইন অ্যাকাউন্ট তৈরি করা যায়নি। সার্ভার কনফিগারেশন পরীক্ষা করুন।' }, 503);
+      await owner.supabase.rpc('owner_fail_manual_admin_provisioning', {
+        p_reservation_id: reservationId,
+        p_error_code: 'auth_user_creation_failed',
+      });
+      return json({ error: 'নিরাপদ Login Account তৈরি করা যায়নি। সার্ভার কনফিগারেশন পরীক্ষা করুন।' }, 503);
     }
-    adminUserId = created.user.id;
 
-    const { data: provisioned, error: provisionError } = await owner.supabase.rpc(
-      'owner_provision_manual_madrasa_admin',
-      {
-        p_application_id: applicationId,
-        p_admin_user_id: adminUserId,
-        p_activate_immediately: activateImmediately,
-        p_contact_verification_method: verificationMethod,
-      },
+    authUserId = created.user.id;
+
+    const { data: completed, error: completeError } = await owner.supabase.rpc(
+      'owner_complete_manual_admin_provisioning',
+      { p_reservation_id: reservationId, p_auth_user_id: authUserId },
     );
 
-    if (provisionError || !provisioned?.tenant_id) {
-      // The Auth user is removed if the atomic database provisioning step fails.
-      await admin.auth.admin.deleteUser(adminUserId);
-      adminUserId = null;
-      return json({
-        error: provisionError?.message === 'manual_provisioning_rate_limit'
-          ? 'নিরাপত্তার কারণে সাময়িকভাবে নতুন অ্যাকাউন্ট তৈরি সীমিত করা হয়েছে।'
-          : 'আবেদনটি এখন অ্যাকাউন্ট তৈরির উপযোগী নয়। নথি, অনুমোদন ও আগের provisioning অবস্থা পরীক্ষা করুন।',
-      }, 409);
+    if (completeError || !completed?.tenant_id) {
+      const { error: deleteError } = await admin.auth.admin.deleteUser(authUserId);
+      if (deleteError) {
+        await admin.auth.admin.updateUserById(authUserId, { ban_duration: '876000h' });
+      } else {
+        authUserId = null;
+      }
+
+      await owner.supabase.rpc('owner_fail_manual_admin_provisioning', {
+        p_reservation_id: reservationId,
+        p_error_code: authUserId ? 'auth_user_cleanup_failed' : 'tenant_finalization_failed',
+      });
+
+      return json({ error: publicProvisioningError(completeError?.message) }, 409);
     }
 
-    revalidatePath('/platform');
+    // Do not let cache invalidation swallow the only credential copy.
+    try { revalidatePath('/platform'); } catch { /* Next navigation will refresh the view. */ }
 
-    // The password exists only in this no-store response and the Owner's
-    // transient component state. It is never returned by a SQL function,
-    // persisted in the database, or written to application logs.
     return json({
       success: true,
-      loginIdentifier,
+      loginIdentifier: completed.login_identifier,
       temporaryPassword,
-      institutionName: application.institution_name,
-      contactEmail: application.contact_email,
-      activationStatus: provisioned.activation_status,
-      tenantId: provisioned.tenant_id,
+      institutionName: completed.institution_name,
+      activationStatus: completed.activated === true ? 'active' : 'pending_activation',
+      tenantId: completed.tenant_id,
+      contactEmail: reservation.contact_email,
+      contactEmailVerified: false,
     });
   } catch {
-    if (adminUserId) {
-      try {
-        await createAdminClient().auth.admin.deleteUser(adminUserId);
-      } catch {
-        // Never log credentials. Orphaned, unassigned Auth identities are
-        // harmless to tenant access and require operational follow-up.
+    if (reservationId) {
+      if (authUserId && admin) {
+        const { error: deleteError } = await admin.auth.admin.deleteUser(authUserId);
+        if (deleteError) {
+          await admin.auth.admin.updateUserById(authUserId, { ban_duration: '876000h' });
+        } else {
+          authUserId = null;
+        }
       }
+      await owner.supabase.rpc('owner_fail_manual_admin_provisioning', {
+        p_reservation_id: reservationId,
+        p_error_code: authUserId ? 'auth_user_cleanup_failed' : 'provisioning_failed',
+      });
     }
-    return json({ error: 'সার্ভারে নিরাপদভাবে অ্যাকাউন্ট তৈরি করা যায়নি।' }, 500);
+    return json({ error: 'সার্ভারে নিরাপদ Account Setup সম্পন্ন করা যায়নি। আবার চেষ্টা করার আগে Audit Trail যাচাই করুন।' }, 500);
   }
 }
