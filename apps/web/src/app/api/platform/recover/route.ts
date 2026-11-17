@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
   const applicationId = cleanText(body?.applicationId, 64);
   const verificationMethod = cleanText(body?.verificationMethod, 32);
   const verificationNote = cleanText(body?.verificationNote, 500);
-  if (!/^[0-9a-f-]{36}$/i.test(applicationId)
+  if (body?.manualContactVerified !== true
+      || !/^[0-9a-f-]{36}$/i.test(applicationId)
       || !['phone_call', 'in_person', 'signed_authorization'].includes(verificationMethod)
       || verificationNote.length < 20) {
     return json({ error: 'Recovery-এর আগে পরিচয় পুনরায় যাচাইয়ের পদ্ধতি এবং ২০–৫০০ অক্ষরের কারণ লিখুন।' }, 400);
