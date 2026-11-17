@@ -53,7 +53,7 @@ DECLARE
   v_curriculum public.curriculum_type;
   v_activation_status TEXT;
 BEGIN
-  IF v_owner IS NULL OR NOT private.is_platform_owner() THEN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
   END IF;
   IF p_application_id IS NULL OR p_admin_user_id IS NULL OR p_activate_immediately IS NULL THEN
@@ -258,7 +258,7 @@ DECLARE
   v_login_identifier TEXT;
   v_contact_email TEXT;
 BEGIN
-  IF v_owner IS NULL OR NOT private.is_platform_owner() THEN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
   END IF;
   IF length(btrim(COALESCE(p_reason,''))) NOT BETWEEN 20 AND 500 THEN
@@ -339,7 +339,7 @@ DECLARE
   v_owner UUID := auth.uid();
   v_tenant_id UUID;
 BEGIN
-  IF v_owner IS NULL OR NOT private.is_platform_owner() THEN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
   END IF;
   IF p_outcome NOT IN ('succeeded','failed') THEN
