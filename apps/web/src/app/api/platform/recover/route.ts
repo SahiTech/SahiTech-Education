@@ -29,10 +29,15 @@ async function requireOwner() {
   return { supabase };
 }
 
+function cleanText(value: unknown, max: number) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
 export async function POST(request: NextRequest) {
   if (request.headers.get('origin') !== request.nextUrl.origin) {
     return json({ error: 'এই অনুরোধটি গ্রহণ করা যায়নি।' }, 403);
   }
+
   const owner = await requireOwner();
   if (!owner) return json({ error: 'Global Owner-এর MFA-verified session প্রয়োজন।' }, 403);
 
@@ -43,78 +48,103 @@ export async function POST(request: NextRequest) {
     return json({ error: 'অনুরোধের তথ্য সঠিক নয়।' }, 400);
   }
 
-  const applicationId = String(body?.applicationId || '');
-  const reason = String(body?.reason || '').trim();
-  const verificationMethod = String(body?.verificationMethod || '');
-  if (!/^[0-9a-f-]{36}$/i.test(applicationId) || reason.length < 20 || reason.length > 500) {
-    return json({ error: 'আবেদন এবং recovery reason সঠিকভাবে দিন (কমপক্ষে ২০ অক্ষর)।' }, 400);
-  }
-  if (body?.manualContactVerified !== true ||
-      !['phone_call', 'whatsapp', 'in_person'].includes(verificationMethod)) {
-    return json({ error: 'Recovery-এর আগে নিবন্ধিত যোগাযোগ মাধ্যমে পরিচয় পুনরায় যাচাই করতে হবে।' }, 400);
+  const applicationId = cleanText(body?.applicationId, 64);
+  const verificationMethod = cleanText(body?.verificationMethod, 32);
+  const verificationNote = cleanText(body?.verificationNote, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(applicationId)
+      || !['phone_call', 'in_person', 'signed_authorization'].includes(verificationMethod)
+      || verificationNote.length < 20) {
+    return json({ error: 'Recovery-এর আগে পরিচয় পুনরায় যাচাইয়ের পদ্ধতি এবং ২০–৫০০ অক্ষরের কারণ লিখুন।' }, 400);
   }
 
-  const { data: target, error: prepareError } = await owner.supabase.rpc(
-    'owner_prepare_manual_admin_recovery',
+  const { data: reservation, error: reserveError } = await owner.supabase.rpc(
+    'owner_reserve_manual_admin_password_reset',
     {
       p_application_id: applicationId,
-      p_reason: reason,
-      p_contact_verification_method: verificationMethod,
+      p_verification_method: verificationMethod,
+      p_verification_note: verificationNote,
     },
   );
 
-  if (prepareError || !target?.admin_user_id) {
-    return json({ error: 'এই আবেদনের জন্য নিরাপদ Manual Admin Recovery পাওয়া যায়নি।' }, 409);
+  if (reserveError || !reservation?.reset_request_id || !reservation?.auth_user_id) {
+    return json({
+      error: 'এই আবেদন থেকে তৈরি MDI Manual Admin Account পাওয়া যায়নি, অথবা Recovery limit অতিক্রম হয়েছে।',
+    }, 409);
   }
 
-  let outcome: 'succeeded' | 'failed' = 'failed';
-  let errorCode = 'auth_admin_update_failed';
-  const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
-
+  let admin: ReturnType<typeof createAdminClient>;
   try {
-    const admin = createAdminClient();
-    const { data: current, error: lookupError } = await admin.auth.admin.getUserById(target.admin_user_id);
-    if (lookupError || !current.user ||
-        current.user.app_metadata?.mdi_manual_provisioning !== true) {
-      throw new Error('manual_identity_not_found');
-    }
-
-    const { error: updateError } = await admin.auth.admin.updateUserById(target.admin_user_id, {
-      password: temporaryPassword,
-      app_metadata: {
-        ...current.user.app_metadata,
-        mdi_force_password_change: true,
-      },
-    });
-    if (updateError) throw new Error('credential_reset_failed');
-
-    outcome = 'succeeded';
-    errorCode = '';
+    admin = createAdminClient();
   } catch {
-    // The reason and requested outcome are audited without credential material.
+    await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+      p_reset_request_id: reservation.reset_request_id,
+      p_succeeded: false,
+      p_error_code: 'auth_update_failed',
+    });
+    return json({ error: 'Server-side Auth Admin configuration অনুপস্থিত। Password পরিবর্তন করা হয়নি।' }, 503);
   }
 
-  const { error: auditError } = await owner.supabase.rpc('owner_finalize_manual_admin_recovery', {
-    p_application_id: applicationId,
-    p_admin_user_id: target.admin_user_id,
-    p_outcome: outcome,
-    p_error_code: auditErrorCode(errorCode),
+  const { data: lookup, error: lookupError } = await admin.auth.admin.getUserById(reservation.auth_user_id);
+  const target = lookup?.user;
+  const isManualIdentity = Boolean(
+    target?.email
+    && /^mdi-[0-9a-f]{32}@login\.sahitech\.invalid$/i.test(target.email)
+    && target.email_confirmed_at
+    && target.app_metadata?.mdi_manual_madrasa_admin === true
+    && target.app_metadata?.mdi_application_id === applicationId
+  );
+
+  if (lookupError || !isManualIdentity) {
+    await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+      p_reset_request_id: reservation.reset_request_id,
+      p_succeeded: false,
+      p_error_code: 'auth_update_failed',
+    });
+    return json({ error: 'Target account MDI Manual Admin identity হিসেবে নিশ্চিত করা যায়নি। Password অপরিবর্তিত রাখা হয়েছে।' }, 409);
+  }
+
+  const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
+  const nextMetadata = {
+    ...target.app_metadata,
+    mdi_manual_madrasa_admin: true,
+    mdi_force_password_change: true,
+    mdi_password_reset_at: new Date().toISOString(),
+  };
+
+  const { error: updateError } = await admin.auth.admin.updateUserById(target.id, {
+    password: temporaryPassword,
+    app_metadata: nextMetadata,
   });
 
-  if (outcome !== 'succeeded' || auditError) {
-    return json({ error: 'Recovery সম্পন্ন হয়েছে কি না নিশ্চিত করা যায়নি। Owner audit trail পরীক্ষা করুন।' }, 500);
+  if (updateError) {
+    await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+      p_reset_request_id: reservation.reset_request_id,
+      p_succeeded: false,
+      p_error_code: 'auth_update_failed',
+    });
+    return json({ error: 'Password Reset ব্যর্থ হয়েছে। আগের Password অপরিবর্তিত রয়েছে।' }, 500);
   }
 
-  revalidatePath('/platform');
+  const { error: auditError } = await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+    p_reset_request_id: reservation.reset_request_id,
+    p_succeeded: true,
+  });
+
+  if (auditError) {
+    // Do not expose the new credential unless the audit outcome is recorded.
+    // Keep the password-change gate enabled; Owner must inspect the audit trail.
+    return json({ error: 'Password Reset হয়েছে, কিন্তু Audit confirmation ব্যর্থ হয়েছে। নিরাপত্তার জন্য নতুন Password প্রকাশ করা হয়নি; Owner audit পরীক্ষা করুন।' }, 500);
+  }
+
+  try { revalidatePath('/platform'); } catch { /* Credential remains available in this no-store response. */ }
+
   return json({
     success: true,
-    loginIdentifier: target.login_identifier,
+    loginIdentifier: target.email,
     temporaryPassword,
-    contactEmail: target.contact_email,
-    message: 'নতুন Temporary Password একবার দেখানো হচ্ছে। প্রথম Login-এ পরিবর্তন বাধ্যতামূলক।',
+    institutionName: reservation.institution_name,
+    contactEmail: reservation.contact_email,
+    contactEmailVerified: false,
+    message: 'নতুন Temporary Password একবার দেখানো হচ্ছে। প্রথম Login-এ Password পরিবর্তন বাধ্যতামূলক।',
   });
-}
-
-function auditErrorCode(value: string) {
-  return value.slice(0, 80);
 }
