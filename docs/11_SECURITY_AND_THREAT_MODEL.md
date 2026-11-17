@@ -48,13 +48,13 @@ The original source review found a static fallback credential, direct writes to 
 - Migrations 00045–00050 and the server-side provisioning, credential-handoff, first-login and recovery routes implement email-independent manual Admin activation without SQL writes to auth.users/auth.identities or plaintext credential storage.
 - Emergency migration 00051 was applied to Production and Development on 2026-11-17; read-only Production catalog verification confirmed owner_direct_setup_madrasa_admin(UUID,TEXT,BOOLEAN) is absent.
 - A further Production-only legacy path, public.owner_direct_provision_tenant(UUID,UUID), was found to have no catalog dependents and no current caller in the branch's Owner server actions. Migration 00052 drops it and adds database AAL2 guards to owner_activate_tenant, owner_issue_invitation, owner_review_application_document and owner_update_application_status.
-- Migration 00052 was applied to the isolated Development project. The read-only regression script packages/database/tests/owner_rpc_aal2_security_smoke.sql then passed, confirming the legacy RPC is absent and all eleven reviewed privileged Owner RPCs carry a database AAL2 predicate.
+- Migration 00052 was applied to Development and Production. The read-only regression script packages/database/tests/owner_rpc_aal2_security_smoke.sql passed on isolated Development, confirming the legacy direct-tenant RPC is absent and all eleven reviewed privileged Owner RPCs carry a database AAL2 predicate there. A separate Production read-only query confirmed the retired legacy direct-tenant RPC is absent and all four existing lifecycle Owner RPCs carry the AAL2 predicate.
 - GitHub Actions CI Run #332 passed for the prior manual-admin branch head. The current branch adds migration 00052 and its regression test; its latest CI run must be checked before merge.
 - The corrected AAL2 migration 00049 accepts functions already hardened by earlier migration order and validates each required function, avoiding a zero-replacement failure.
 
 ### Production status and remaining verification
 
-- Production has baseline 00044 plus emergency 00051 and security hotfix 00052. A read-only Production query confirmed owner_direct_provision_tenant is absent and all four existing lifecycle Owner RPCs enforce AAL2. Feature migrations 00045–00050 remain pending.
+- Production has baseline 00044, emergency 00051 and security hotfix 00052. A read-only Production query confirmed owner_direct_provision_tenant is absent and all four existing lifecycle Owner RPCs enforce AAL2. Feature migrations 00045–00050 remain pending.
 - Production application is not yet on the secure Owner UI. The legacy direct-provision button remains unavailable because its insecure RPC was retired; do not restore it.
 - Real Supabase Auth E2E for create, .invalid login alias acceptance, first-login password change and Owner recovery remains NOT VERIFIED.
 - Vercel Production still lacks the server-only Supabase Auth Admin key and MDI_EMAIL_TOKEN_HMAC_SECRET. Never put either in Git, browser variables or chat.
