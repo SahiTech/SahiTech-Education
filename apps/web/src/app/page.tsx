@@ -65,6 +65,8 @@ export default async function HomePage() {
             alt="Islamic educational campus architecture"
             fill
             priority
+            fetchPriority="high"
+            quality={65}
             sizes="100vw"
             className="object-cover object-center"
           />
@@ -73,8 +75,8 @@ export default async function HomePage() {
         <div
           className="absolute inset-0 -z-10 opacity-[0.12]"
           style={{
-            backgroundImage: "url('/images/islamic-pattern.jpg')",
-            backgroundSize: '300px 300px',
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.45) 1px, transparent 0)',
+            backgroundSize: '24px 24px',
           }}
           aria-hidden="true"
         />
