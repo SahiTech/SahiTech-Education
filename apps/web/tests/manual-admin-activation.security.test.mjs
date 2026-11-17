@@ -116,6 +116,7 @@ const credentialRoute = read('src/app/api/platform/credential/route.ts');
 const credentialHelper = read('src/lib/security/manual-admin-credential.ts');
 const migration48 = read('../../packages/database/migrations/00048_single_use_manual_admin_credential_handoff.sql');
 const migration49 = read('../../packages/database/migrations/00049_enforce_aal2_manual_admin_owner_rpcs.sql');
+const migration50 = read('../../packages/database/migrations/00050_rate_limit_manual_admin_credential_handoffs.sql');
 
 test('temporary credentials are delivered only through encrypted, Owner-bound, single-use handoff', () => {
   assert.match(provisionRoute, /sealManualAdminCredential/);
@@ -141,4 +142,11 @@ test('AAL2 is enforced inside database Owner RPCs, not only in HTTP handlers', (
   }
   assert.match(migration49, /auth\.jwt\(\)->>''aal'' IS DISTINCT FROM ''aal2''/);
   assert.match(migration49, /Expected to harden 5 manual-admin Owner RPCs/);
+});
+
+test('credential handoff creation is rate-limited and its owner lookup is indexed', () => {
+  assert.match(migration50, /v_recent_count>=10/);
+  assert.match(migration50, /created_at>now\(\)-interval '1 hour'/);
+  assert.match(migration50, /manual_admin_credential_handoffs_owner_created_idx/);
+  assert.match(migration50, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
 });
