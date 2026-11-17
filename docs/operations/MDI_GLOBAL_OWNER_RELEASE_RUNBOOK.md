@@ -169,3 +169,17 @@ This dated addendum supersedes older environment snapshots above where they conf
 6. Apply Production migrations, merge PR #15, deploy the secure app and run live smoke tests only after all gates above are evidenced.
 
 Production release status: NOT READY. Source implementation and Development database verification are not Production verification.
+
+
+---
+
+## Post-hotfix status — 2026-11-17
+
+This update supersedes the earlier current-status snapshot in section 142 onward.
+
+- Production applied security migration 00052 after emergency 00051. A read-only SQL verification confirmed the legacy direct-tenant provisioning RPC is absent and the four existing Owner lifecycle RPCs require AAL2.
+- Production ledger is baseline through 00044 plus 00051 and 00052. The manual-admin feature migrations 00045–00050 remain pending. Do not reapply 00051 or 00052.
+- Production direct manual-admin provisioning remains unavailable by design: the old password-bearing setup RPC was retired and the secure replacement schema/application has not yet been released.
+- The new Owner provisioning code is in PR #15. CI passed for source/test commit f692b433de021f6ebec7a8ca762c18762ebdb696; the current documentation-updated PR head requires its own completed CI result before merge.
+- The feature Preview READY deployment for commit d3eb21c18812a946e5c01933a406976bba82293b uses branch-scoped Development Supabase client configuration. It does not include the missing server-only Admin key or HMAC signing secret.
+- Remaining gates: Vercel Production and Preview server-only Supabase Auth Admin key; matching Vercel/Supabase Edge Function MDI_EMAIL_TOKEN_HMAC_SECRET; real Development Auth create/login/first-password-change/recovery E2E; Supabase Security Advisor and leaked-password-protection review; Production backup/restore readiness; migrations 00046, 00045, 00047, 00048, 00049 and 00050; merge/deploy and post-deployment smoke test.
