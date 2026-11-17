@@ -141,7 +141,9 @@ test('AAL2 is enforced inside database Owner RPCs, not only in HTTP handlers', (
     assert.match(source, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
   }
   assert.match(migration49, /auth\.jwt\(\)->>''aal'' IS DISTINCT FROM ''aal2''/);
-  assert.match(migration49, /Expected to harden 5 manual-admin Owner RPCs/);
+  assert.match(migration49, /v_found <> cardinality\(v_required\)/);
+  assert.match(migration49, /v_guarded <> cardinality\(v_required\)/);
+  assert.match(migration49, /AAL2 guard missing in %/);
 });
 
 test('credential handoff creation is rate-limited and its owner lookup is indexed', () => {
