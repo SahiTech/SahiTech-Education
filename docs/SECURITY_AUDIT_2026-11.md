@@ -52,3 +52,32 @@
 - Review Supabase Auth security settings, rate limits, recovery redirects, SMTP, MFA, secret rotation, Vercel environment configuration, security headers/CSP, logging and monitoring.
 - Validate public admission anti-abuse controls and narrowly scope the anonymous insert surface.
 - Audit and update all remaining public pages, metadata, dashboard actions, localization and responsive layouts, then test each required viewport and workflow in a browser.
+
+
+---
+
+## 2026-11-17 — Follow-up source review
+
+**Reviewed source ref:** `main` at `aaaf802d4c4f85b7982410d346ece201201116b4`  
+**Review type:** repository source and documentation inspection only. This is not a penetration test, live database audit, deployment review or browser E2E run.
+
+### Confirmed follow-up observations
+
+1. The repository contains migration files through `00045`. This is a repository inventory, not proof that any given environment applied those migrations.
+2. Migration `00044_private_rls_security_definer_helpers.sql` introduces private-schema SECURITY DEFINER helper implementations and public SECURITY INVOKER wrappers. Review effective grants and deployed definitions in each environment before relying on this structure.
+3. Migration `00045_owner_direct_setup_madrasa_admin.sql` includes a static fallback password path and can return a field containing the password used. This is a **critical release blocker**. Do not use this RPC for real account provisioning until a reviewed remediation removes static credentials and secret-bearing output, and regression tests confirm secrets never appear in returned JSON, logs or audit data. The literal credential is intentionally not reproduced here.
+4. The database package's `test` script is currently a placeholder echo. The SQL file `packages/database/tests/platform_security_smoke.sql` is separate; its header describes historical migration assumptions through 00030 and it is not wired into the inspected CI workflow.
+5. Runtime localization imports TypeScript dictionaries from `apps/web/src/lib/i18n/dictionaries`. JSON message files elsewhere in the web app are not the active source in the inspected import path.
+6. The inspected homepage has no live prayer-time, Qibla, Hijri utility, newsletter delivery or editorial publishing workflow. These should remain planned until verified.
+7. The inspected source tree does not establish a complete offline attendance PWA/IndexedDB workflow or an AI/OCR workflow.
+
+### Review limitations
+
+No development or production Supabase catalog/migration ledger was queried in this follow-up. No Vercel deployment/runtime logs, Auth configuration, Resend sender setup, real email delivery, live application, owner MFA session or browser viewport tests were inspected. No code or SQL migrations were changed.
+
+### Required next actions
+
+- Remediate migration 00045's credential behavior using a secure invitation/verified-reset design. Review any existing users/test data before changing account lifecycle.
+- Reconcile effective RLS policies, grants, function ownership/execution, Storage policies and applied migrations in isolated development, then rehearse any production path against a clone/restore.
+- Replace placeholder DB tests and add cross-tenant, transactional workflow and browser E2E gates.
+- Revalidate historical findings against the current deployed schema; do not assume previous “fixed in source” statements imply production rollout.

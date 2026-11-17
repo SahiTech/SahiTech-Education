@@ -1,3 +1,5 @@
+> **Operational status notice (reviewed 2026-11-17):** This is a setup guide, not proof that Resend is configured or email delivery is active. Recheck verified sender-domain ownership, secrets, deployed Edge Function, schedule, outbox health and a real received test email in the intended environment before marking delivery operational. Never paste secrets into chat or commit them. See [documentation sync policy](../DOCUMENTATION_SYNC_POLICY.md).
+
 # MDI transactional email outbox
 
 The application approval flow writes an invitation and a queued outbox event in one database transaction. It does not send email from the web request.

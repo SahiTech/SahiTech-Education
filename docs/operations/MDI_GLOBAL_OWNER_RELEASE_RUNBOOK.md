@@ -1,3 +1,5 @@
+> **Historical release snapshot notice (reviewed 2026-11-17):** This runbook includes dates, branch/PR identifiers, migration counts, environment state, email readiness and owner MFA observations from its authored update. They may have changed. Revalidate current source, project IDs, migration ledger, Auth/MFA, environment variables, function schedule, provider sender and Preview commit before following steps. Production migration, merge, DNS change and deployment require separate explicit approval. See [implementation status](../../IMPLEMENTATION_STATUS.md) and [documentation sync policy](../DOCUMENTATION_SYNC_POLICY.md).
+
 # MDI Global Platform Owner & Release Operations Runbook
 
 **Status:** Draft — development implementation; Production release NOT READY  

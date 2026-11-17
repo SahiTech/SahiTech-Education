@@ -1,54 +1,75 @@
 # 03. Functional & Non-Functional Requirements
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Program:** Madrasa Digitalization Initiative (MDI)  
+**Parent brand:** SahiTech  
+**Division:** SahiTech Education  
+**Status:** Requirements and service objectives; performance and operational values require measurement
 
----
+## 1. Functional requirements
 
-## 1. Functional Requirements Matrix
+1. **Tenant and identity:** institution-scoped membership and role authorization, separate platform-owner authorization, fail-closed tenant resolution.
+2. **Academic contexts:** configurable Qawmi and Alia curriculum models with versioned rules and historical result preservation.
+3. **Student lifecycle:** application, review, enrollment, academic-year progression, graduation and alumni records.
+4. **Attendance:** daily/session/period workflows, with an explicit online/offline state if offline sync is implemented.
+5. **Examinations and credentials:** exam scheduling, controlled marks entry, review/ratification, immutable result snapshots and narrowly scoped public Sanad verification.
+6. **Finance:** invoice/payment workflows, balanced accounting entries, auditability, reconciliation and restricted-fund controls subject to institutional approval.
+7. **Institutional operations:** staff, hostel/boarding, notices, communication and branches as enabled by the tenant plan.
+8. **Public experience:** institutional profile/site and application or verification flows with abuse controls and privacy by design.
+9. **Localization:** Bangla, English and Arabic including RTL, localized metadata, validation and error states.
 
-```mermaid
-graph TD
-    FR[Functional Requirements] --> Tenancy[1. Tenancy & Auth]
-    FR --> Academic[2. Academic Dual Engine]
-    FR --> SIS[3. Student Information System]
-    FR --> Faculty[4. Faculty & Staff Management]
-    FR --> Attendance[5. Attendance Tracking]
-    FR --> Exams[6. Exams, Results & Sanad]
-    FR --> Finance[7. Finance & Lillah Accounting]
-    FR --> Hostel[8. Darul Iqamah & Boarding]
-    FR --> WebCMS[9. Institutional CMS & Comms]
-```
+This list is a product requirement. Individual capability status must be checked in [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md).
 
-### Detailed Functional Requirements
-1. **Tenancy & Isolation**: System must isolate all tenant data at the database engine level via PostgreSQL Row Level Security (RLS). Cross-tenant queries must return 0 rows.
-2. **Academic Engines**: System must natively execute both the Qawmi Dars-e-Nizami curriculum (9 Marhalas, Kitabs, Chala terms) and the Alia BMEB curriculum (Ebtedayee to Kamil, GPA grading).
-3. **Student Information System**: Support multi-year student lifecycle: application, verification, enrollment, class progression, and alumni graduation.
-4. **Attendance Tracking**: Support daily, session-wise, and period-wise attendance marking with offline local draft capability.
-5. **Examinations & Sanad**: Calculate term exam marks, enforce passing criteria, generate trilingual report cards, and issue cryptographically verifiable Sanads with QR codes.
-6. **Finance & Accounting**: Enforce double-entry bookkeeping, automate monthly fee invoices, reconcile cash and MFS payments, and isolate charitable Lillah/Zakat funds.
-7. **Hostel & Dining**: Track residential student beds, curfew status, and daily food headcount for meal planning.
-8. **Public CMS**: Provide a public-facing institutional website with notice board, admission applications, and certificate verification.
+## 2. Non-functional requirements
 
----
+### Security and privacy
+- Server-side authentication and per-operation authorization.
+- PostgreSQL RLS, least-privilege grants, reviewed RPCs, secure Storage and tenant-aware relational integrity.
+- No privileged secret in browser code or public documentation.
+- Data minimization, safe retention and redacted logs.
+- Independent authorization tests for tenant roles and platform owner.
 
-## 2. Non-Functional Requirements & Service Level Objectives (SLOs)
+### Reliability and integrity
+- Multi-record critical workflows must be transactional and idempotent.
+- Failed downstream work must not be reported as successful.
+- Financial postings and ratified academic results must have explicit immutable/reversal rules.
+- Background jobs must be tenant-scoped, bounded and observable.
+- Backup and restore procedures must be tested.
 
-> [!NOTE]
-> The performance metrics below represent **Architectural Service Level Objectives (SLOs)** for production operations, backed by specific infrastructure designs. Current measured development baselines are documented alongside production targets.
+### Performance
+Set measurable budgets for:
+- server-rendered initial response and Core Web Vitals;
+- client JavaScript transfer and hydration cost;
+- database query p50/p95 latency for representative tenant workloads;
+- low-end Android interaction responsiveness;
+- image/font transfer and layout stability.
 
-### 2.1 Performance & Latency Matrix
+Do not copy historical numbers into a “current baseline” without a dated repeatable measurement, device/network profile and test artifact. Define targets only after a representative workload and acceptance threshold have been approved.
 
-| Metric | Target Service Level Objective (SLO) | Current Measured Baseline (Dev) | Infrastructure Dependency to Achieve Target |
-| :--- | :--- | :--- | :--- |
-| **Initial HTML First Contentful Paint (FCP)** | **< 1.5s on 3G mobile** | **~420ms (Local Fast 3G simulation)** | Edge-rendered React Server Components (Next.js 15) with zero client bundle overhead. |
-| **Shared Client JS Bundle Size** | **< 115 kB gzipped** | **102 kB gzipped (Verified via next build)** | Strict tree-shaking, no heavy dynamic UI packages, native browser web standards. |
-| **Database Query Latency (P95)** | **< 120ms** | **~35ms (Verified via Supabase ap-south-1)** | Dedicated btree indexes on all leading `tenant_id` columns + Postgres connection pooler. |
-| **PWA Offline Attendance Save** | **< 200ms instantaneous UI** | **~15ms (Local IndexedDB write buffer)** | Zero network wait on click; background sync worker dispatches when online. |
+### Accessibility and usability
+- Target WCAG 2.2 AA.
+- Keyboard, touch and assistive technology support.
+- Responsive layout without horizontal overflow.
+- Localized forms and errors.
+- Arabic RTL and mixed-direction content verification.
 
-### 2.2 Reliability & Availability Standards
-- **Uptime SLO**: Target 99.5% for pilot phase; 99.9% for production tier (achieved via multi-AZ Supabase PostgreSQL failover and Cloudflare redundant edge routing).
-- **Recovery Point Objective (RPO)**: **< 1 hour** (continuous WAL archiving + daily automated physical snapshots).
-- **Recovery Time Objective (RTO)**: **< 4 hours** (point-in-time recovery restore to a warm standby replica).
+### Portability and maintainability
+- Keep domain rules independent of framework/provider details.
+- Use additive, ordered and rehearsed database migrations.
+- Keep providers behind typed adapters.
+- Document architecture changes with ADRs.
 
+## 3. Service objectives and measurement
+
+Uptime, RPO, RTO, query latency and page-performance targets are operational objectives, not measured facts. For each metric record:
+- target and business reason;
+- measurement method and sampling window;
+- environment and workload;
+- current measured baseline with timestamp;
+- dependency and known limitations;
+- owner and remediation threshold.
+
+No numeric SLO is treated as achieved until monitoring or a reproducible test provides evidence.
+
+## 4. Acceptance standard
+
+A requirement is accepted only when the relevant workflow, authorization, validation, data integrity, localization and failure states are implemented and tested. A schema object, static page, diagram or passing production build alone is not sufficient evidence.

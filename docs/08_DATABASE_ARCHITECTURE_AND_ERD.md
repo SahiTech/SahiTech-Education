@@ -1,119 +1,72 @@
-# 08. Database Architecture & Entity Relationships (ERD)
+# 08. Database Architecture & Entity Relationships
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Database**: PostgreSQL 17 (Supabase Managed in `ap-south-1`)  
-**Status**: 15 Public Tables Live with RLS Enabled  
+**Database platform:** Supabase-managed PostgreSQL  
+**Migration source:** `packages/database/migrations`  
+**Current documentation rule:** migration files are repository history, not proof of applied database state
 
----
+## 1. Schema source of truth
 
-## 1. Entity-Relationship Diagram (ERD)
+The ordered SQL migrations are the schema change source of truth. The reviewed repository contains migration files through `00045`. That count describes tracked migration files only; it must not be confused with the latest migration applied to development or production.
 
-```mermaid
-erDiagram
-    tenants ||--o{ branches : "has"
-    tenants ||--o{ tenant_users : "members"
-    profiles ||--o{ tenant_users : "assigned"
-    tenants ||--o{ academic_years : "configures"
-    tenants ||--o{ departments : "defines"
-    departments ||--o{ classes : "contains"
-    classes ||--o{ sections : "subdivided"
-    classes ||--o{ subjects : "teaches"
-    tenants ||--o{ students : "enrolls"
-    students ||--o{ student_enrollments : "history"
-    academic_years ||--o{ student_enrollments : "in"
-    classes ||--o{ student_enrollments : "class"
-    sections ||--o{ student_enrollments : "section"
-    tenants ||--o{ teachers : "employs"
-    tenants ||--o{ attendance_records : "tracks"
-    students ||--o{ attendance_records : "attends"
-    tenants ||--o{ fee_categories : "defines"
-    tenants ||--o{ fee_invoices : "bills"
-    students ||--o{ fee_invoices : "receives"
-    fee_categories ||--o{ fee_invoices : "categorized"
+Before changing the schema:
+1. Read the complete relevant migration history and current branch head.
+2. Inspect the target environment's migration ledger and schema catalog.
+3. Reconcile drift in tables, columns, constraints, triggers, indexes, grants, RLS policies, functions, views and Storage policies.
+4. Add a new forward migration; do not rewrite a migration already applied to any shared environment.
+5. Test on an isolated development database and prepare a rollback/forward-fix plan.
+6. Obtain separate approval before production execution.
 
-    tenants {
-        uuid id PK
-        varchar name
-        varchar code UK
-        varchar subdomain UK
-        curriculum_type curriculum_type
-        boolean is_active
-        timestamptz created_at
-    }
+## 2. Conceptual entity groups
 
-    profiles {
-        uuid id PK "references auth.users"
-        varchar full_name_bn
-        varchar full_name_en
-        varchar full_name_ar
-        varchar phone
-    }
+The database model spans:
+- Platform identity and institutional tenancy: `tenants`, branches, profiles, tenant memberships, platform-owner/application/invitation objects.
+- Academic structure: academic years, departments, classes, sections and subjects.
+- Student lifecycle: students, admissions, guardians, enrollments and supporting documents.
+- Academic operations: attendance, examinations, marks, result and Sanad records.
+- Institutional operations: teachers, hostel rooms/allocations, staff leave and notices/pages.
+- Finance: fee categories/invoices, accounts, journal entries and journal lines.
+- Audit and integration: institutional/platform audit data, communication records and email outbox.
 
-    tenant_users {
-        uuid id PK
-        uuid tenant_id FK
-        uuid user_id FK
-        user_role role
-        boolean is_active
-    }
+The exact table/column catalogue must be generated or reconciled against the environment being changed. Avoid fixed table counts in this specification.
 
-    students {
-        uuid id PK
-        uuid tenant_id FK
-        varchar admission_no UK
-        varchar full_name_bn
-        varchar full_name_en
-        boolean is_residential
-        boolean is_lillah_boarder
-    }
+## 3. Relational integrity
 
-    fee_invoices {
-        uuid id PK
-        uuid tenant_id FK
-        uuid student_id FK
-        varchar invoice_number UK
-        numeric amount
-        numeric paid_amount
-        invoice_status status
-    }
-```
+- Every tenant-owned record must carry or inherit a verified tenant boundary.
+- Prefer tenant-aware composite foreign keys for relationships between tenant-owned records.
+- Validate existing data before adding constraints; use staged validation where appropriate.
+- Unique identifiers should be tenant-scoped where business rules permit.
+- Financial journal lines must not reference accounts belonging to a different tenant.
+- Student enrollment, guardian, class, academic year, examination and Sanad references must be checked for same-tenant integrity.
+- Index child-side foreign-key columns based on query workload and explain plans.
 
----
+## 4. Tenant security in the database
 
-## 2. Table Specifications & Constraints
+RLS is necessary but not sufficient. Review together:
+- RLS enabled and FORCE RLS settings where appropriate;
+- permissive/restrictive policy combination behavior;
+- SELECT, INSERT, UPDATE, DELETE and table-level grants;
+- view security/invoker behavior;
+- function owner, SECURITY DEFINER/INVOKER and execution grants;
+- safe search_path and schema privileges;
+- Storage bucket visibility and object policies;
+- privileged service-role usage and server authorization.
 
-### 2.1 Core Multi-Tenancy Tables
-- `tenants`: Primary institutional root. Constraints: `code UNIQUE`, `subdomain UNIQUE`, `custom_domain UNIQUE`.
-- `branches`: Multi-campus structure. Constraints: `UNIQUE(tenant_id, code)`.
-- `profiles`: User identity linked 1:1 with Supabase `auth.users(id)` with `ON DELETE CASCADE`.
-- `tenant_users`: Join table for tenant membership and roles. Constraints: `UNIQUE(tenant_id, user_id, role)`.
+The recent migration sequence includes private-schema RLS helper implementations and public SECURITY INVOKER wrappers. Confirm the exact deployed definitions and grants before relying on that pattern.
 
-### 2.2 Academic Hierarchy Tables
-- `academic_years`: Calendar terms with dual Hijri and Gregorian support.
-- `departments`: Divisions (e.g. Kitab, Hifz, Nurani, Alia Ebtedayee). Constraints: `UNIQUE(tenant_id, code)`.
-- `classes`: Classes/Marhalas (e.g. Dawra-e-Hadith, Mishkat, Dakhil 10). Constraints: `UNIQUE(tenant_id, department_id, code)`.
-- `sections`: Class branches/sections. Capacity default: 40.
-- `subjects`: Kitabs/Subjects taught in a class with `total_marks` and `passing_marks`. Constraints: `UNIQUE(tenant_id, class_id, code)`.
+## 5. Financial integrity
 
-### 2.3 Student, Staff & Operations Tables
-- `students`: Central SIS entity with biographical, residential, and Lillah indicators. Constraints: `UNIQUE(tenant_id, admission_no)`.
-- `student_enrollments`: Yearly class enrollments. Constraints: `UNIQUE(academic_year_id, class_id, section_id, roll_no)` and `UNIQUE(academic_year_id, student_id)`.
-- `teachers`: Faculty registry with employee ID, designations, and qualifications. Constraints: `UNIQUE(tenant_id, employee_id)`.
-- `attendance_records`: Attendance log. Constraints: `UNIQUE(tenant_id, student_id, attendance_date)`.
-- `fee_categories`: Fee taxonomy (Tuition, Admission, Exam, Hostel).
-- `fee_invoices`: Financial invoices with payment status and due dates. Constraints: `UNIQUE(tenant_id, invoice_number)`.
+The domain package contains finance validation logic and the schema includes journal-related objects. Do not claim posted entries are immutable, balanced or transactionally posted unless database constraints/triggers/RPCs enforce those rules and integration tests verify bypass resistance.
 
-### 2.4 Financial & Double-Entry Ledger Tables (Phase 6 Schema)
-- `accounts`: Tenant Chart of Accounts (Asset, Liability, Equity, Revenue, Expense). Constraints: `UNIQUE(tenant_id, account_code)`.
-- `journal_entries`: Immutable balanced financial transactions with sequence numbers (`entry_number`). Status: `draft`, `posted`, `reversed`.
-- `journal_entry_lines`: Individual debit/credit lines. Constraint: `CHECK (debit >= 0 AND credit >= 0)`.
-- `lillah_fund_allocations`: Sub-ledger mapping charitable Lillah/Zakat expenditures strictly to eligible students (`is_lillah_boarder = true`).
-- `audit_logs`: Append-only, tamper-evident action ledger tracking actor, action, previous state, and new state.
+Required production design:
+- balanced debit/credit posting in one transaction;
+- posted entries cannot be edited/deleted; corrections use reversal entries;
+- unique and concurrency-safe document/receipt numbers;
+- tenant-consistent account references;
+- reliable audit events;
+- restricted fund policy approved by qualified institutional/Shariah reviewers.
 
----
+## 6. Database test coverage
 
-## 3. Indexing Strategy for RLS Performance
-- In PostgreSQL 17 with Row Level Security, every query executes an implicit `WHERE tenant_id IN (...)` clause.
-- Composite unique constraints with `tenant_id` as the **leading column** (`UNIQUE(tenant_id, code)`, `UNIQUE(tenant_id, admission_no)`) automatically provide btree indexes that accelerate RLS tenant filtering.
-- 29 verified btree indexes are currently active across all 15 public tables.
+`packages/database/tests/platform_security_smoke.sql` is a separate SQL test file with checks and rollback-only probes. Its header describes a historical schema expectation through migrations 00001–00030. It is not a current full-schema test by definition and is not invoked by the current database package's placeholder `test` script or the inspected CI workflow.
 
+Update the test assumptions when the schema evolves. Run it only against an isolated database with matching fixtures/schema, and record exact environment and result. Never point a destructive or fixture-creating test at production.

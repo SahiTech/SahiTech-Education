@@ -1,3 +1,5 @@
+> **Curriculum governance notice:** BMEB/Islamic Arabic University structures, class tiers, subject codes, GPA rules and syllabus versions must be checked against the current official circulars and academic year before production use. This specification is a configurable product model, not official board confirmation or an accreditation statement.
+
 # 13. Alia Academic Engine Specification
 
 **Program**: Madrasa Digitalization Initiative (MDI)  

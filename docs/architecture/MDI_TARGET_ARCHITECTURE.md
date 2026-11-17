@@ -1,3 +1,5 @@
+> **Decision snapshot notice (reviewed 2026-11-17):** This is the accepted target-architecture record from its authored date, not a live environment status report. Any environment IDs, owner binding, migration state, branch/PR, provider readiness or implementation-phase claim must be revalidated before use. Current source observations are in [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md); follow [DOCUMENTATION_SYNC_POLICY.md](../DOCUMENTATION_SYNC_POLICY.md) for future updates.
+
 # MDI Target Architecture and Implementation Decisions
 
 **Status:** Accepted architecture baseline; implementation pending isolated development environment  

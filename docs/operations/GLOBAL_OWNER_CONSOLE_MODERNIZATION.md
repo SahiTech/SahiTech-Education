@@ -1,3 +1,5 @@
+> **Historical operations snapshot notice (reviewed 2026-11-17):** This document contains dated UI, Preview and production observations. Its commit SHAs, counts, deployment states, route details, function status and environment configuration are not live guarantees. Recheck the current code, Vercel deployment and Supabase project before acting. Production actions remain approval-gated. See [implementation status](../../IMPLEMENTATION_STATUS.md) and [documentation sync policy](../DOCUMENTATION_SYNC_POLICY.md).
+
 # Global Platform Owner Console — Audit, Mapping & Modernization Plan
 
 **Project:** SahiTech Education · Madrasa Digitalization Initiative (MDI)  

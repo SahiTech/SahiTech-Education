@@ -1,56 +1,26 @@
-# MDI Database Schema & Security Specification
+# MDI Database Schema — Supplemental Index
 
-## 1. Overview
-The Madrasa Digitalization Initiative (MDI) database is built on **PostgreSQL 17** via **Supabase**. It leverages strict Row Level Security (RLS) policies, foreign key integrity, and localized text fields.
+**Status:** Introductory summary only. Current migration files and [Database Architecture](08_DATABASE_ARCHITECTURE_AND_ERD.md) are authoritative.
 
----
+MDI uses Supabase-managed PostgreSQL. Ordered schema changes live in `packages/database/migrations`. At the 2026-11-17 source review, repository migration files existed through `00045`; this does not prove the same migrations are applied to development or production.
 
-## 2. Core Tables
+## Conceptual areas
+- Institution and tenant identity.
+- Profiles and tenant memberships.
+- Academic years, departments, classes, sections and subjects.
+- Students, guardians, admissions and enrollments.
+- Attendance, examinations, marks and Sanads.
+- Teachers, hostel operations and notices.
+- Fee, account, journal and audit records.
+- Platform applications, invitations, owner lifecycle and email outbox.
 
-### 2.1 Multi-Tenancy & Identity
-- `tenants`: Primary entity representing an educational institution (Madrasa).
-- `branches`: Physical locations/branches belonging to a Madrasa.
-- `profiles`: User identity profiles linked 1:1 with Supabase `auth.users`.
-- `tenant_users`: Join table representing user membership and assigned roles (`user_role`) per tenant.
+The exact current schema, table count, indexes, constraints, policies and grants must be reconciled against the target environment. Do not use old hard-coded counts.
 
-### 2.2 Academic Structure
-- `academic_years`: Calendar periods supporting both Gregorian and Hijri date tracking.
-- `departments`: Divisions within a Madrasa (e.g., Kitab, Hifz, Nurani, Alia Ebtedayee).
-- `classes`: Classes/Marhalas (e.g. Dawra-e-Hadith, Mishkat, Dakhil 10).
-- `sections`: Physical groupings of students within a class.
-- `subjects`: Kitabs / subjects taught within a class, with pass marks and total marks.
+## Security reminder
+RLS is one layer. Review table/schema grants, effective policies, function security/grants, views, Storage object policies, tenant-aware foreign keys and server authorization together.
 
-### 2.3 Students & Staff
-- `students`: Central student profiles with biographical, residential, and lillah boarding indicators.
-- `student_enrollments`: Historical and active student enrollments per academic year, class, section, and roll number.
-- `teachers`: Educator profiles (Asatiza) with employee IDs, designations, and contact details.
-
-### 2.4 Operations & Finance
-- `attendance_records`: Daily/session attendance with status (`present`, `absent`, `late`, `excused`).
-- `fee_categories`: Fee classification (Tuition, Admission, Exam, Hostel, Lillah Fund).
-- `fee_invoices`: Financial invoices with payment status, discounts, and due dates.
-
----
-
-## 3. Row Level Security (RLS) Verification
-All tables have RLS enabled:
-```sql
-ALTER TABLE public.<table_name> ENABLE ROW LEVEL SECURITY;
-```
-Access is governed by the security definer function:
-```sql
-CREATE OR REPLACE FUNCTION public.get_auth_tenant_ids()
-RETURNS SETOF UUID
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-SET search_path = public
-AS $$
-    SELECT tenant_id 
-    FROM public.tenant_users 
-    WHERE user_id = auth.uid() 
-      AND is_active = true;
-$$;
-```
-Every operational query executes within the tenant boundary of the authenticated user.
-
+See:
+- [Document 08 — Database Architecture](08_DATABASE_ARCHITECTURE_AND_ERD.md)
+- [Document 09 — Multi-Tenancy](09_MULTI_TENANCY_ARCHITECTURE.md)
+- [Document 11 — Security](11_SECURITY_AND_THREAT_MODEL.md)
+- [Documentation Sync Policy](DOCUMENTATION_SYNC_POLICY.md)

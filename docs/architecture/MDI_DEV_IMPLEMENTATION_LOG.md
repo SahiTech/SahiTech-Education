@@ -1,3 +1,5 @@
+> **Historical snapshot notice (reviewed 2026-11-17):** This log records a dated development-environment state. Branch names, PR numbers, Supabase project status, applied migration ranges, CI run numbers and secrets/configuration may have changed. Do not execute its deployment steps or treat its environment observations as current without rechecking the actual project and branch. Current repo source evidence is summarized in [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md); required update procedure is [DOCUMENTATION_SYNC_POLICY.md](../DOCUMENTATION_SYNC_POLICY.md).
+
 # MDI Development Implementation Log
 
 **Environment:** Supabase project `sahitech-mdi-dev`  

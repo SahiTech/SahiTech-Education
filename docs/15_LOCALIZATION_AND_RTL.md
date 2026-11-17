@@ -1,55 +1,62 @@
-# 15. Localization & RTL (Right-to-Left) Architecture
+# 15. Localization & RTL Architecture
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
-**Supported Locales**: `bn` (Bangla - Default), `en` (English), `ar` (Arabic)  
+**Supported locales:** `bn` (default), `en`, `ar`  
+**Runtime source:** TypeScript dictionary modules under `apps/web/src/lib/i18n/dictionaries`
 
----
+## 1. Current implementation
 
-## 1. Trilingual Architecture Overview
+The inspected runtime imports dictionaries from:
+- `apps/web/src/lib/i18n/dictionaries/bn.ts`
+- `apps/web/src/lib/i18n/dictionaries/en.ts`
+- `apps/web/src/lib/i18n/dictionaries/ar.ts`
 
-```mermaid
-graph TD
-    Request[User Request] --> DetectLocale[Locale Resolver: Cookie / Header / Preference]
-    DetectLocale --> Context[Locale Context Provider]
-    Context --> Dict[Load JSON Dictionary: bn.json / en.json / ar.json]
-    Context --> Dir{Is Arabic?}
-    Dir -->|Yes| SetRTL[Set dir='rtl' on <html>]
-    Dir -->|No| SetLTR[Set dir='ltr' on <html>]
-    SetRTL --> MirrorLayout[Mirror CSS Layout via Logical Properties]
-```
+The locale types, client provider and server resolvers live under `apps/web/src/lib/i18n`. The root layout resolves the locale and direction and renders them as the document `lang` and `dir` attributes. The selected locale is persisted using the `NEXT_LOCALE` cookie.
 
----
+JSON locale files also exist under `apps/web/src/messages`, but the inspected i18n runtime imports the TypeScript dictionaries. Do not edit only the JSON files and assume the displayed application changes. Before changing the source-of-truth approach, search every import and add an ADR if the architecture changes.
 
-## 2. Deep RTL Layout Mirroring Standards
+## 2. Locale requirements
 
-In Arabic (`ar`), the entire user interface mirrors horizontally:
-1. **Sidebars**: Shift from left to right (`start-0` resolves to right side).
-2. **Icons**: Directional icons mirror (e.g. `ChevronRight` becomes `ChevronLeft` when navigating forward).
-3. **Tables**: Columns read from right to left (First column: Student Name, Last column: Actions on the far left).
+- Bangla (`bn`) is the default.
+- English (`en`) is available for international users and reporting.
+- Arabic (`ar`) must use right-to-left document direction and appropriate text shaping.
+- All user-facing dictionary keys should exist across all locales.
+- Protected brand strings remain in English: SahiTech, SahiTech Education, Madrasa Digitalization Initiative, MDI.
+- Dates, numbers, currency, phone formats and academic terminology require explicit locale-aware formatting policies.
 
-### CSS Logical Properties Implementation:
-Zero legacy directional properties (`margin-left`, `margin-right`, `left`, `right`) are permitted in codebase CSS. All components must use CSS logical properties:
-```html
-<!-- Correct: Responsive to both LTR and RTL -->
-<div className="ms-4 me-2 ps-3 pe-6 start-0">
-  <span className="text-start">...</span>
-</div>
+## 3. Dictionary quality and completeness
 
-<!-- FORBIDDEN: Breaks Arabic RTL layout -->
-<div className="ml-4 mr-2 pl-3 pr-6 left-0">
-  <span className="text-left">...</span>
-</div>
-```
+- Keep dictionary structure compatible with `Translations` types.
+- Add new keys to all three locales in the same change.
+- Avoid silent fallback that hides missing translations during development.
+- Add an automated key-parity check or test when practical.
+- Review long Bangla/Arabic labels, form validation, empty/loading/error states and metadata.
+- Do not translate official names, identifiers, serials or brand terms unless the product owner approves a canonical translation.
 
----
+## 4. RTL and bidirectional text
 
-## 3. Bidirectional (BiDi) Text Isolation
-When rendering mixed Arabic text (e.g., Quranic ayahs, Hadith references, or kitab titles like *صحيح البخاري*) within Bengali or English prose, wrap the string in `<bdi>` (bidirectional isolate) to avoid punctuation inversion:
-```jsx
-<p>
-  আজকের পাঠ্য কিতাব: <bdi dir="rtl" className="font-serif text-emerald-800">صحيح البخاري</bdi> (প্রথম খণ্ড)।
-</p>
-```
+- Set `dir="rtl"` for Arabic and `dir="ltr"` for Bangla/English.
+- Prefer CSS logical properties: `margin-inline`, `padding-inline`, `inset-inline`, `text-align: start/end`, and Tailwind logical/start-end utilities where supported.
+- Avoid left/right-specific layout assumptions in reusable components.
+- Mirror directional navigation icons where direction implies forward/back.
+- Use `<bdi>` for mixed-direction tokens, names, Arabic text, phone numbers and identifiers where punctuation could reorder.
+- Numbers, dates, Latin identifiers and QR/Sanad tokens need explicit direction isolation when necessary.
 
+## 5. Persistence, rendering and hydration
+
+- Server and client must agree on locale before initial render wherever possible.
+- Avoid a flash of one locale followed by another during hydration.
+- Validate cookie input against the supported locale union; never reflect arbitrary cookie values into document attributes.
+- Locale switching must update document properties and persist safely.
+- Metadata, alternate-language URLs and document direction should follow the selected route/locale strategy.
+
+## 6. Verification
+
+Test all visible routes and states in all locales:
+- desktop, mobile and zoomed views;
+- navigation and sidebar placement;
+- forms, dialogs, tables, badges and empty/error states;
+- long text and mixed Arabic/Bangla/English content;
+- keyboard order and screen reader labels;
+- date/number/currency display and copy/paste behavior.
+
+The presence of dictionary modules and RTL CSS is source evidence only. Do not claim full application-wide translation or verified RTL quality until browser-based route coverage is completed.
