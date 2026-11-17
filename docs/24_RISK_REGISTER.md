@@ -8,7 +8,7 @@
 | ID | Risk | Priority | Mitigation / required evidence |
 |---|---|---|---|
 | RSK-01 | Cross-tenant data exposure through policy/grant/function gaps | Critical | Reconcile live catalog; test RLS, table grants, function execution, views, Storage and cross-tenant references |
-| RSK-02 | Legacy static credential and password-return path | Critical until Production release is verified | Source replacement exists in migrations 00045–00051; Production has emergency 00051 only. Apply the secure release and verify runtime/Auth E2E before lowering severity |
+| RSK-02 | Legacy static credential and password-return path | Critical until secure Admin workflow is Production verified | Emergency 00051 and lifecycle hotfix 00052 are in Production; old credential RPC is removed, but secure feature migrations 00045–00050, required secrets and Auth E2E remain pending |
 | RSK-03 | Multi-step workflows may partially commit or report success after failed writes | High | Transactional RPCs, idempotency, failure injection and rollback tests |
 | RSK-04 | Financial journal invariants may rely on app validation | Critical | DB-enforced balanced posting, immutable posted entries and reversal chain; accountant review |
 | RSK-05 | Production/dev migration drift | High | Compare migration ledgers and database catalogs; test a replacement migration path on a production clone |
