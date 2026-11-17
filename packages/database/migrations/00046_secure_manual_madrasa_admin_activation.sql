@@ -465,6 +465,8 @@ AS $$
 DECLARE
   v_owner UUID := auth.uid();
   v_tenant_id UUID;
+  v_institution_name TEXT;
+  v_contact_email TEXT;
   v_user_id UUID;
   v_admin_count INTEGER;
   v_request_id UUID;
@@ -480,7 +482,7 @@ BEGIN
     RAISE EXCEPTION 'manual_recovery_verification_required';
   END IF;
 
-  SELECT id INTO v_tenant_id
+  SELECT id, name, contact_email INTO v_tenant_id, v_institution_name, v_contact_email
   FROM public.tenants
   WHERE source_application_id = p_application_id
   FOR UPDATE;
@@ -540,7 +542,9 @@ BEGIN
   RETURN jsonb_build_object(
     'reset_request_id', v_request_id,
     'auth_user_id', v_user_id,
-    'tenant_id', v_tenant_id
+    'tenant_id', v_tenant_id,
+    'institution_name', v_institution_name,
+    'contact_email', v_contact_email
   );
 END;
 $$;
