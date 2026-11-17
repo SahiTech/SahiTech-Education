@@ -59,48 +59,74 @@ export async function signOutUser() {
   redirect('/login');
 }
 
-export type InitialPasswordChangeState = { error?: string };
+export type InitialPasswordChangeState = { success: boolean; error?: string; redirectTo?: string };
 
-export async function completeInitialPasswordChange(
+export async function changeInitialMadrasaAdminPassword(
   _previousState: InitialPasswordChangeState,
   formData: FormData,
 ): Promise<InitialPasswordChangeState> {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user || user.app_metadata?.mdi_force_password_change !== true) {
-    return { error: 'এই সেশনে প্রাথমিক Password পরিবর্তনের অনুমতি নেই। পুনরায় Login করুন।' };
-  }
-
   const password = formData.get('password');
   const confirmation = formData.get('confirmPassword');
+
   if (typeof password !== 'string' || typeof confirmation !== 'string' || password !== confirmation) {
-    return { error: 'দুটি Password মিলছে না।' };
+    return { success: false, error: 'দুটি Password মিলছে না।' };
   }
   if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-    return { error: 'নতুন Password কমপক্ষে ১২ অক্ষরের হতে হবে এবং বড় হাতের, ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।' };
+    return { success: false, error: 'নতুন Password কমপক্ষে ১২ অক্ষরের হতে হবে এবং বড় হাতের, ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।' };
   }
 
-  try {
-    const admin = createAdminClient();
-    const { error } = await admin.auth.admin.updateUserById(user.id, {
-      password,
-      app_metadata: {
-        ...user.app_metadata,
-        mdi_force_password_change: false,
-        mdi_password_changed_at: new Date().toISOString(),
-      },
-    });
-    if (error) return { error: 'নতুন Password সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' };
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user || user.app_metadata?.mdi_manual_madrasa_admin !== true) {
+    return { success: false, error: 'এই অ্যাকাউন্টে MDI Manual Admin Password Change অনুমোদিত নয়।' };
+  }
 
-    const { error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError) {
-      await supabase.auth.signOut();
-      return { error: 'Password পরিবর্তন হয়েছে। নিরাপত্তার জন্য আবার নতুন Password দিয়ে Login করুন।' };
-    }
-  } catch {
-    return { error: 'Password পরিবর্তনের server configuration প্রস্তুত নয়। Support-এর সঙ্গে যোগাযোগ করুন।' };
+  // This RPC checks current database Auth metadata (not only a potentially stale JWT).
+  const { data: passwordChangeRequired, error: gateError } =
+    await (supabase.rpc as any)('mdi_manual_password_change_required');
+  if (gateError || passwordChangeRequired !== true) {
+    return { success: false, error: 'Password Change gate যাচাই করা যায়নি অথবা এই অ্যাকাউন্টে আর প্রাথমিক Password Change প্রয়োজন নেই।' };
+  }
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { error: passwordError } = await supabase.auth.updateUser({ password });
+  if (passwordError) {
+    return { success: false, error: 'নতুন Password সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' };
+  }
+
+  const nextAppMetadata = {
+    ...user.app_metadata,
+    mdi_manual_madrasa_admin: true,
+    mdi_force_password_change: false,
+    mdi_password_changed_at: now,
+  };
+  const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: nextAppMetadata,
+  });
+
+  if (metadataError) {
+    return { success: false, error: 'Password পরিবর্তন হয়েছে, কিন্তু নিরাপত্তা অবস্থা আপডেট হয়নি। Dashboard প্রবেশ বন্ধ থাকবে; Support-এ যোগাযোগ করুন।' };
+  }
+
+  const { error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) {
+    await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { ...nextAppMetadata, mdi_force_password_change: true },
+    });
+    await supabase.auth.signOut();
+    return { success: false, error: 'নিরাপদ Session Refresh হয়নি। নতুন Password দিয়ে আবার Login করুন।' };
+  }
+
+  const { error: auditError } = await (supabase.rpc as any)('record_manual_admin_password_change');
+  if (auditError) {
+    await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { ...nextAppMetadata, mdi_force_password_change: true },
+    });
+    await supabase.auth.refreshSession();
+    return { success: false, error: 'Password পরিবর্তন হয়েছে, কিন্তু Security Audit নিশ্চিত হয়নি। নিরাপত্তার জন্য Dashboard প্রবেশ বন্ধ রাখা হয়েছে; Support-এ যোগাযোগ করুন।' };
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  return { success: true, redirectTo: '/dashboard' };
 }
