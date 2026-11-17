@@ -87,15 +87,23 @@ export async function POST(request: NextRequest) {
 
   const { data: lookup, error: lookupError } = await admin.auth.admin.getUserById(reservation.auth_user_id);
   const target = lookup?.user;
+  if (lookupError || !target) {
+    await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+      p_reset_request_id: reservation.reset_request_id,
+      p_succeeded: false,
+      p_error_code: 'auth_update_failed',
+    });
+    return json({ error: 'Target Auth Account পাওয়া যায়নি। Password অপরিবর্তিত রাখা হয়েছে।' }, 409);
+  }
+
   const isManualIdentity = Boolean(
-    target?.email
+    target.email
     && /^mdi-[0-9a-f]{32}@login\.sahitech\.invalid$/i.test(target.email)
     && target.email_confirmed_at
     && target.app_metadata?.mdi_manual_madrasa_admin === true
     && target.app_metadata?.mdi_application_id === applicationId
   );
-
-  if (lookupError || !isManualIdentity) {
+  if (!isManualIdentity) {
     await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
       p_reset_request_id: reservation.reset_request_id,
       p_succeeded: false,
