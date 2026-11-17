@@ -63,7 +63,11 @@ For every protected operation:
 
 Never hard-code initial passwords, return passwords from privileged RPCs, log reset tokens, or store raw invitation tokens where hashes can be used. Initial account activation should use verified invitations or a secure reset/onboarding flow. Secrets belong in server-only environment/secret stores.
 
-Migration `00045_owner_direct_setup_madrasa_admin.sql` currently contains a static fallback credential path and a response field that may return the password used. Treat this as a release blocker pending code/migration remediation and review. Do not invoke this routine to provision real users until the issue is corrected.
+Email-independent Madrasa Admin activation is implemented as a separate Owner-approved workflow documented in [Secure Manual Madrasa Admin Activation](30_SECURE_MANUAL_ADMIN_ACTIVATION.md). It requires Global Platform Owner AAL2 at both the HTTP and database RPC boundaries, explicit out-of-band identity verification, a server-only Supabase Auth Admin API call, and a platform-generated non-routable Login ID. The applicant's contact email remains unverified.
+
+Temporary credentials are generated server-side, encrypted with AES-256-GCM in a 90-second HttpOnly cookie, and shown only after the MFA-verified Owner atomically consumes a one-time database nonce. Plaintext passwords are never returned by RPCs/JSON or persisted in database tables/logs. The first-login password-change gate is enforced at middleware, server context and database-policy levels.
+
+Migrations 00046, 00045, 00047, 00048, 00049 and 00050 form the reviewed Development sequence; inspect the actual target migration ledger and follow the dependency order in the runbook before any Production rollout. The old compatibility RPCs created in 00045 are dropped by 00047. Do not reintroduce the retired direct-password provisioning routine.
 
 ## 7. Verification expectations
 
