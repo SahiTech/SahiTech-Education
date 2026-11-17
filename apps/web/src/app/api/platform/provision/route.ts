@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { assertCredentialDisplayKey, createCredentialNonce, sealManualAdminCredential } from '@/lib/security/manual-admin-credential';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -80,6 +81,8 @@ export async function POST(request: NextRequest) {
     return json({ error: 'প্রথমে আবেদনকারীর পরিচয় ফোন, WhatsApp, সরাসরি সাক্ষাৎ বা স্বাক্ষরিত অনুমোদনের মাধ্যমে যাচাই করুন এবং ২০–৫০০ অক্ষরের নোট দিন।' }, 400);
   }
 
+  try { assertCredentialDisplayKey(); } catch { return json({ error: 'Credential display encryption key সার্ভারে কনফিগার করা নেই।' }, 503); }
+
   let reservationId: string | null = null;
   let authUserId: string | null = null;
   let admin: ReturnType<typeof createAdminClient> | null = null;
@@ -105,6 +108,18 @@ export async function POST(request: NextRequest) {
       return json({ error: publicProvisioningError(reserveError?.message) }, 409);
     }
     reservationId = reservation.reservation_id;
+
+    const handoff = createCredentialNonce();
+    const { error: handoffError } = await owner.supabase.rpc('owner_create_manual_admin_credential_handoff', {
+      p_nonce_hash: handoff.nonceHash,
+    });
+    if (handoffError) {
+      await owner.supabase.rpc('owner_fail_manual_admin_provisioning', {
+        p_reservation_id: reservationId,
+        p_error_code: 'credential_handoff_unavailable',
+      });
+      return json({ error: 'একবার ব্যবহারযোগ্য Credential নিরাপদ ব্যবস্থা প্রস্তুত করা যায়নি।' }, 503);
+    }
 
     // Cryptographic 256-bit temporary credential; it is never written to SQL/logs.
     const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
@@ -160,16 +175,20 @@ export async function POST(request: NextRequest) {
     // Do not let cache invalidation swallow the only credential copy.
     try { revalidatePath('/platform'); } catch { /* Next navigation will refresh the view. */ }
 
-    return json({
-      success: true,
+    const credentialCookie = sealManualAdminCredential({
+      ownerUserId: owner.user.id,
+      nonce: handoff.nonce,
       loginIdentifier: completed.login_identifier,
       temporaryPassword,
       institutionName: completed.institution_name,
       activationStatus: completed.activated === true ? 'active' : 'pending_activation',
-      tenantId: completed.tenant_id,
       contactEmail: reservation.contact_email,
       contactEmailVerified: false,
+      issuedAt: Date.now(),
     });
+    const response = json({ success: true, credentialPath: '/api/platform/credential' });
+    response.cookies.set(credentialCookie.name, credentialCookie.value, credentialCookie.options);
+    return response;
   } catch {
     if (reservationId) {
       if (authUserId && admin) {
