@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS private.manual_admin_provisionings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT manual_admin_login_identifier_format
-    CHECK (login_identifier ~ '^mdi-[0-9a-f]{32}@login\\.sahitech\\.invalid$')
+    CHECK (login_identifier ~ '^mdi-[0-9a-f]{32}@login[.]sahitech[.]invalid$')
 );
 
 ALTER TABLE private.manual_admin_provisionings ENABLE ROW LEVEL SECURITY;
@@ -87,7 +87,7 @@ BEGIN
   END IF;
 
   IF p_application_id IS NULL
-     OR p_login_identifier !~ '^mdi-[0-9a-f]{32}@login\\.sahitech\\.invalid$' THEN
+     OR p_login_identifier !~ '^mdi-[0-9a-f]{32}@login[.]sahitech[.]invalid$' THEN
     RAISE EXCEPTION 'invalid_manual_provisioning_request';
   END IF;
 
@@ -473,8 +473,10 @@ BEGIN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE = '42501';
   END IF;
 
-  IF p_verification_method NOT IN ('phone_call', 'in_person', 'signed_authorization')
-     OR length(btrim(COALESCE(p_verification_note, ''))) NOT BETWEEN 20 AND 500 THEN
+  IF p_verification_method IS NULL
+     OR p_verification_method NOT IN ('phone_call', 'in_person', 'signed_authorization')
+     OR p_verification_note IS NULL
+     OR length(btrim(p_verification_note)) NOT BETWEEN 20 AND 500 THEN
     RAISE EXCEPTION 'manual_recovery_verification_required';
   END IF;
 
