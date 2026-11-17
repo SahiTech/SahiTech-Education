@@ -716,8 +716,8 @@ AS $$
     FROM auth.users AS u
     WHERE u.id = (SELECT auth.uid())
       AND NOT (
-        u.raw_app_meta_data->>'mdi_manual_madrasa_admin' = 'true'
-        AND u.raw_app_meta_data->>'mdi_force_password_change' = 'true'
+        COALESCE(u.raw_app_meta_data->>'mdi_manual_madrasa_admin', 'false') = 'true'
+        AND COALESCE(u.raw_app_meta_data->>'mdi_force_password_change', 'false') = 'true'
       )
   );
 $$;
