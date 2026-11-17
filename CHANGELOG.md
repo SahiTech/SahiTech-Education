@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased] - 2026-11-17
+
+### Changed
+- Added mandatory documentation synchronization workflow and source-to-document ownership map for coding agents.
+- Rebuilt the documentation index with repository-relative links and explicit implementation-status vocabulary.
+- Strengthened public Islamic website design contract with semantic tokens, responsive breakpoints, accessibility states, performance targets, SEO, and feature-readiness labels.
+- Expanded frontend design-system standards and clarified verified architecture versus optional future capabilities.
+- Marked implementation status as a dated evidence snapshot rather than live production truth.
+
+
 All notable changes to the Madrasa Digitalization Initiative (MDI) platform will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
