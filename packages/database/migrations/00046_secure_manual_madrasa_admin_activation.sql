@@ -690,3 +690,113 @@ COMMENT ON TABLE private.manual_admin_password_reset_requests IS
 COMMENT ON FUNCTION public.record_manual_admin_password_change() IS
   'One-time/idempotent audit recorder for a manual Madrasa Admin completing a forced password change.';
 
+
+
+-- Database-level fail-closed gate: middleware alone is not sufficient because
+-- authenticated users can call the Supabase Data API directly.
+CREATE OR REPLACE FUNCTION private.can_use_mdi_tenant_features()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, auth, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM auth.users AS u
+    WHERE u.id = (SELECT auth.uid())
+      AND NOT (
+        u.raw_app_meta_data->>'mdi_manual_madrasa_admin' = 'true'
+        AND u.raw_app_meta_data->>'mdi_force_password_change' = 'true'
+      )
+  );
+$$;
+REVOKE ALL ON FUNCTION private.can_use_mdi_tenant_features() FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION private.get_auth_tenant_ids()
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public, private, auth, pg_temp
+AS $$
+  SELECT tu.tenant_id
+  FROM public.tenant_users AS tu
+  JOIN public.tenants AS t ON t.id = tu.tenant_id
+  WHERE tu.user_id = (SELECT auth.uid())
+    AND tu.is_active = TRUE
+    AND tu.role <> 'super_admin'::public.user_role
+    AND t.is_active = TRUE
+    AND t.platform_status = 'active'
+    AND private.can_use_mdi_tenant_features();
+$$;
+
+CREATE OR REPLACE FUNCTION private.has_tenant_onboarding_access(target_tenant_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public, private, auth, pg_temp
+AS $$
+  SELECT private.can_use_mdi_tenant_features() AND EXISTS (
+    SELECT 1
+    FROM public.tenant_users AS tu
+    JOIN public.tenants AS t ON t.id = tu.tenant_id
+    WHERE tu.tenant_id = target_tenant_id
+      AND tu.user_id = (SELECT auth.uid())
+      AND tu.role = 'madrasa_admin'::public.user_role
+      AND tu.is_active = TRUE
+      AND t.platform_status = 'pending_activation'
+      AND t.is_active = FALSE
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION private.has_tenant_onboarding_write(target_tenant_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public, private, auth, pg_temp
+AS $$
+  SELECT private.can_use_mdi_tenant_features() AND EXISTS (
+    SELECT 1
+    FROM public.tenant_users AS tu
+    JOIN public.tenants AS t ON t.id = tu.tenant_id
+    WHERE tu.tenant_id = target_tenant_id
+      AND tu.user_id = (SELECT auth.uid())
+      AND tu.role = 'madrasa_admin'::public.user_role
+      AND tu.is_active = TRUE
+      AND t.platform_status = 'pending_activation'
+      AND t.is_active = FALSE
+      AND t.onboarding_completed_at IS NULL
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION private.has_tenant_role(target_tenant_id uuid, required_roles public.user_role[])
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public, private, auth, pg_temp
+AS $$
+  SELECT private.can_use_mdi_tenant_features() AND EXISTS (
+    SELECT 1
+    FROM public.tenant_users AS tu
+    JOIN public.tenants AS t ON t.id = tu.tenant_id
+    WHERE tu.tenant_id = target_tenant_id
+      AND tu.user_id = (SELECT auth.uid())
+      AND tu.role <> 'super_admin'::public.user_role
+      AND tu.role = ANY(array_remove(required_roles, 'super_admin'::public.user_role))
+      AND tu.is_active = TRUE
+      AND t.is_active = TRUE
+      AND t.platform_status = 'active'
+  );
+$$;
+
+REVOKE ALL ON FUNCTION private.get_auth_tenant_ids() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.has_tenant_onboarding_access(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.has_tenant_onboarding_write(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.has_tenant_role(uuid, public.user_role[]) FROM PUBLIC, anon, authenticated;
+
+COMMENT ON FUNCTION private.can_use_mdi_tenant_features() IS
+  'Database-level access gate for the mandatory first password change on manually provisioned madrasa admin accounts.';
