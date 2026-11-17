@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface AuthActionResult {
   success: boolean;
@@ -56,4 +57,50 @@ export async function signOutUser() {
   await supabase.auth.signOut();
   revalidatePath('/', 'layout');
   redirect('/login');
+}
+
+export type InitialPasswordChangeState = { error?: string };
+
+export async function completeInitialPasswordChange(
+  _previousState: InitialPasswordChangeState,
+  formData: FormData,
+): Promise<InitialPasswordChangeState> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user || user.app_metadata?.mdi_force_password_change !== true) {
+    return { error: 'এই সেশনে প্রাথমিক Password পরিবর্তনের অনুমতি নেই। পুনরায় Login করুন।' };
+  }
+
+  const password = formData.get('password');
+  const confirmation = formData.get('confirmPassword');
+  if (typeof password !== 'string' || typeof confirmation !== 'string' || password !== confirmation) {
+    return { error: 'দুটি Password মিলছে না।' };
+  }
+  if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+    return { error: 'নতুন Password কমপক্ষে ১২ অক্ষরের হতে হবে এবং বড় হাতের, ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।' };
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(user.id, {
+      password,
+      app_metadata: {
+        ...user.app_metadata,
+        mdi_force_password_change: false,
+        mdi_password_changed_at: new Date().toISOString(),
+      },
+    });
+    if (error) return { error: 'নতুন Password সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' };
+
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      await supabase.auth.signOut();
+      return { error: 'Password পরিবর্তন হয়েছে। নিরাপত্তার জন্য আবার নতুন Password দিয়ে Login করুন।' };
+    }
+  } catch {
+    return { error: 'Password পরিবর্তনের server configuration প্রস্তুত নয়। Support-এর সঙ্গে যোগাযোগ করুন।' };
+  }
+
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
 }
