@@ -8,7 +8,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  */
 export function createAdminClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const secret = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !secret) {
     throw new Error('Manual account provisioning is unavailable: server-side Supabase Auth credentials are not configured.');
