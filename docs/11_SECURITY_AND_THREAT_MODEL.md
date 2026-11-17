@@ -54,7 +54,7 @@ The original source review found a static fallback credential, direct writes to 
 
 ### Production status and remaining verification
 
-- Production still has the baseline through 00044 plus emergency 00051; 00045–00050 and 00052 remain pending. Production still contains the legacy owner_direct_provision_tenant function and the older lifecycle RPCs have not yet received the new database-level AAL2 guards.
+- Production has baseline 00044 plus emergency 00051 and security hotfix 00052. A read-only Production query confirmed owner_direct_provision_tenant is absent and all four existing lifecycle Owner RPCs enforce AAL2. Feature migrations 00045–00050 remain pending.
 - Production application is not yet on the secure Owner UI. The legacy direct-provision button remains unavailable because its insecure RPC was retired; do not restore it.
 - Real Supabase Auth E2E for create, .invalid login alias acceptance, first-login password change and Owner recovery remains NOT VERIFIED.
 - Vercel Production still lacks the server-only Supabase Auth Admin key and MDI_EMAIL_TOKEN_HMAC_SECRET. Never put either in Git, browser variables or chat.
