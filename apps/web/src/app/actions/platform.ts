@@ -321,7 +321,9 @@ export async function resetMadrasaAdminPasswordManually(params: {
         institution_name: reservation.institution_name || 'Madrasa Admin',
         subdomain: reservation.subdomain || '',
         activated: true,
-        contact_email_verified: Boolean(existingUser.email_confirmed_at),
+        contact_email_verified: existingUser.email.endsWith('@login.sahitech.invalid')
+          ? existingUser.app_metadata?.mdi_contact_email_verified === true
+          : Boolean(existingUser.email_confirmed_at),
         ...(finishError ? { audit_warning: 'Password reset হয়েছে, তবে completion audit নিশ্চিত করা যায়নি। পুনরায় Reset করবেন না; Owner Audit Trail যাচাই করুন।' } : {}),
       },
     };
