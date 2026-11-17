@@ -14,6 +14,7 @@ const form = read('src/app/platform/(owner)/direct-provision-form.tsx');
 const migration = read('../../packages/database/migrations/00045_owner_direct_setup_madrasa_admin.sql');
 const platformActions = read('src/app/actions/platform.ts');
 const ownerPage = read('src/app/platform/(owner)/page.tsx');
+const applicationActions = read('src/app/actions/applications.ts');
 
 test('temporary credentials are generated only with cryptographic randomness', () => {
   assert.match(route, /randomBytes\(12\)/);
@@ -67,5 +68,7 @@ test('manual recovery requires a reason and renewed out-of-band contact verifica
 
 test('invitation signing fails closed when the HMAC secret is absent', () => {
   assert.match(platformActions, /Secure invitation signing is not configured/);
-  assert.doesNotMatch(platformActions + ownerPage, /0123456789abcdef0123456789abcdef/);
+  assert.doesNotMatch(platformActions + ownerPage + applicationActions, /0123456789abcdef0123456789abcdef|DEFAULT_HMAC_SECRET/);
+  assert.doesNotMatch(applicationActions, /NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(applicationActions, /নিরাপদ application upload ব্যবস্থা প্রস্তুত নয়/);
 });
