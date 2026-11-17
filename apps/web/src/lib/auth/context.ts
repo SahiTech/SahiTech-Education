@@ -25,11 +25,9 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return null;
-  if (user.app_metadata?.mdi_manual_madrasa_admin === true) {
-    const { data: passwordChangeRequired, error: passwordGateError } =
-      await (supabase.rpc as any)('mdi_manual_password_change_required');
-    if (passwordGateError || passwordChangeRequired === true) return null;
-  }
+  const { data: passwordChangeRequired, error: passwordGateError } =
+    await (supabase.rpc as any)('mdi_manual_password_change_required');
+  if (passwordGateError || passwordChangeRequired === true) return null;
 
   const [profileResult, cookieStore, headerStore] = await Promise.all([
     supabase
