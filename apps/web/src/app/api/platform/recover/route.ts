@@ -27,7 +27,7 @@ async function requireOwner() {
   if (aal?.currentLevel !== 'aal2') return null;
   const { data: isOwner, error: ownerError } = await (supabase.rpc as any)('is_platform_owner');
   if (ownerError || isOwner !== true) return null;
-  return { supabase };
+  return { supabase, user };
 }
 
 function cleanText(value: unknown, max: number) {
