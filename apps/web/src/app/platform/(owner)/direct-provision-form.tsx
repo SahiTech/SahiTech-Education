@@ -82,7 +82,8 @@ export function DirectProvisionForm({
       if (!response.ok || !payload?.success) {
         throw new Error(payload?.error || 'নিরাপদভাবে অনুরোধ সম্পন্ন করা যায়নি।');
       }
-      setResult(payload as CredentialResult);
+      window.location.assign(payload.credentialPath || '/api/platform/credential');
+      return;
     } catch (submissionError: any) {
       setError(submissionError?.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।');
     } finally {
