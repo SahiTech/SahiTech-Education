@@ -798,5 +798,12 @@ REVOKE ALL ON FUNCTION private.has_tenant_onboarding_access(uuid) FROM PUBLIC, a
 REVOKE ALL ON FUNCTION private.has_tenant_onboarding_write(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.has_tenant_role(uuid, public.user_role[]) FROM PUBLIC, anon, authenticated;
 
+-- These four private helpers are intentionally callable by application roles through
+-- the existing SECURITY INVOKER public wrappers created in migration 00044.
+GRANT EXECUTE ON FUNCTION private.get_auth_tenant_ids() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.has_tenant_onboarding_access(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.has_tenant_onboarding_write(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.has_tenant_role(uuid, public.user_role[]) TO anon, authenticated;
+
 COMMENT ON FUNCTION private.can_use_mdi_tenant_features() IS
   'Database-level access gate for the mandatory first password change on manually provisioned madrasa admin accounts.';
