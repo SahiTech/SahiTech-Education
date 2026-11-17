@@ -813,3 +813,23 @@ GRANT EXECUTE ON FUNCTION private.has_tenant_role(uuid, public.user_role[]) TO a
 
 COMMENT ON FUNCTION private.can_use_mdi_tenant_features() IS
   'Database-level access gate for the mandatory first password change on manually provisioned madrasa admin accounts.';
+
+
+-- Safe current-session query for Middleware/Server Components. It exposes only the
+-- authenticated caller's own mandatory-password-change state and uses DB metadata
+-- so password resets take effect even when an access token still contains old claims.
+CREATE OR REPLACE FUNCTION public.mdi_manual_password_change_required()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, private, auth, pg_temp
+AS $$
+  SELECT (SELECT auth.uid()) IS NOT NULL
+     AND NOT private.can_use_mdi_tenant_features();
+$$;
+REVOKE ALL ON FUNCTION public.mdi_manual_password_change_required() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.mdi_manual_password_change_required() TO authenticated;
+
+COMMENT ON FUNCTION public.mdi_manual_password_change_required() IS
+  'Returns only the caller own authoritative manual-admin password-change gate, using Auth app metadata stored in auth.users rather than possibly stale JWT claims.';
