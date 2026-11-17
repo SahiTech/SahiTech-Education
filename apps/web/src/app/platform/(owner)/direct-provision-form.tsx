@@ -8,6 +8,7 @@ interface DirectProvisionFormProps {
   institutionName: string;
   contactEmail: string;
   isAlreadyProvisioned?: boolean;
+  isManualAccount?: boolean;
   tenantCode?: string;
   tenantSubdomain?: string;
 }
@@ -33,6 +34,7 @@ export function DirectProvisionForm({
   institutionName,
   contactEmail,
   isAlreadyProvisioned = false,
+  isManualAccount = false,
   tenantCode,
   tenantSubdomain,
 }: DirectProvisionFormProps) {
@@ -115,6 +117,10 @@ SahiTech Education Support
     } catch {
       setError('Clipboard অনুমতি পাওয়া যায়নি। Login ID ও Password আলাদাভাবে কপি করুন।');
     }
+  }
+
+  if (isAlreadyProvisioned && !isManualAccount) {
+    return <p className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-[10px] leading-relaxed text-slate-600">এই প্রতিষ্ঠানটি Invitation workflow দিয়ে তৈরি হয়েছে। Manual password reset এখানে প্রযোজ্য নয়; বিদ্যমান verified-account recovery ব্যবহার করুন।</p>;
   }
 
   return (
