@@ -46,6 +46,7 @@ export function DirectProvisionForm({
   const [manualContactVerified, setManualContactVerified] = useState(false);
   const [verificationNote, setVerificationNote] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [activateImmediately, setActivateImmediately] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CredentialResult | null>(null);
@@ -88,8 +89,6 @@ export function DirectProvisionForm({
       setIsSubmitting(false);
     }
   }
-
-  const [activateImmediately, setActivateImmediately] = useState(true);
 
   async function handleCopyCredentials() {
     if (!result) return;
