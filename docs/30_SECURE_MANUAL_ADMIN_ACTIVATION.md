@@ -17,8 +17,8 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 - Provisioning starts with a database reservation bound to the Global Owner and application. The reservation expires after 15 minutes, prevents concurrent duplicate setup, and limits repeated attempts.
 - The server creates the Auth identity only through the server-only Supabase Auth Admin API. It then finalizes the reservation into the tenant, branch, academic year, departments, and initial administrator membership in one database transaction.
 - If Auth creation or tenant finalization fails, the server records the failed attempt and attempts to delete the unassigned Auth identity; if deletion fails, the identity is banned. Credentials are never included in SQL RPC results.
-- The server generates temporary passwords using Node.js cryptographic randomness. The password is returned only in a no-store, private HTTP response to the MFA-verified Owner. It is not written to SQL, audit logs, normal Server Action results, or page props.
-- The Owner dashboard displays credentials transiently, clears them after five minutes, and offers a WhatsApp/SMS message to copy. Close the credential panel after delivery.
+- The server generates temporary passwords using Node.js cryptographic randomness. The credential payload is encrypted with AES-256-GCM and placed in a 90-second, Secure, HttpOnly, SameSite=Strict host cookie. The database stores only a SHA-256 nonce hash, Owner binding, expiry, and consumed timestamp.
+- The Owner opens a dedicated no-store HTML endpoint. It verifies the Owner's AAL2 session and atomically consumes the nonce before displaying the credentials. A second request, another Owner session, or an expired cookie cannot retrieve the same credential. Plaintext credentials are not returned in JSON, Server Action results, or page props and are never written to SQL or logs.
 - The MDI login alias is non-routable. It cannot receive mail and is not the institution's contact email.
 
 ## First login
@@ -45,13 +45,14 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 
 1. Configure `SUPABASE_SECRET_KEY` as an encrypted server-only environment variable for the web app. The legacy `SUPABASE_SERVICE_ROLE_KEY` remains a fallback during the API-key transition. Never prefix either key with `NEXT_PUBLIC_`.
 2. Keep the ordinary user-session Supabase client separate from the Auth Admin client.
-3. Configure `MDI_EMAIL_TOKEN_HMAC_SECRET` only when invitation/upload token delivery is enabled. It is not required for the manual activation path.
-4. Before release, verify that the connected Supabase Auth configuration accepts the generated `.invalid` sign-in alias and that the application allows password sign-in for this identity.
+3. Configure `MDI_CREDENTIAL_DISPLAY_KEY` as a server-only base64-encoded 32-byte key for AES-256-GCM credential handoff. Generate with `openssl rand -base64 32`.
+4. Configure `MDI_EMAIL_TOKEN_HMAC_SECRET` as a server-only high-entropy key for public application upload-capability token signing. Manual activation itself does not depend on SMTP, but public application intake/upload does.
+5. Before release, verify that the connected Supabase Auth configuration accepts the generated `.invalid` sign-in alias and that the application allows password sign-in for this identity.
 
 ## Migration order and safety
 
-- Apply migrations in repository order: `00045`, `00046`, then `00047`.
-- Migration `00045` replaces the previously unsafe direct-password migration; `00046` establishes reservation-based provisioning and the database-backed password-change gate; `00047` records initial contact verification, flags manual tenants, and restricts recovery to manual accounts.
+- Apply migrations in repository order: `00045`, `00046`, `00047`, then `00048`.
+- Migration `00045` replaces the previously unsafe direct-password migration; `00046` establishes reservation-based provisioning and the database-backed password-change gate; `00047` records initial contact verification, flags manual tenants, and restricts recovery to manual accounts; `00048` adds the Owner-bound, atomic single-use credential handoff nonce.
 - Inspect each target environment's migration ledger before applying. Do not rewrite an already-applied migration.
 - Do not apply this change to Production until the Development workflow has passed database smoke checks and real Supabase Auth create/login/password-change/recovery tests.
 
