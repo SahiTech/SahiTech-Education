@@ -65,7 +65,7 @@ DECLARE
   v_res private.manual_admin_provisionings%ROWTYPE;
   v_attempts SMALLINT;
 BEGIN
-  IF v_owner IS NULL OR NOT private.is_platform_owner() THEN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE = '42501';
   END IF;
 
@@ -251,7 +251,7 @@ DECLARE
   v_admin_count INTEGER;
   v_request_id UUID;
 BEGIN
-  IF v_owner IS NULL OR NOT private.is_platform_owner() THEN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
     RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
   END IF;
   IF p_verification_method IS NULL
