@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
   const temporaryPassword = `Mdi-${randomBytes(32).toString('base64url')}!9`;
   const nextMetadata = {
-    ...target.app_metadata,
+    ...(target?.app_metadata ?? {}),
     mdi_manual_madrasa_admin: true,
     mdi_force_password_change: true,
     mdi_password_reset_at: new Date().toISOString(),
