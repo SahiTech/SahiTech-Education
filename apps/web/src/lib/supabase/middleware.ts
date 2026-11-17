@@ -51,6 +51,25 @@ export async function updateSession(request: NextRequest) {
 
   // Route protection
   const pathname = request.nextUrl.pathname;
+  const requiresInitialPasswordChange = user?.app_metadata?.mdi_manual_madrasa_admin === true
+    && user?.app_metadata?.mdi_force_password_change === true;
+
+  // Temporary-password sessions are restricted to the password-change route.
+  if (user && requiresInitialPasswordChange && pathname !== '/first-login-password'
+    && !pathname.startsWith('/_next/') && !pathname.startsWith('/api/')) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/first-login-password';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && !requiresInitialPasswordChange && pathname === '/first-login-password') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/dashboard';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const isProtectedPath = 
     pathname.startsWith('/dashboard') || 
     pathname.startsWith('/portals') ||
