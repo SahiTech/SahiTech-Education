@@ -25,6 +25,8 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   ]);
 
   const applicationIds = (applications || []).map((app:any)=>app.id);
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  const invitationTokenConfigured = Boolean(hmacSecret && Buffer.byteLength(hmacSecret, 'utf8') >= 32);
   const [{ data: invitations }, { data: allTenantsForApps }, { data: outboxRows }] = await Promise.all([
     applicationIds.length
       ? (supabase.from('platform_invitations') as any).select('id,application_id,invitee_email,status,expires_at,created_at').in('application_id',applicationIds).order('created_at',{ascending:false})
@@ -32,7 +34,7 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
     applicationIds.length
       ? (supabase.from('tenants') as any).select('id,name,code,subdomain,platform_status,is_active,is_verified,source_application_id').in('source_application_id',applicationIds)
       : Promise.resolve({ data: [] as any[] }),
-    applicationIds.length
+    applicationIds.length && invitationTokenConfigured
       ? (supabase.from('email_outbox') as any).select('payload').eq('event_type', 'madrasa_invitation').order('created_at', { ascending: false })
       : Promise.resolve({ data: [] as any[] }),
   ]);
@@ -45,8 +47,6 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   }
 
   const inviteLinkByApp = new Map<string, string>();
-  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
-  const invitationTokenConfigured = Boolean(hmacSecret && Buffer.byteLength(hmacSecret, 'utf8') >= 32);
   if (invitationTokenConfigured && hmacSecret) {
     for (const row of (outboxRows || [])) {
       const p = row.payload;
