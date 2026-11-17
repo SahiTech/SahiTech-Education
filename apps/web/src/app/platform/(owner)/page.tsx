@@ -45,15 +45,18 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   }
 
   const inviteLinkByApp = new Map<string, string>();
-  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-  for (const row of (outboxRows || [])) {
-    const p = row.payload;
-    if (p?.application_id && p?.token_nonce && !inviteLinkByApp.has(p.application_id)) {
-      const rawToken = createHmac('sha256', hmacSecret)
-        .update(`mdi-invitation:${p.application_id}:${p.token_nonce}`)
-        .digest('hex')
-        .toUpperCase();
-      inviteLinkByApp.set(p.application_id, `/platform/accept#token=${rawToken}`);
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  const invitationTokenConfigured = Boolean(hmacSecret && Buffer.byteLength(hmacSecret, 'utf8') >= 32);
+  if (invitationTokenConfigured && hmacSecret) {
+    for (const row of (outboxRows || [])) {
+      const p = row.payload;
+      if (p?.application_id && p?.token_nonce && !inviteLinkByApp.has(p.application_id)) {
+        const rawToken = createHmac('sha256', hmacSecret)
+          .update(`mdi-invitation:${p.application_id}:${p.token_nonce}`)
+          .digest('hex')
+          .toUpperCase();
+        inviteLinkByApp.set(p.application_id, `/platform/accept#token=${rawToken}`);
+      }
     }
   }
 
@@ -192,10 +195,16 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
                     <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
                       অথবা সেলফ-সার্ভিস আমন্ত্রণ লিঙ্ক:
                     </span>
+                    {!invitationTokenConfigured && (
+                      <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
+                        Secure invitation configuration is not available. Email/self-service invitation is disabled for now. Use the Manual Admin Activation above; no email provider is required for that flow.
+                      </p>
+                    )}
                     <form action={issueApplicationInvitation}>
                       <input type="hidden" name="applicationId" value={app.id}/>
                       <button
                         disabled={
+                          !invitationTokenConfigured ||
                           !app.requested_code ||
                           !app.requested_subdomain ||
                           !(documentsByApplication.get(app.id)||[]).some((doc:any)=>doc.verification_status==='verified') ||
