@@ -320,7 +320,7 @@ export async function resetMadrasaAdminPasswordManually(params: {
         temporary_password: temporaryPassword,
         institution_name: reservation.institution_name || 'Madrasa Admin',
         subdomain: reservation.subdomain || '',
-        activated: true,
+        activated: reservation.is_active === true,
         contact_email_verified: existingUser.email.endsWith('@login.sahitech.invalid')
           ? existingUser.app_metadata?.mdi_contact_email_verified === true
           : Boolean(existingUser.email_confirmed_at),
