@@ -204,7 +204,8 @@ export async function provisionMadrasaAdminManually(params: {
     }
 
     createdAuthUserId = null;
-    revalidatePath('/platform');
+    // Cache invalidation must never swallow the only copy of a newly generated credential.
+    try { revalidatePath('/platform'); } catch { /* Provisioning already committed; the next navigation refreshes the page. */ }
 
     // Deliberate one-time credential response. The client keeps it in component memory only.
     return {
