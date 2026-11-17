@@ -17,7 +17,7 @@ MDI uses Supabase-managed PostgreSQL. Ordered schema changes live in `packages/d
 The exact current schema, table count, indexes, constraints, policies and grants must be reconciled against the target environment. Do not use old hard-coded counts.
 
 ## Security reminder
-RLS is one layer. Review table/schema grants, effective policies, function security/grants, views, Storage object policies, tenant-aware foreign keys and server authorization together.
+RLS is one layer. Review table/schema grants, effective policies, function security/grants, views, Storage object policies, tenant-aware foreign keys and server authorization together. Migration 00052 retires the legacy owner_direct_provision_tenant function and adds database AAL2 checks to the remaining Owner lifecycle RPCs.
 
 See:
 - [Document 08 — Database Architecture](08_DATABASE_ARCHITECTURE_AND_ERD.md)
