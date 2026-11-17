@@ -135,3 +135,37 @@ Do not merge or deploy until all applicable items are completed and evidenced:
 - [ ] Produce a Production backup/restore and rollback plan, then obtain explicit approval for the Production database migration and deployment.
 
 **Handoff recommendation:** the reviewer may inspect the Draft PR and current Preview deployment, run additional tests in Development/Preview, and prepare a written Production migration/deployment plan. They must not merge the PR, change the custom-domain alias, apply Production migrations or deploy to Production until the release gates are signed off and the owner explicitly approves the Production change.
+
+
+---
+
+## Current release status update — 2026-11-17
+
+This dated addendum supersedes older environment snapshots above where they conflict. Keep the original historical notes for audit context.
+
+### Source and PR mapping
+- PR #12 (homepage hero critical-path optimization) was squash-merged to main. Vercel Production deployment for merge commit caf3289a0851f7d99428002ded6944fc3f6c99a2 completed successfully.
+- PR #15 (email-independent secure Manual Madrasa Admin activation) remains open pending final current-head CI and review. It contains the server-side Auth Admin provisioning flow, encrypted one-time credential handoff, first-login password gate, manual-only recovery, and migrations 00045–00052.
+- Issue #13 remains open until the secure application and database release are live and verified.
+
+### Database evidence
+- Production migration ledger: baseline through 00044 plus emergency 00051. Migrations 00045–00050 and 00052 are pending. Do not reapply 00051.
+- Development ledger includes 00045–00051 in the reviewed dependency sequence, and 00052 has now been applied.
+- The targeted read-only SQL test packages/database/tests/owner_rpc_aal2_security_smoke.sql passed against the isolated Development project after 00052.
+- Production catalog check confirmed owner_direct_setup_madrasa_admin is absent. The legacy owner_direct_provision_tenant routine was found in Production and is removed by 00052; this remains pending in Production.
+
+### Deployment and configuration
+- PR #12's Production Vercel deployment is READY and its GitHub Vercel status is success.
+- The secure feature branch has a READY Vercel Preview at commit d3eb21c18812a946e5c01933a406976bba82293b. Branch-scoped Preview configuration points to the isolated Development Supabase project and includes its public client URL/key plus the encrypted credential-display key.
+- Production Vercel does not have the server-only Supabase Auth Admin key (SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY) or MDI_EMAIL_TOKEN_HMAC_SECRET. These must be configured as encrypted server-only variables. Never expose them with NEXT_PUBLIC_ or put them in Git/chat.
+- MDI_EMAIL_TOKEN_HMAC_SECRET must be the same high-entropy value in the web application's Vercel environment and the Supabase Edge Function that verifies application upload tokens; do not rotate one side independently.
+
+### Remaining release gates
+1. Current-head MDI CI and fresh Code Review must finish with no unresolved actionable findings.
+2. Configure the missing server-only Auth Admin key and HMAC secret for the intended environments.
+3. Run real Supabase Auth E2E: create a manual admin, sign in using the generated .invalid alias, force the first password change, and exercise Owner-assisted recovery in Development.
+4. Review remaining Supabase Security Advisor findings and enable leaked-password protection where supported.
+5. Confirm Production backup/restore readiness and rehearse the exact migration order: 00046, 00045, 00047, 00048, 00049, 00050, 00052. Production already records 00051, so skip it.
+6. Apply Production migrations, merge PR #15, deploy the secure app and run live smoke tests only after all gates above are evidenced.
+
+Production release status: NOT READY. Source implementation and Development database verification are not Production verification.
