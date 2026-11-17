@@ -2,7 +2,7 @@
 
 **Status:** Introductory summary only. Current migration files and [Database Architecture](08_DATABASE_ARCHITECTURE_AND_ERD.md) are authoritative.
 
-MDI uses Supabase-managed PostgreSQL. Ordered schema changes live in `packages/database/migrations`. At the 2026-11-17 source review, repository migration files existed through `00045`; this does not prove the same migrations are applied to development or production.
+MDI uses Supabase-managed PostgreSQL. Ordered schema changes live in `packages/database/migrations`. At the 2026-11-17 security feature branch head, repository migration files exist through 00052; this does not prove that the same migrations are applied to Development or Production. The Production ledger was separately observed at 00044 plus emergency 00051 and security hotfix 00052; feature migrations 00045–00050 remain pending.
 
 ## Conceptual areas
 - Institution and tenant identity.
