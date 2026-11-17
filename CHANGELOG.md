@@ -16,7 +16,7 @@ The format follows Keep a Changelog. Versions are assigned when a release is app
 ### Security and Owner activation
 - Added email-independent manual Madrasa Admin provisioning through the server-only Supabase Auth Admin API, Owner AAL2 reservation/finalization, out-of-band contact verification, encrypted single-use credential handoff, forced first-login password change and audited manual-only recovery.
 - Added database AAL2 hardening for the manual-admin RPCs and the remaining Global Owner lifecycle RPCs; migration 00052 retires the unused legacy direct-tenant provisioning RPC.
-- Applied emergency migration 00051 to Production and Development to retire the insecure legacy direct-admin setup RPC. Production rollout of migrations 00045–00050 and 00052, Auth E2E, secrets configuration and live verification remain pending; this changelog is not deployment evidence.
+- Applied emergency migration 00051 to Production and Development to retire the insecure legacy direct-admin setup RPC. Applied security hotfix 00052 to Production and Development to retire the unused legacy direct-tenant RPC and enforce AAL2 in four lifecycle Owner RPCs. Production feature migrations 00045–00050, Auth E2E, secrets configuration and live verification remain pending; this changelog is not deployment evidence.
 
 ## [1.0.0] - 2026-11-12
 
