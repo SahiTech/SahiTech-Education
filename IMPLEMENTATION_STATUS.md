@@ -3,10 +3,11 @@
 **Parent Brand**: SahiTech  
 **Division**: SahiTech Education  
 **Active Project**: Madrasa Digitalization Initiative (MDI)  
-**Last Updated**: 2026-11-13  
+**Snapshot Date**: 2026-11-13
+**Status Note**: Historical development/production snapshot; re-verify before relying on any current-state claim.  
 **Platform Status**: SECURITY HARDENING IN PROGRESS — NOT RELEASE READY
 
-> **Environment truth (2026-11-13):** The production project `sahitech-mdi` (`xbswamfmslhliayoowlo`) remains untouched by this hardening work. All new security and workflow migrations are applied only to the isolated development project `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`). Migration `00007_security_hardening.sql` is intentionally not applied because its legacy `super_admin` assumptions conflict with the separate Global Platform Owner model. The work is tracked in draft PR #1. Do not treat this branch as production-ready until CI, browser E2E, owner MFA binding, verified Resend sender setup, and deployment review are complete.
+> **Historical environment snapshot (2026-11-13; verify before use):** The production project `sahitech-mdi` (`xbswamfmslhliayoowlo`) remains untouched by this hardening work. All new security and workflow migrations are applied only to the isolated development project `sahitech-mdi-dev` (`srcmodeinjvfqwkramni`). Migration `00007_security_hardening.sql` is intentionally not applied because its legacy `super_admin` assumptions conflict with the separate Global Platform Owner model. The work is tracked in draft PR #1. Do not treat this branch as production-ready until CI, browser E2E, owner MFA binding, verified Resend sender setup, and deployment review are complete.
 
 ---
 
@@ -116,3 +117,10 @@ Production baseline (`xbswamfmslhliayoowlo`) retains migrations 00001–00006. D
 - **ESLint Code Quality**: `pnpm --filter web lint` ➔ **0 errors, 0 warnings**.
 - **Production Build**: `pnpm --filter web build` ➔ **24 routes compiled & optimized**.
 - **PostgreSQL Database**: All 32 tables running on Supabase PostgreSQL 17 with 100% active RLS.
+
+
+---
+
+## 4. Documentation freshness notice
+
+This file is a dated snapshot, not a live system probe. Its migration counts, table counts, test totals, route inventory, project connectivity and deployment statements may become stale as the repository evolves. Before using any statement for release or operational decisions, inspect the current branch, migrations, CI output, Supabase environment and Vercel deployment evidence. Keep this file synchronized under [Documentation Governance](./docs/DOCUMENTATION_GOVERNANCE.md). Local-machine `file:///` references in older historical content should not be used; use the repository [documentation index](./docs/README.md).
