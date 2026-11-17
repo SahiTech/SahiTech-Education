@@ -25,8 +25,9 @@ test('manual login uses a platform-owned alias and leaves the applicant contact 
   assert.match(route, /@accounts\.sahitech\.invalid/);
   assert.match(route, /email_confirm:\s*true/);
   assert.match(route, /mdi_contact_email_verified:\s*false/);
-  assert.match(migration, /contact_email_verified,contact_phone/);
-  assert.match(migration, /FALSE,v_app\.contact_phone/);
+  assert.match(migration, /contact_email_verified/);
+  assert.match(migration, /contact_email_verified,manual_admin_provisioned/);
+  assert.match(migration, /v_app\.contact_email,FALSE,TRUE,/);
 });
 
 test('temporary credentials are not persisted or returned by database functions', () => {
