@@ -39,11 +39,11 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 
 - Self-service invitation and application upload token creation fail closed unless `MDI_EMAIL_TOKEN_HMAC_SECRET` is configured with at least 32 bytes of entropy.
 - There is no hardcoded HMAC fallback and no derivation from the public anon key.
-- Manual activation does not depend on SMTP or the invitation HMAC secret.
+- Manual activation does not depend on SMTP or the invitation HMAC secret. However, the public application submission/upload-token flow still requires `MDI_EMAIL_TOKEN_HMAC_SECRET` even when no email is sent; configure this server-only signing key so application intake and document upload remain available.
 
 ## Server configuration
 
-1. Configure `SUPABASE_SERVICE_ROLE_KEY` (or the supported newer `SUPABASE_SECRET_KEY`) as an encrypted server-only environment variable for the web app. Never prefix it with `NEXT_PUBLIC_`.
+1. Configure `SUPABASE_SECRET_KEY` as an encrypted server-only environment variable for the web app. The legacy `SUPABASE_SERVICE_ROLE_KEY` remains a fallback during the API-key transition. Never prefix either key with `NEXT_PUBLIC_`.
 2. Keep the ordinary user-session Supabase client separate from the Auth Admin client.
 3. Configure `MDI_EMAIL_TOKEN_HMAC_SECRET` only when invitation/upload token delivery is enabled. It is not required for the manual activation path.
 4. Before release, verify that the connected Supabase Auth configuration accepts the generated `.invalid` sign-in alias and that the application allows password sign-in for this identity.
