@@ -241,3 +241,12 @@ Do not create a second dictionary source. If JSON files remain in the repository
 - Build checks and Preview review are evidenced before release.
 
 **Implementation rule:** This specification is a design contract, not proof that every section or integration already exists. When a requirement conflicts with current architecture or cannot be delivered safely, document the gap and propose the smallest safe change.
+
+
+## Hero media performance implementation note
+
+The homepage hero is the primary Largest Contentful Paint candidate. Keep the campus image on the critical path but avoid a separate large decorative texture request:
+- Prioritize the hero image with Next.js image priority/fetch priority and explicit responsive sizing.
+- Use a CSS-only geometric texture for decorative overlay rather than downloading a large background image.
+- Keep the hero image quality responsive to visual inspection; the current implementation uses a reduced quality setting that must be checked on real mobile and desktop screenshots.
+- Do not claim a PageSpeed/Core Web Vitals improvement until a fresh preview measurement is recorded for the same route, device profile and test conditions.
