@@ -11,7 +11,36 @@ export default async function FirstLoginPasswordPage() {
   if (!user) redirect('/login');
   const { data: passwordChangeRequired, error } =
     await (supabase.rpc as any)('mdi_manual_password_change_required');
-  if (error) redirect('/login');
+  if (error) {
+    return (
+      <main className="flex min-h-[75vh] items-center justify-center bg-slate-50 px-4 py-12">
+        <section
+          role="alert"
+          className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-7 shadow-sm"
+        >
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-900">
+            <span className="text-xl font-black">MDI</span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900">
+            নিরাপত্তা যাচাই সম্পন্ন করা যাচ্ছে না
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            আপনার প্রথম লগইনের পাসওয়ার্ড পরিবর্তন প্রয়োজন কি না, তা এই মুহূর্তে যাচাই করা যাচ্ছে না।
+            আপনার অ্যাকাউন্ট নিরাপদ রাখতে Dashboard-এ প্রবেশ বন্ধ রাখা হয়েছে।
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            কিছুক্ষণ পর আবার চেষ্টা করুন। সমস্যাটি চলতে থাকলে Platform Owner-এর সঙ্গে যোগাযোগ করুন।
+          </p>
+          <a
+            href="/first-login-password"
+            className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-800 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
+          >
+            আবার চেষ্টা করুন
+          </a>
+        </section>
+      </main>
+    );
+  }
   if (passwordChangeRequired !== true) redirect('/dashboard');
 
   return (
