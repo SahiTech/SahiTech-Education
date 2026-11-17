@@ -56,6 +56,7 @@
 
 ## Additional documentation areas
 
+- [Documentation Governance](./DOCUMENTATION_GOVERNANCE.md) — mandatory source-to-document ownership map and synchronization workflow.
 - [Architecture references](./architecture/) — supporting architecture notes and diagrams.
 - [Operations references](./operations/) — operational procedures and runbooks.
 - [Root README](../README.md) — repository overview and setup.
