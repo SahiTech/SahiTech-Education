@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
   const credentialCookie = sealManualAdminCredential({
     ownerUserId: owner.user.id,
     nonce: handoff.nonce,
-    loginIdentifier: target.email,
+    loginIdentifier: target.email ?? reservation.login_identifier,
     temporaryPassword,
     institutionName: reservation.institution_name,
     contactEmail: reservation.contact_email,
