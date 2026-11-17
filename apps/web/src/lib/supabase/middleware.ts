@@ -51,8 +51,16 @@ export async function updateSession(request: NextRequest) {
 
   // Route protection
   const pathname = request.nextUrl.pathname;
-  const requiresInitialPasswordChange = user?.app_metadata?.mdi_manual_madrasa_admin === true
-    && user?.app_metadata?.mdi_force_password_change === true;
+  let requiresInitialPasswordChange = false;
+  if (user?.app_metadata?.mdi_manual_madrasa_admin === true) {
+    // Use the database as the source of truth because Auth access tokens may carry
+    // stale app_metadata until refresh. Fail closed for manual accounts on RPC errors.
+    const { data: passwordChangeRequired, error: passwordGateError } =
+      await (supabase.rpc as any)('mdi_manual_password_change_required');
+    requiresInitialPasswordChange = passwordGateError
+      ? true
+      : passwordChangeRequired === true;
+  }
 
   // Temporary-password sessions are restricted to the password-change route.
   if (user && requiresInitialPasswordChange && pathname !== '/first-login-password'
