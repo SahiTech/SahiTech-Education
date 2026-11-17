@@ -39,15 +39,29 @@ Migration `00044_private_rls_security_definer_helpers.sql` contains private-sche
 - Verify email links and webhooks against a trusted canonical origin and cryptographic signature.
 - Treat honeypots and per-email quotas as supplemental friction, not a complete anti-abuse solution.
 
-## 4. Critical source-review blocker — migration 00045
+## 4. Manual Admin credential-path remediation — 2026-11-17
 
-The reviewed source file `packages/database/migrations/00045_owner_direct_setup_madrasa_admin.sql` contains:
-- a static fallback password path for new admin account creation;
-- a function response field that can return the password used in certain account-creation/update cases.
+The original source review found a static fallback credential, direct writes to Supabase Auth tables, and a password-bearing RPC response in the legacy owner_direct_setup_madrasa_admin routine. The replacement is now implemented on the security feature branch; this does not imply Production is already running it.
 
-This is an unacceptable credential-handling pattern for production. Do not disclose or reproduce the literal fallback credential. Do not run this function to provision real accounts until a separately reviewed remediation removes static credentials and stops returning secrets, migrates any affected test accounts safely, and verifies secure first-login/reset behavior. Add regression tests proving no password or secret appears in RPC output, logs or audit payloads.
+### Source and Development evidence
 
-This finding is based on checked-in source inspection, not a live exploit test. No code/migration was changed in the documentation-only branch.
+- Migrations 00045–00050 and the server-side provisioning, credential-handoff, first-login and recovery routes implement email-independent manual Admin activation without SQL writes to auth.users/auth.identities or plaintext credential storage.
+- Emergency migration 00051 was applied to Production and Development on 2026-11-17; read-only Production catalog verification confirmed owner_direct_setup_madrasa_admin(UUID,TEXT,BOOLEAN) is absent.
+- A further Production-only legacy path, public.owner_direct_provision_tenant(UUID,UUID), was found to have no catalog dependents and no current caller in the branch's Owner server actions. Migration 00052 drops it and adds database AAL2 guards to owner_activate_tenant, owner_issue_invitation, owner_review_application_document and owner_update_application_status.
+- Migration 00052 was applied to the isolated Development project. The read-only regression script packages/database/tests/owner_rpc_aal2_security_smoke.sql then passed, confirming the legacy RPC is absent and all eleven reviewed privileged Owner RPCs carry a database AAL2 predicate.
+- GitHub Actions CI Run #332 passed for the prior manual-admin branch head. The current branch adds migration 00052 and its regression test; its latest CI run must be checked before merge.
+- The corrected AAL2 migration 00049 accepts functions already hardened by earlier migration order and validates each required function, avoiding a zero-replacement failure.
+
+### Production status and remaining verification
+
+- Production still has the baseline through 00044 plus emergency 00051; 00045–00050 and 00052 remain pending. Production still contains the legacy owner_direct_provision_tenant function and the older lifecycle RPCs have not yet received the new database-level AAL2 guards.
+- Production application is not yet on the secure Owner UI. The legacy direct-provision button remains unavailable because its insecure RPC was retired; do not restore it.
+- Real Supabase Auth E2E for create, .invalid login alias acceptance, first-login password change and Owner recovery remains NOT VERIFIED.
+- Vercel Production still lacks the server-only Supabase Auth Admin key and MDI_EMAIL_TOKEN_HMAC_SECRET. Never put either in Git, browser variables or chat.
+- Supabase Security Advisor reports additional SECURITY DEFINER/grant and leaked-password-protection warnings. Review each function's purpose and authorization individually; do not blanket-revoke.
+- Production backup/restore readiness, final migration plan and live smoke test remain release gates.
+
+This is a combined source/development verification record, not a penetration test or Production security certification.
 
 ## 5. High-risk workflows requiring database-level guarantees
 
