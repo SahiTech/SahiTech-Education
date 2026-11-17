@@ -1,6 +1,6 @@
 # MDI Public Website — International Islamic Design & Homepage Specification
 
-**Status:** Design specification — approved direction, implementation pending  
+**Status:** Living design contract — requirements and implementation status must be verified against the current code before each release  
 **Product:** Madrasa Digitalization Initiative (MDI)  
 **Parent brand:** SahiTech  
 **Division:** SahiTech Education  
@@ -297,3 +297,68 @@ The redesign is not complete until all of the following are true:
 ---
 
 **Implementation rule:** Treat this document as the design contract. If the current code, an existing component, or an integration cannot satisfy a requirement safely, document the gap and propose the smallest safe change rather than silently shipping a fake or partial feature.
+
+
+---
+
+## 13. Design-system implementation contract (maintained)
+
+This specification governs the **public-facing website only**. The authenticated institutional dashboard may use denser, task-oriented patterns, but it must share accessibility, localization, semantic-token, and component-quality standards from `docs/14_FRONTEND_AND_DESIGN_SYSTEM.md`.
+
+### 13.1 Token architecture
+- Define semantic CSS variables once (for example: `--public-bg`, `--public-surface`, `--public-text`, `--public-muted`, `--public-brand`, `--public-accent`, `--public-border`, `--public-focus`).
+- Map Tailwind utilities/components to tokens; avoid scattered literal hex values in page components.
+- Keep the public-site palette in this document distinct from dashboard curriculum semantics. Qawmi/Alia colors must never replace brand colors or be used as the only status indicator.
+- Every foreground/background pair used for text, controls, icons conveying meaning, and focus indicators must be contrast-tested to WCAG 2.2 AA. Gold is decorative/accent only unless its contrast is independently verified.
+- Support light surfaces as the default. Dark emerald is reserved for hero overlays, selected emphasis, and footer—not every section.
+
+### 13.2 Layout, spacing, and responsive behavior
+- Use a consistent content container and spacing scale; avoid one-off widths and arbitrary spacing values.
+- Design from 320 CSS px upward; verify 320, 360, 390, 430, 768, 1024, 1280, and 1440 px viewports.
+- No horizontal page overflow. Tables or genuinely wide data may use a labelled, keyboard-accessible local scroll region.
+- Use CSS logical properties (`margin-inline`, `padding-inline`, `inset-inline`, `text-align: start`) so Arabic RTL is structural, not a collection of ad-hoc flips.
+- Header, hero, cards, forms, utility panels, and footer must reflow without hiding primary actions or requiring hover.
+
+### 13.3 Component and interaction states
+Every interactive component must define default, hover, focus-visible, active, disabled, loading, success, empty, and error states as applicable. Provide:
+- Visible keyboard focus and logical tab order.
+- Touch targets designed for at least 44×44 CSS px where practical.
+- Semantic buttons for actions and links for navigation.
+- Accessible labels, field hints, and announced validation/error feedback.
+- Reduced-motion behavior; animation must not carry essential information.
+- No fake links, inert controls, hardcoded success states, or placeholder integrations presented as live.
+
+### 13.4 Typography and assets
+- Prefer self-hosted or framework-optimized font delivery with appropriate subsets and `font-display: swap`; do not load every script/weight unnecessarily.
+- Verify Bangla conjuncts, punctuation, numerals, Arabic shaping, diacritics, and mixed-direction text on actual devices.
+- Use responsive image sizing, explicit aspect ratios/dimensions, modern formats where supported, and lazy-load below-the-fold imagery. The LCP/hero asset must be prioritized without causing layout shift.
+- Provide meaningful alt text for informative imagery; decorative patterns use empty alt or CSS backgrounds.
+- Do not introduce sacred text/calligraphy as decoration or use imagery that implies an unverified institution/partnership.
+
+### 13.5 Performance budgets and measurement
+Treat these as release targets, not claims about current production performance:
+- Core Web Vitals targets at the 75th percentile: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1.
+- Keep client-side JavaScript and third-party scripts minimal; prefer Server Components for static/public content.
+- Avoid blocking font/image loading, duplicate data requests, oversized hero assets, and hydration work for static content.
+- Measure production-like preview on mobile and desktop. Record tool, route, viewport, date, and results; do not infer performance from a successful build.
+
+### 13.6 SEO, metadata, and trust
+- Provide localized title/description, canonical URL, locale alternates, Open Graph/Twitter metadata, favicon, and a meaningful not-found experience.
+- Use structured data only when the content is accurate and eligible; never fabricate ratings, organization credentials, reviews, or affiliations.
+- Publish privacy/terms/contact destinations only when real routes and approved content exist.
+- Protect user-submitted forms with server-side validation, rate limiting/abuse controls, consent capture, and safe error messages.
+
+## 14. Feature readiness labels
+Use the same labels in design reviews and public copy:
+- **Available:** implemented, permission-checked, tested, and verified in the target environment.
+- **Limited:** implemented with explicitly documented scope/constraints.
+- **Planned:** approved direction but not yet implemented.
+- **Blocked:** cannot be safely completed because credentials, provider approval, legal review, or another dependency is missing.
+
+A visual mock-up, route placeholder, or UI-only control is not an available feature.
+
+## 15. Change-control and documentation sync
+Any change to the public homepage, navigation, public route, visual token, locale dictionary, prayer-time data source, newsletter workflow, public form, or SEO metadata must update this document and, where relevant, docs 14, 15, 16, 19, 21, and the operational documentation. Update the acceptance checklist only after implementation evidence exists.
+
+## 16. Current-state verification record
+The earlier baseline notes in Section 10 are historical observations, not a permanent description of the code. Before implementation, re-inspect the current homepage, root layout, Navbar, locale dictionaries, CSS tokens, public routes, and image assets. Replace stale observations with a dated evidence record. Do not mark prayer times, newsletter, or any other planned section as implemented without tracing its real backend/data source and testing its failure states.
