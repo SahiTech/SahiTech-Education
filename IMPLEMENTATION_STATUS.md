@@ -94,12 +94,12 @@ Never restore a “production-ready” label based only on a successful build or
 | Manual Madrasa Admin activation | Server-side Auth Admin provisioning, reservation/finalization, out-of-band contact verification, encrypted single-use credentials, forced first-login password change and manual-only recovery in PR #15 | Source implemented |
 | Manual-admin Owner RPCs | Migrations 00046–00050 enforce database AAL2, reservations, rate limits and one-time credential handoff | Source implemented |
 | Legacy direct-admin RPC | Emergency migration 00051 applied to Development and Production; read-only Production catalog query confirmed old password-bearing RPC absent | Production mitigation verified |
-| Legacy direct-tenant path and lifecycle AAL2 | Migration 00052 applied to Development; retires unused direct-tenant RPC and enforces AAL2 on four lifecycle RPCs | Development verified; Production pending |
+| Legacy direct-tenant path and lifecycle AAL2 | Migration 00052 applied to Development and Production; read-only Production checks confirm the old direct-tenant RPC is absent and four lifecycle Owner RPCs have AAL2 guards | Production hotfix verified; manual-admin feature pending |
 | Owner RPC regression SQL | packages/database/tests/owner_rpc_aal2_security_smoke.sql executed successfully against isolated Development after 00052 | Development verified |
 | GitHub CI | CI run 44096861056 passed for commit f692b433de021f6ebec7a8ca762c18762ebdb696; later documentation-only commits triggered a new current-head run | CI passed for source/test head; current-head run pending at this snapshot |
 | Homepage performance | PR #12 merged as caf3289a0851f7d99428002ded6944fc3f6c99a2; Vercel Production status success | Production deployment verified; measured PageSpeed/Core Web Vitals improvement not verified |
 | Secure app Preview | Vercel Preview dpl_EcVJpg7E5N3nFsoQpwNsytsvFvRx READY for commit d3eb21c18812a946e5c01933a406976bba82293b, with branch-scoped Development Supabase URL/client key and credential-display key | Preview deployment verified; current documentation head not rebuilt |
-| Production migrations | Production ledger has 00044 and emergency 00051 only; migrations 00045–00050 and 00052 pending | Not Production complete |
+| Production migrations | Production ledger has 00044, emergency 00051 and security hotfix 00052; feature migrations 00045–00050 remain pending | Partial Production verification; feature release not complete |
 | Supabase Auth E2E | Real manual account creation/login/first-password-change/recovery not run | Not verified |
 | Production secrets | SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY and MDI_EMAIL_TOKEN_HMAC_SECRET are absent from Vercel Production | User configuration required |
 | Backup/restore and Auth security settings | Production restore readiness and leaked-password-protection setting remain unverified/disabled per Security Advisor | Not verified |
