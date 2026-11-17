@@ -1,67 +1,58 @@
 # SahiTech Education — Madrasa Digitalization Initiative (MDI)
 
-[![Supabase Postgres 17](https://img.shields.io/badge/Postgres-17-316192?logo=postgresql&logoColor=white)](https://supabase.com)
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?logo=next.js&logoColor=white)](https://nextjs.org)
-[![pnpm workspace](https://img.shields.io/badge/pnpm-12.18-f69220?logo=pnpm&logoColor=white)](https://pnpm.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+**Parent brand:** SahiTech  
+**Division:** SahiTech Education  
+**Initiative:** Madrasa Digitalization Initiative (MDI)  
+**Positioning:** SahiTech Education — An Education Initiative of SahiTech
 
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
-**Active Project**: Madrasa Digitalization Initiative (MDI)  
+MDI is a Bangladesh-first, international-ready digital platform initiative for Qawmi and Alia madrasas. The product direction is trilingual (Bangla, English and Arabic), with institution-scoped administration and separate academic models. Feature specifications describe intended capability; they do not by themselves establish that a feature is implemented or production-ready.
 
----
+## Repository at a glance
 
-## 🌟 Executive Overview
-The **Madrasa Digitalization Initiative (MDI)** is an enterprise-grade, trilingual (Bangla, English, Arabic), hybrid multi-tenant academic and institutional operating system engineered specifically for Islamic educational institutions (Madrasas) in Bangladesh and South Asia.
+- apps/web — Next.js App Router application (React, TypeScript, Tailwind CSS).
+- packages/domain — portable TypeScript domain logic, academic rules, RBAC and finance validation.
+- packages/database — Supabase client package and ordered SQL migrations.
+- supabase/functions — Supabase Edge Functions.
+- docs — product, design, architecture, security, operations and release specifications.
+- AGENTS.md — coding-agent operating and documentation-sync rules.
+- IMPLEMENTATION_STATUS.md — evidence-labelled implementation and release status.
 
-MDI delivers native dual academic engines:
-1. **Qawmi Academic Engine**: Tailored for Dars-e-Nizami (Befaqul Madaris / Al-Haiatul Ulya) marhala curricula, kitabs, chala examinations, sanad issuance, and lillah boarding funds.
-2. **Alia Academic Engine**: Tailored for Bangladesh Madrasa Education Board (BMEB) curricula, Ebtedayee to Kamil, GPA grading, and national board metrics.
+This is a Domain-Driven Modular Monolith in a pnpm workspace. There is no separate UI workspace package in the currently inspected repository.
 
----
+## Technology baseline
 
-## 🏗️ Architecture & Technology Stack
-- **Monorepo**: Domain-Driven Modular Monolith powered by pnpm workspaces.
-- **Frontend / Application**: Next.js 15 App Router, React 19, Tailwind CSS, Lucide icons.
-- **Backend / Database**: Supabase (PostgreSQL 17) with strict Row Level Security (RLS) on all multi-tenant tables.
-- **Localization**: Bangla (`bn` - default), English (`en`), Arabic (`ar` with RTL layout support).
-- **Security**: Tenant-scoped identity, role-based access control (RBAC), and session verification.
+The checked-in manifests specify pnpm 12.18.0, Next.js 15.x, React 19, TypeScript 5.7.x, Supabase JS/SSR packages and Tailwind CSS 3.4.x. Use package manifests and lockfile as the authority for exact resolved versions; badges and prose must not override them.
 
----
+The application has TypeScript locale dictionaries for bn, en and ar under apps/web/src/lib/i18n/dictionaries. Arabic direction is resolved as RTL. Verify locale completeness and direction in the UI; the presence of dictionaries alone is not a completeness test.
 
-## 📂 Repository Layout
-```
-├── apps/
-│   └── web/                   # Next.js 15 App Router application
-├── packages/
-│   ├── database/              # Supabase migrations (00001_initial_mdi_schema.sql) & client
-│   └── domain/                # Pure TypeScript domain models (Qawmi & Alia engines, RBAC)
-├── docs/                      # Technical specifications, architecture, and schema
-├── AGENTS.md                  # Antigravity agent standard operating procedures
-├── IMPLEMENTATION_STATUS.md   # Dynamic progress and connectivity tracker
-├── package.json               # Monorepo root
-└── pnpm-workspace.yaml        # Workspace configuration
-```
+## Getting started
 
----
+Prerequisites: Node.js 22 (the CI workflow currently uses Node 22) and pnpm 12.18.0.
 
-## 🚀 Getting Started
-
-### 1. Prerequisites
-- Node.js `v22+` or `v26+`
-- pnpm `v12+`
-- Supabase Project (configured in `.env.local`)
-
-### 2. Installation & Running
 ```bash
-# Install dependencies across all workspaces
-pnpm install
-
-# Start the web application
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
----
+Useful checks:
 
-## 🔒 Security & Tenant Isolation
-All tables in the public schema enforce PostgreSQL Row Level Security (RLS) policies. Access is strictly scoped to the authenticated tenant membership through `get_auth_tenant_ids()`.
+```bash
+pnpm test
+pnpm --filter web exec tsc --noEmit
+pnpm --filter web lint
+pnpm --filter web build
+```
+
+Note: packages/database currently exposes a placeholder test script. The separate SQL security smoke test must be run against an isolated database with the migration state it expects. A successful pnpm test command does not prove that SQL smoke test passed.
+
+## Security and environment
+
+- Copy the relevant example environment file locally and configure only the variables actually required by the code.
+- Never commit .env files or disclose credentials.
+- Supabase service-role credentials are server-only and must never use a NEXT_PUBLIC_ prefix.
+- Tenant security depends on server authorization, RLS policies, table/function grants, Storage policies and tenant-aware relational constraints together.
+- Development and production Supabase projects must remain separate.
+
+## Documentation
+
+Start with [the documentation index](docs/README.md), then read [the documentation sync policy](docs/DOCUMENTATION_SYNC_POLICY.md) and [agent instructions](AGENTS.md). Implementation status must be checked separately from target specifications. Production release always requires explicit approval and evidence for the release gates.

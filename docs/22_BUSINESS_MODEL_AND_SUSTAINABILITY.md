@@ -1,3 +1,5 @@
+> **Commercial status:** All subscription amounts, usage fees, tier entitlements and subsidy assumptions in this document are planning hypotheses, not approved offers or current prices. Validate unit costs, taxes, support obligations, payment provider fees and institutional willingness to pay before publishing or billing.
+
 # 22. Business Model & Financial Sustainability
 
 **Program**: Madrasa Digitalization Initiative (MDI)  

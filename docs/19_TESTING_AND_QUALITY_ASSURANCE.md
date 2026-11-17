@@ -1,66 +1,56 @@
-# 19. Testing & Quality Assurance Strategy
+# 19. Testing & Quality Assurance
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Purpose:** verify behavior at domain, application, database, browser and release boundaries.
 
----
+## 1. Current repository test baseline
 
-## 1. Multi-Tier Test Pyramid
+At the reviewed repository ref:
+- `packages/domain` uses Node.js built-in `node --test` test files.
+- The web CI workflow runs `pnpm test`, web TypeScript checking, web lint and Next.js build.
+- `packages/database/package.json` currently defines its test script as an echo placeholder. It is not a database test.
+- `packages/database/tests/platform_security_smoke.sql` is a separate SQL script. Its header records historical schema assumptions through migrations 00001–00030; it is not automatically run by the inspected CI workflow.
+- No Playwright configuration or Vitest setup was confirmed in the reviewed tree. Do not report those tools as active until added and wired into CI.
 
-```mermaid
-graph TD
-    E2E[End-to-End Tests: Playwright - Full Critical User Flows] --> Integration[Integration Tests: Server Actions, API Adapters]
-    Integration --> Unit[Unit Tests: Vitest - Domain Rules, GPA, Qawmi Marhalas]
-    Unit --> DBTests[Database & RLS Tests: pgTAP - Tenant Leak Isolation Probes]
-```
+This is a source inspection; no commands were executed as part of this documentation update.
 
-### Testing Toolchain:
-- **Unit Testing**: Vitest (instant execution, zero mock leakage, strict TypeScript coverage).
-- **End-to-End (E2E)**: Playwright (cross-browser desktop & mobile viewport testing).
-- **Database Security Testing**: pgTAP / Supabase CLI test runners (asserting RLS denial across tenants).
+## 2. Test pyramid
 
----
+1. **Domain unit tests:** academic grading, admission state transitions, RBAC, finance invariants, token helpers and pure validation.
+2. **Application/service tests:** server actions, authorization guards, idempotency, provider adapters and error handling.
+3. **Database integration/security tests:** RLS, grants, function execution, tenant-aware foreign keys, triggers, transaction rollback and Storage policies against isolated PostgreSQL/Supabase.
+4. **Browser E2E:** real user journeys across public application, owner MFA/review, invitation, onboarding, student operations, finance and Sanad verification.
+5. **Operational tests:** email delivery, backups/restores, observability, deployment health and incident recovery.
 
-## 2. Automated Cross-Tenant Security Probe Suite
+## 3. Critical security test cases
 
-The most critical test in MDI is verifying that **Tenant A cannot see or mutate Tenant B's data**:
+- Tenant A cannot read/write Tenant B data using known or guessed IDs.
+- Inactive memberships and pending/suspended tenants fail closed.
+- A tenant user cannot grant themselves owner/platform authority.
+- Global Owner requires trusted binding and required MFA.
+- Public callers cannot access application/document metadata directly.
+- Public Sanad lookup reveals only approved public fields.
+- Storage upload/download obeys tenant ownership and allowed content rules.
+- SECURITY DEFINER functions expose only intended operations to intended roles.
+- Cross-tenant foreign-key insertion is rejected.
+- Journal entries cannot be posted unbalanced, edited after posting or cross-link another tenant's account.
+- Invitation/upload capabilities expire, revoke and cannot be replayed.
+- Error paths roll back all writes and do not leak secrets.
 
-```typescript
-// Example: Cross-Tenant Isolation Test Spec
-describe('Multi-Tenant Isolation Assurance', () => {
-  it('prevents Tenant A user from querying Tenant B student records', async () => {
-    const tenantAClient = createTestClientForUser(USER_TENANT_A);
-    const { data, error } = await tenantAClient
-      .from('students')
-      .select('*')
-      .eq('tenant_id', TENANT_B_ID);
+## 4. CI baseline and recommended gates
 
-    expect(data).toHaveLength(0); // Guaranteed 0 rows returned by RLS
-  });
+The inspected workflow currently installs dependencies with a frozen lockfile, runs the root test script, checks web TypeScript, runs web lint and builds the web app. Keep workflow descriptions synchronized with the actual YAML.
 
-  it('rejects cross-tenant student enrollment mutation', async () => {
-    const tenantAClient = createTestClientForUser(USER_TENANT_A);
-    const { error } = await tenantAClient
-      .from('students')
-      .insert({
-        tenant_id: TENANT_B_ID,
-        admission_no: 'HACK-001',
-        full_name_en: 'Unauthorized Insert'
-      });
+Recommended future gates:
+- test all workspace packages and build them where applicable;
+- run real database integration tests against disposable Postgres/Supabase;
+- lint/validate Markdown links and Mermaid blocks;
+- add dictionary key-parity tests;
+- add Playwright E2E across critical routes, bn/en/ar and RTL;
+- add dependency/security scanning and secret scanning;
+- publish test reports and pin tested commit SHA.
 
-    expect(error).toBeDefined(); // RLS default-deny triggers policy violation
-  });
-});
-```
+## 5. Release quality gates
 
----
+A successful build proves compilation, not correct authorization, migration compatibility, live integration or production readiness. No release should proceed with unresolved critical/high security issues, unverified migrations, broken E2E workflows or missing backup/rollback plan.
 
-## 3. Quality Gates for Release
-A pull request or deployment is barred from merging unless:
-1. `pnpm lint` passes with 0 warnings.
-2. `tsc --noEmit` passes with 0 errors across all monorepo packages.
-3. 100% of domain unit tests pass.
-4. RLS security isolation tests pass.
-5. `next build` compiles with 0 production errors.
-
+Every test report must state command, commit, environment, timestamp, outcome and skipped checks. Never invent coverage percentages or passing test counts.

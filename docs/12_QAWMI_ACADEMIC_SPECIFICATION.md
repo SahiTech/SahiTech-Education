@@ -1,3 +1,5 @@
+> **Curriculum governance notice:** The structures, terminology, grading bands, Kitab lists, term calendars and weightings in this specification are configurable baseline proposals. They must be reviewed against the institution's selected board/federation and current official circulars by qualified academic authorities. Do not present this document as universal Qawmi policy or formal board accreditation.
+
 # 12. Qawmi Academic Engine Specification
 
 **Program**: Madrasa Digitalization Initiative (MDI)  

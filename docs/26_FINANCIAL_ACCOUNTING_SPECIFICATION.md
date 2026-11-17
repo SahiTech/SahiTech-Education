@@ -1,121 +1,61 @@
 # 26. Financial & Double-Entry Accounting Specification
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
-**Standard**: GAAP / IFRS-Compatible Double-Entry Ledger with Shariah-Compliant Fund Segregation  
+**Status:** Target financial domain specification. Database-enforced production behavior must be verified independently.
 
----
+## 1. Core accounting principles
 
-## 1. Architectural Philosophy: Double-Entry Core
+MDI is designed around tenant-scoped accounting records and double-entry journal posting. Every posted journal entry should balance: total debits equal total credits. The accounting period, currency precision, rounding, receivable recognition, payment allocation and refund policies must be explicit.
 
-MDI does not treat institutional finance as simple disconnected payment slips. Every financial event generates balanced, immutable double-entry journal records.
+## 2. Ledger lifecycle
 
-```mermaid
-graph TD
-    Event[Financial Event: Fee Collection / Expense / Donation] --> Transaction[Transaction Record]
-    Transaction --> JournalEntry[Journal Entry: Balanced Debit & Credit]
-    JournalEntry --> GL[General Ledger Accounts]
-    GL --> CoreAccounts[Asset, Liability, Equity, Revenue, Expense]
-    GL --> RestrictedFunds[Restricted Shariah Lillah / Zakat Sub-Ledger]
-    GL --> Reports[Financial Statements: Cashbook, Balance Sheet, Committee Audit]
-```
+Required lifecycle:
+1. Create a draft voucher from an authorized business event.
+2. Validate tenant, accounts, source document, currency and totals.
+3. Validate restricted-fund rules and supporting documents.
+4. Post debit and credit lines atomically in one database transaction.
+5. Prevent direct edit/delete of posted entries.
+6. Correct mistakes through a linked reversal and a new corrected entry.
+7. Record actor, approver, timestamp, source and audit correlation.
 
----
+Do not call a payment successful when the receipt or corresponding journal posting failed.
 
-## 2. Standard Chart of Accounts (COA) Structure
+## 3. Tenant Chart of Accounts
 
-Each tenant (Madrasa) is provisioned with a standardized, customizable Chart of Accounts:
+Each tenant needs a configurable chart of accounts with account types and parent-child relationships. Avoid hard-coded assumptions that all madrasas use the same accounting categories, fiscal periods or cash/payment channels.
 
-```
-1000 - ASSETS (সম্পদ)
-  ├── 1100: Cash and Cash Equivalents (নগদ তহবিল)
-  │     ├── 1110: Cash in Hand - Main Counter (প্রধান ক্যাশ)
-  │     ├── 1120: Petty Cash - Principal/Muhtamim (খুচরা ক্যাশ)
-  │     └── 1130: Bank Accounts (ব্যাংক হিসাব)
-  ├── 1200: Digital & MFS Wallets (ডিজিটাল ওয়ালেট)
-  │     ├── 1210: bKash Merchant Wallet (বিকাশ)
-  │     ├── 1220: Nagad Merchant Wallet (নগদ)
-  │     └── 1230: Rocket / Bank Gateway (রকেট/ব্যাংক গেটওয়ে)
-  └── 1300: Accounts Receivable (প্রাপ্য ফি ও বকেয়া)
+Amounts must use an explicit currency code and exact decimal/minor-unit representation; avoid floating-point arithmetic for money.
 
-2000 - LIABILITIES (দায়)
-  ├── 2100: Accounts Payable (প্রদেয় খরচ)
-  └── 2200: Advance Student Fees (অগ্রিম ফি গ্রহণ)
+## 4. Restricted funds and Shariah review
 
-3000 - RESTRICTED & COMMITTED FUNDS (সংরক্ষিত ও ধর্মীয় তহবিল)
-  ├── 3100: General Institutional Fund (সাধারণ প্রাতিষ্ঠানিক তহবিল)
-  ├── 3200: Lillah Boarding & Orphan Subsidy Fund (লিল্লাহ বোর্ডিং ও এতিম তহবিল - Zakat/Sadqah)
-  ├── 3300: Mosque & Infrastructure Waqf Fund (মসজিদ ও ভবন ওয়াকফ তহবিল)
-  └── 3400: Kitab / Library Endowment Fund (কিতাব ও কুতুবখানা তহবিল)
+MDI may model separate categories for general operating funds, Lillah, Zakat/Fitrah, Waqf and institution-specific restricted donations. Their eligibility, collection, custody, disbursement, transfer and administration-cost treatment must be defined by qualified Shariah advisors and the institution's governing policy.
 
-4000 - REVENUES (আয়)
-  ├── 4100: Operational Student Revenues (ছাত্র বেতন ও ফি)
-  │     ├── 4110: Monthly Tuition Fees (মাসিক বেতন)
-  │     ├── 4120: Annual Admission & Re-enrollment Fees (ভর্তি ও দাখেলা ফি)
-  │     ├── 4130: Examination Fees (পরীক্ষা ফি)
-  │     └── 4140: Residential & Hostel Utility Fees (আবাসিক ও ইউটিলিটি ফি)
-  └── 4200: Charitable & Community Donations (দান ও সাহায্য)
-        ├── 4210: General Public Donations (সাধারণ দান)
-        ├── 4220: Zakat & Fitrah Collections (যাকাত ও ফিতরা)
-        └── 4230: Animal Hide / Qurbani Skin Collections (কোরবানির চামড়া বিক্রয় আয়)
+No generic software rule should be presented as a universal fatwa. The exact rules in historical examples must be treated as illustrative policy until formally reviewed. Record the policy version and approving authority.
 
-5000 - EXPENSES (ব্যয়)
-  ├── 5100: Faculty & Staff Compensation (আসতিযা ও স্টাফদের বেতন-ভাতা)
-  ├── 5200: Lillah Kitchen & Student Subsistence (লিল্লাহ খানা ও খাদ্য ব্যয়)
-  ├── 5300: Academic & Examination Printing (পরীক্ষা ও কিতাব মুদ্রণ খরচ)
-  └── 5400: Campus Utilities, Electricity & Maintenance (বিদ্যুৎ ও মেরামত ব্যয়)
-```
+## 5. Database enforcement requirements
 
----
+A production-grade implementation must provide:
+- balanced posting enforced within a transaction;
+- immutable posted journal entries and lines;
+- unique tenant-scoped entry and receipt sequences;
+- same-tenant account and source-document references;
+- concurrency-safe and idempotent payment processing;
+- append-only audit records;
+- scoped access for accountant, admin, approver and support roles.
 
-## 3. Shariah-Compliant Fund Segregation (Lillah / Zakat Invariant)
+An application/domain validator is useful but can be bypassed by another database client or privileged routine. Do not claim a database invariant until a constraint, trigger, restricted RPC or equivalent database control and an integration test demonstrate it.
 
-### Shariah Invariant Rule:
-> **Zakat, Fitrah, and Lillah funds are religious trusts (Amanah). They can strictly only be used for the direct benefit of eligible underprivileged, poor, or orphan students (*Masarif al-Zakat*). They CANNOT be commingled with general commercial revenues or used to pay general administrative overhead, construction, or commercial teacher bonuses.**
+## 6. Reconciliation and reporting
 
-```mermaid
-flowchart LR
-    DonorDonation[Donor Zakat / Lillah Contribution] --> CreditLillah[Credit: 3200 Lillah & Orphan Fund]
-    CreditLillah --> DebitCash[Debit: 1110 Cash / 1210 bKash]
-    
-    SubsidizedMeal[Subsidized Student Meal Expense] --> DebitExpense[Debit: 5200 Lillah Kitchen Expense]
-    DebitExpense --> CreditCash[Credit: 1110 Cash in Hand]
-    DebitExpense --> ReleaseFund[Debit: 3200 Lillah Fund ➔ Credit: 3100 General Fund]
-    
-    AdminExpense[General Admin / Building Construction] -.->|STRICTLY FORBIDDEN| Denied[DENIED by Shariah Engine Policy]
-```
+Reconcile cash, bank, MFS provider settlement, fee invoices, donations, restricted balances and reversal entries. A report must show its as-of date, accounting basis, currency and filters. Keep raw source transactions and audit evidence available to authorized reviewers.
 
-### Technical Enforcement:
-1. Every payment voucher tagged with `fund_id = 'lillah_fund'` verifies against student eligibility records (`students.is_lillah_boarder = true`).
-2. General operational expenses (e.g., campus rent, generator fuel) cannot reference account `3200` as a debit source. Any attempt throws an unhandled domain exception.
+## 7. Production readiness checklist
 
----
-
-## 4. Immutability & Reversal Entries (Zero Silent Edits)
-
-Financial integrity requires that **posted journal entries are never updated or deleted**:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Muhasib as Accountant
-    participant System as MDI Ledger Engine
-    participant DB as PostgreSQL Database
-
-    Note over Muhasib,System: Erroneous Payment Entry #JE-1049 Recorded (৳5,000 recorded instead of ৳3,000)
-    Muhasib->>System: Requests Correction for #JE-1049
-    System-->>Muhasib: Rejection: Direct Edit of Posted Entry Forbidden
-    Muhasib->>System: Issues Reversal Entry Request with Reason ("Wrong counter receipt amount")
-    System->>DB: Inserts #JE-1050 (Exact Reversal: Debits become Credits, Credits become Debits)
-    System->>DB: Inserts #JE-1051 (Corrected Entry: ৳3,000)
-    System->>DB: Links #JE-1050 and #JE-1051 as reversal chain of #JE-1049
-    System-->>Muhasib: Complete, Audited Reversal Chain Recorded
-```
-
----
-
-## 5. Cash Counterfoil & Bank Reconciliation
-1. **Counterfoil Slips**: Every cash payment prints a dual-leaf or tri-leaf voucher (Student Copy, Office Copy, Accounts Copy) with an auto-incrementing sequential receipt number (`receipt_sequence_no`) unique to each financial year.
-2. **Reconciliation Queue**: Digital payments via bKash/Nagad are matched against the gateway transaction report. Unmatched payments are placed in an exception queue for manual bursar reconciliation.
-
+- [ ] Institution accounting rules approved.
+- [ ] Restricted fund rules reviewed by qualified authority.
+- [ ] COA and fiscal-period setup versioned.
+- [ ] Atomic posting and rollback tests pass.
+- [ ] Posted-entry immutability is database enforced.
+- [ ] Payment callbacks are signed, idempotent and reconciled.
+- [ ] Cross-tenant account references are rejected.
+- [ ] Receipt numbering is collision-safe and tenant/period scoped.
+- [ ] Audit and permission model reviewed by finance stakeholders.

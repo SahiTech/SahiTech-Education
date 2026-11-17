@@ -1,3 +1,5 @@
+> **Specification status:** This document describes product/market hypotheses and configurable pilot criteria. Market figures, eligibility thresholds, pricing or partner claims must be validated and approved before public use. Requirements in this file are not implementation or accreditation evidence.
+
 # 02. Product & Business Requirements
 
 **Program**: Madrasa Digitalization Initiative (MDI)  

@@ -1,106 +1,54 @@
 # 27. Institutional Support, Audit & Background Job Protocol
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
-**Standards**: Zero-Trust Tenant Isolation, Audited Support Access, Safe Background Processing  
+**Status:** Security and operations target. Do not assume every mechanism described here is deployed.
 
----
+## 1. Consent-based institutional support access
 
-## 1. Controlled Support Access & Impersonation Protocol
+Support personnel must not obtain routine unrestricted access to confidential tenant records. Any future support elevation must be:
+- explicitly authorized by the institution's designated administrator;
+- scoped by tenant, purpose and permitted actions;
+- short-lived with a fixed maximum duration;
+- revocable immediately;
+- visibly indicated throughout the session;
+- re-authorized server-side for each protected operation;
+- fully audited with actor, authorizer, purpose, scope, start, expiry and termination.
 
-In a multi-tenant education SaaS, platform support engineers must never have unrestrained, back-door access to an institution's confidential records, student files, or financial balances.
+Support access must not permit payments, ledger posting/reversal, role promotion, owner identity management or other high-impact operations unless a separate documented approval model exists.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor MadrasaAdmin as Muhtamim / Madrasa Admin
-    actor SupportTech as MDI Support Engineer
-    participant System as Support Access Gateway
-    participant Audit as Immutable Audit Log
+Do not claim impersonation or consent-based support is implemented merely because this protocol is documented.
 
-    MadrasaAdmin->>System: Grants Support Access (Selects Scope: "Read-Only" or "Assisted Setup", Duration: "4 Hours")
-    System->>Audit: Records Support Access Token Grant (Authorizer ID, Expiry, Tenant ID)
-    SupportTech->>System: Requests Session Elevation for Tenant ID
-    System->>System: Validates Active Non-Expired Grant & MFA on Support Account
-    System->>Audit: Logs "Support Session Initiated" with Support Engineer ID & IP
-    Note over SupportTech,System: Support Tech assists institution with prominent red visual banner in UI
-    SupportTech->>System: Performs troubleshooting actions
-    System->>Audit: Every individual action logged with actor="support_impersonation"
-    alt Manual Revocation or Timeout Expiration
-        MadrasaAdmin->>System: Revokes Access OR Timer reaches 4 hours
-        System->>System: Invalidate Support Session Token immediately
-        System->>Audit: Logs "Support Session Terminated"
-    end
-```
+## 2. Background job isolation
 
-### Mandatory Support Access Rules:
-1. **Consent Required**: Platform Super Admins **cannot** arbitrarily view tenant data without an active, explicit consent grant from the institution's primary administrator.
-2. **Time-Bound**: Grants auto-expire after a maximum of 4 to 24 hours. No standing access permitted.
-3. **Prominent UI Banner**: When an impersonated or support session is active, a persistent, un-dismissible high-visibility banner displays: *"Support Assistance Session Active — Authorized by Muhtamim. Actions are audited."*
-4. **Zero Financial Mutation via Support**: Support access tokens are strictly barred from executing payments, transferring ledger funds, or changing bank account details.
+The repository includes an email outbox worker source. General worker architecture must be assessed per function and deployment. An asynchronous worker must never assume a human `auth.uid()` or operate across all tenant rows by default.
 
----
+Required controls:
+- authenticated, narrowly scoped job invocation;
+- validated tenant/job payload;
+- trusted transaction-local tenant context or dedicated tenant-scoped service authorization;
+- least-privilege database grants;
+- idempotent execution and concurrency-safe leases;
+- bounded retries and dead-letter visibility;
+- no cross-tenant bulk operations;
+- redacted structured logs and audit correlation;
+- explicit failure/rollback behavior.
 
-## 2. Background Job Security & Tenant Isolation Protocol
+A session setting alone is not a security boundary unless RLS policies and worker connection behavior enforce it.
 
-In interactive HTTP requests, `auth.uid()` drives PostgreSQL Row Level Security (RLS) via `public.get_auth_tenant_ids()`. However, automated background workers (e.g. generating monthly fee invoices, sending batch SMS notifications, compiling daily attendance analytics) execute asynchronously without an active user session.
+## 3. Audit design
 
-```mermaid
-flowchart TD
-    Queue[Background Job Queue: pgmq / Postgres Outbox Table] --> Worker[Worker Process]
-    Worker --> ExtractPayload[Extract Job Payload: target_tenant_id, job_type]
-    Worker --> BeginTx[BEGIN Transaction]
-    BeginTx --> SetSession[SET LOCAL app.current_tenant_id = target_tenant_id]
-    SetSession --> ExecLogic[Execute Job Logic with RLS Active]
-    ExecLogic --> PolicyCheck{RLS Engine: Does row.tenant_id == app.current_tenant_id?}
-    PolicyCheck -->|Yes| ProcessRow[Process & Update Job Status]
-    PolicyCheck -->|No| RejectRow[Kernel Violation: Rollback & Alert]
-    ProcessRow --> CommitTx[COMMIT Transaction]
-```
+Record high-impact actions with actor/service identity, tenant, action, target entity, timestamp, correlation ID and approved change context. Sensitive payloads should be minimized or redacted.
 
-### Technical Enforcement:
-1. **Tenant-Scoped Transactions**: Background workers **must never** execute unbounded cross-tenant bulk updates in a single query.
-2. **Transaction Local Context**: The worker sets a transaction-local session variable:
-   ```sql
-   SET LOCAL app.current_tenant_id = 'c4b8...';
-   ```
-3. **Worker RLS Policy**: Tables include worker-specific RLS policies that verify `app.current_tenant_id`:
-   ```sql
-   CREATE POLICY "Worker tenant policy"
-   ON public.fee_invoices FOR ALL
-   USING (
-     (current_setting('app.current_tenant_id', true))::uuid = tenant_id
-   );
-   ```
-4. **Failure Isolation**: An error or deadlock in Tenant A's background job rolls back Tenant A's transaction without impacting Tenant B's queued jobs.
+Append-only behavior must be enforced by database grants and protections, not merely by hiding edit controls. Define retention, access, export and incident investigation procedures.
 
----
+## 4. Operational acceptance
 
-## 3. Tamper-Evident Audit Logging Protocol
+Before calling support access or a worker operational:
+1. verify deployment target and exact version;
+2. inspect function grants and database role;
+3. test allowed and denied actions;
+4. verify tenant isolation;
+5. simulate expiry, revocation, retry and failure;
+6. confirm audit events are written;
+7. document monitoring and runbook ownership.
 
-All high-impact institutional operations are recorded in an append-only, tamper-evident audit ledger:
-
-```sql
-CREATE TABLE IF NOT EXISTS public.audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    actor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    actor_role VARCHAR(50) NOT NULL,
-    is_support_impersonation BOOLEAN NOT NULL DEFAULT false,
-    action VARCHAR(100) NOT NULL, -- e.g., 'student.admission_approved', 'invoice.reversed'
-    entity_name VARCHAR(100) NOT NULL, -- e.g., 'students', 'fee_invoices'
-    entity_id UUID NOT NULL,
-    previous_state JSONB,
-    new_state JSONB,
-    ip_address INET,
-    user_agent TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
-);
-```
-
-### Immutable Security Constraints:
-- `audit_logs` has **zero** `UPDATE` or `DELETE` permissions granted to any role.
-- Triggers record the exact `previous_state` and `new_state` for exam result updates, fee reversals, and role promotions.
-- Any attempt to truncate or delete audit records raises an uncatchable database alert.
-
+Production changes require explicit approval.

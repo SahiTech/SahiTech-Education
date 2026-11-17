@@ -1,86 +1,78 @@
-# 10. Authentication & Role-Based Access Control (RBAC)
+# 10. Authentication & Authorization
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+## 1. Identity layers
 
----
+MDI has two distinct authorization domains:
 
-## 1. Authentication Engine: Supabase Auth
+1. **Platform identity:** the singleton Global Platform Owner authorization boundary. It is not a tenant membership or a tenant role.
+2. **Institution identity:** authenticated users with active tenant-scoped memberships and roles in `tenant_users`.
 
-MDI leverages Supabase Auth for enterprise-grade authentication:
-- **Email & Password**: Standard administrative login for Muhtamim, Academic Dean, and Staff.
-- **Mobile Phone & OTP**: Simplified SMS-based login for Ustads and Guardians.
-- **Session Tokens**: Cryptographically signed JSON Web Tokens (JWT) stored in HTTP-only, Secure, SameSite=Lax cookies via `@supabase/ssr`.
+An authenticated session alone does not grant platform or tenant access.
 
----
+## 2. Authentication
 
-## 2. Role Taxonomy & Authorization Matrix
+Supabase Auth is the current authentication provider in the application source. The web app uses `@supabase/ssr` server/client utilities and cookie-backed sessions. Protected routes and server actions must obtain and validate the authoritative user on the server.
 
-MDI defines 7 institutional roles scoped by `tenant_id`. The Global Platform Owner is a separate platform identity and is never a tenant role:
+Do not rely on:
+- client-side role state;
+- user-editable metadata;
+- caller-provided tenant IDs;
+- a hidden/disabled navigation link;
+- middleware alone as authorization.
 
-| Role Key | Classical Designation | Primary Operational Scope |
-| :--- | :--- | :--- |
-| `madrasa_admin` | Muhtamim / Principal | Full administrative governance within the tenant. |
-| `academic_dean` | Nazim-e-Taleemat | Curricula, routines, exam schedules, mark approvals, Sanads. |
-| `teacher` | Ustad / Muallim | Class attendance entry, subject marks recording, student remarks. |
-| `accountant` | Muhasib / Bursar | Fee invoicing, cash collection, voucher printing, financial reporting. |
-| `hostel_warden` | Nazim-e-Darul-Iqamah | Dormitory room assignments, residential attendance, kitchen meal counts. |
-| `student` | Talib-e-Ilm | Viewing personal attendance, marksheet, routine, and syllabus. |
-| `parent` | Abhibhabok / Guardian | Viewing child attendance, exam report cards, and online fee payment. |
+Password reset, email confirmation, OTP and MFA behavior must be tested against the actual Supabase Auth configuration and redirect allowlists. Provider configuration cannot be inferred from source code.
 
----
+## 3. Tenant role set
 
-## 3. Global Platform Owner
+The intended institution-scoped roles are:
 
-The single Global Platform Owner identity is stored separately from tenant memberships. It authenticates with email/password and mandatory TOTP MFA (`aal2`). Only the bound, verified owner can review applications, issue/revoke invitations, inspect application documents, and perform final tenant activation. No tenant role has cross-tenant privileges.
+| Role key | Scope |
+|---|---|
+| `madrasa_admin` | Institution-level administration within authorized tenant |
+| `academic_dean` | Academic administration within authorized tenant |
+| `teacher` | Assigned teaching and classroom workflows |
+| `accountant` | Approved fee and accounting workflows |
+| `hostel_warden` | Approved boarding/hostel workflows |
+| `student` | Own permitted student records |
+| `parent` | Linked child/ward records only |
 
-The legacy database enum value `super_admin` is retained temporarily for migration compatibility but is rejected for new or updated tenant memberships, excluded from tenant RLS helper checks, and has no application permissions. Existing memberships must be audited before the enum value is removed in a later migration.
+Actual permission scope must be enforced on the server and database. A role label alone does not express class assignment, student ownership, guardian relationship or least-privilege field visibility.
 
-## 4. Granular Permission Matrix
+The legacy database enum value `super_admin` may remain during compatibility cleanup. It must not be used as a current tenant role or as the Global Platform Owner authorization mechanism.
 
-```mermaid
-graph TD
-    subgraph AdminPermissions[Madrasa Admin / Muhtamim]
-        P1[manage_tenant_settings]
-        P2[manage_branches]
-        P3[manage_staff]
-        P4[manage_academic_calendar]
-        P5[manage_fees]
-        P6[view_financial_reports]
-    end
+## 4. Global Platform Owner boundary
 
-    subgraph AcademicPermissions[Academic Dean / Nazim-e-Taleemat]
-        P7[manage_curriculum]
-        P8[manage_admissions]
-        P9[input_marks]
-        P10[generate_transcripts]
-        P11[issue_sanad]
-    end
+The platform owner identity is held separately from tenant membership and requires the trusted owner binding plus mandatory MFA/AAL2 checks in the accepted platform workflow. Every owner page and server action must re-check authorization. Browser metadata or email equality alone must never grant owner access.
 
-    subgraph FacultyPermissions[Teacher / Ustad]
-        P12[record_attendance]
-        P13[input_marks]
-        P14[view_student_records]
-    end
+Owner lifecycle, invitation issuance, application review and final tenant activation are high-impact operations. They require validation of state transitions, authorization, idempotency and immutable audit records.
 
-    subgraph BursarPermissions[Accountant / Muhasib]
-        P15[manage_fees]
-        P16[collect_payments]
-        P17[view_financial_reports]
-    end
-```
+## 5. Authorization enforcement checklist
 
-### TypeScript Permission Guard Enforcement
-All business logic functions verify permissions using pure TypeScript domain validators:
-```typescript
-import { hasPermission, UserRole, Permission } from '@sahitech/domain';
+For every protected operation:
+1. Validate the user session on the server.
+2. Resolve the correct tenant and active membership.
+3. Check a specific permission, not merely “is logged in”.
+4. Validate all identifiers belong to the selected tenant.
+5. Validate input with a runtime schema.
+6. Execute through the intended database role/client.
+7. Rely on RLS, grants and constraints as defense in depth.
+8. Log sensitive lifecycle, finance and academic changes.
+9. Return minimal errors and avoid leaking existence of protected records.
 
-export function authorizeAction(userRole: UserRole, requiredPermission: Permission) {
-  if (!hasPermission(userRole, requiredPermission)) {
-    throw new Error(`Unauthorized: Role '${userRole}' lacks permission '${requiredPermission}'`);
-  }
-}
-```
-Client navigation is visually permission-filtered, but server-side execution strictly enforces the guard on every database mutation.
+## 6. Secrets and credential lifecycle
 
+Never hard-code initial passwords, return passwords from privileged RPCs, log reset tokens, or store raw invitation tokens where hashes can be used. Initial account activation should use verified invitations or a secure reset/onboarding flow. Secrets belong in server-only environment/secret stores.
+
+Migration `00045_owner_direct_setup_madrasa_admin.sql` currently contains a static fallback credential path and a response field that may return the password used. Treat this as a release blocker pending code/migration remediation and review. Do not invoke this routine to provision real users until the issue is corrected.
+
+## 7. Verification expectations
+
+Test:
+- tenant admin cannot grant platform owner privileges;
+- owner is rejected without trusted binding and required MFA;
+- non-owner is rejected from owner routes and RPCs;
+- tenant A cannot access tenant B, including guessed identifiers;
+- inactive membership and pending/suspended tenants fail closed;
+- teacher, parent, student and accountant see only their authorized records and fields;
+- tokens/invitations expire, revoke and cannot be replayed;
+- owner and tenant lifecycle actions are auditable.

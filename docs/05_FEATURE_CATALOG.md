@@ -1,3 +1,5 @@
+> **Feature status:** This is a target capability catalogue, not a live feature checklist. Mark each capability implemented only when its complete authorized workflow is present and tested. Provider names and future integrations are options, not evidence of a live connection.
+
 # 05. Complete Platform Feature Catalog
 
 **Program**: Madrasa Digitalization Initiative (MDI)  

@@ -1,43 +1,61 @@
-# 17. AI & Automation Architecture (Privacy-First)
+# 17. AI & Automation Architecture — Privacy-First Target
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Status:** Target architecture. No user-facing AI/OCR workflow is confirmed as production-operational by the reviewed repository baseline.
 
----
+## 1. Guiding principle: assistant, not authority
 
-## 1. Architectural Philosophy: Assistant, Not Authority
+AI may help staff prepare, organize or summarize information. It must not independently:
+- create or approve admissions;
+- publish exam results or alter marks;
+- issue, revoke or amend a Sanad;
+- create, post, reverse or approve financial entries;
+- change tenant, owner, staff or access privileges;
+- determine religious eligibility or make a binding Shariah ruling.
 
-AI within MDI operates strictly as a **productivity assistant** for human administrators, never as an autonomous authority:
-- **Zero Autonomous Destructive Actions**: AI cannot alter grades, delete student records, or issue financial adjustments without human sign-off.
-- **Zero-Retention Privacy**: No student personal data, photos, or exam records are stored or used for training third-party models.
-- **Human-in-the-Loop**: Every AI extraction or generated draft requires explicit human review and confirmation.
+A qualified human must review extracted or generated content before it becomes a record or communication.
 
-```mermaid
-flowchart TD
-    PhysicalDoc[Handwritten Admission Paper] --> Scan[Mobile Camera / Scanner Scan]
-    Scan --> VisionAI[Vision Extraction Service: Zero Data Retention]
-    VisionAI --> Parse[Parse Fields: Name, Father, DOB, Address]
-    Parse --> DraftUI[Render Draft Admission Form in MDI UI]
-    DraftUI --> StaffReview{Office Staff Review & Verification}
-    StaffReview -->|Confirmed & Edited| Commit[Save to PostgreSQL SIS Database]
-    StaffReview -->|Rejected| Discard[Discard Draft]
-```
+## 2. Privacy and data governance
 
----
+Before introducing a model or OCR provider:
+- classify data and define a lawful purpose;
+- minimize prompt/context to the fields required;
+- identify provider retention/training policies contractually;
+- use approved regional/data-transfer arrangements where required;
+- redact direct identifiers where feasible;
+- define retention/deletion and audit rules;
+- restrict access to model outputs;
+- do not include secrets or private student data in telemetry.
 
-## 2. Core High-Value AI Capabilities
+“Zero retention” must not be claimed unless provider contract/settings and runtime behavior prove it.
 
-### 2.1 Bengali Handwritten Form OCR
-- **Context**: In rural Bangladesh, guardians submit handwritten admission forms in Bengali script.
-- **Function**: Extracts key fields (Student Name in Bengali, Father's Name, Date of Birth, Guardian Phone, Present Address) into structured JSON drafts.
-- **Result**: Reduces student enrollment data entry from 5 minutes to 45 seconds per student.
+## 3. Potential workflows (planned)
 
-### 2.2 Trilingual Notice & Announcement Drafter
-- **Context**: Madrasas need to publish notices (Ramadan closures, exam dates, fee deadlines) in formal administrative Bengali, classical Arabic, and English.
-- **Function**: Takes brief bullet points from the Muhtamim and drafts polished, respectful, grammatically correct notices in all three languages.
+### 3.1 Document field extraction
+A future OCR workflow may extract candidate fields from a scanned admission form. Store the result as a draft with field-level confidence, source reference and review state. Never silently commit extraction output to a student record.
 
-### 2.3 Attendance Anomaly Early-Warning Detector
-- **Context**: Residential madrasa students who fall ill or experience distress often show early attendance anomalies.
-- **Function**: Detects patterns (e.g., student missing two consecutive morning Fajr roll calls or sudden drops in dining hall meals) and alerts the Hostel Warden.
+### 3.2 Notice drafting
+A future language assistant may produce Bangla, English and Arabic notice drafts from staff-approved facts. A staff member must verify dates, amounts, religious references, audience and translation before publication.
 
+### 3.3 Operational anomaly indicators
+A future analytics workflow may surface patterns such as unusual attendance changes for human review. It must avoid stigmatizing labels, inferential diagnoses or automatic punitive actions. Explain the evidence behind each alert and permit review/correction.
+
+## 4. Technical controls
+
+- Use an explicit provider adapter and server-side secrets.
+- Apply schema validation to inputs and structured outputs.
+- Treat uploaded files, prompts and retrieved documents as untrusted data.
+- Protect against prompt injection and data exfiltration.
+- Enforce per-tenant authorization before retrieval and after generation.
+- Track model/version, prompt template version, actor, source records and human disposition without storing unnecessary sensitive content.
+- Add cost/rate limits and a provider kill switch.
+- Keep critical data mutation in established application workflows.
+
+## 5. Acceptance criteria before launch
+
+- Privacy/security assessment approved.
+- Tenant boundary and source-document access tested.
+- Output validation and prompt-injection tests included.
+- Human review and rejection/edit paths work.
+- No autonomous critical mutation is possible.
+- Retention, consent, cost and provider failure states are documented.
+- Feature marked as operational only after real end-to-end verification.

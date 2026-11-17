@@ -1,84 +1,72 @@
 # 09. Multi-Tenancy Architecture & Data Isolation
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Model:** Shared database/shared schema with tenant-scoped PostgreSQL Row Level Security  
+**Authority:** authenticated server identity plus database membership/policy checks
 
----
+## 1. Tenant isolation contract
 
-## 1. Selected Tenancy Model: Shared Database + Shared Schema with PostgreSQL RLS
+Each institution (Madrasa) is a tenant. A user may have memberships in one or more tenants, with a role scoped to each membership. Tenant identity may be selected in the UI or resolved from a domain/session context, but that selection is never authorization by itself.
 
-MDI uses **Engine-Level Row Level Security (RLS)** in PostgreSQL 17. Every operational table includes a `tenant_id` column, and PostgreSQL enforces tenant boundaries directly inside the database kernel before any data leaves the storage engine.
+Required request flow:
+1. Authenticate the request using the trusted server-side session.
+2. Resolve the user's active membership for the requested tenant.
+3. Reject missing, inactive, ambiguous or invalid tenant context (fail closed).
+4. Execute the operation using a server-side Supabase client/session.
+5. Let database grants and RLS independently constrain rows.
+6. Record privileged or high-impact operations in an audit trail.
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor User as Authenticated Client
-    participant App as Next.js 15 Server Layer
-    participant PG as PostgreSQL 17 Kernel
-    participant Table as Database Storage
-
-    User->>App: Invokes API / Server Action with Auth Cookie
-    App->>App: Extracts Verified User JWT (auth.uid())
-    App->>PG: Executes SQL Query (e.g., SELECT * FROM students)
-    PG->>PG: Evaluates RLS Policy: get_auth_tenant_ids()
-    alt User has membership in tenant
-        PG->>Table: Filters rows where tenant_id IN (authorized_tenants)
-        Table-->>PG: Returns only tenant-scoped records
-        PG-->>App: Results returned
-        App-->>User: 200 OK with scoped data
-    else User has NO membership / unauthorized tenant
-        PG-->>App: Returns 0 rows (Blank / Access Denied)
-        App-->>User: 403 Forbidden
-    end
+  actor User
+  participant Web as Next.js server
+  participant Auth as Supabase Auth
+  participant DB as PostgreSQL + RLS
+  User->>Web: Request tenant-scoped action
+  Web->>Auth: Validate server session
+  Auth-->>Web: Verified user identity
+  Web->>Web: Resolve active membership and permission
+  Web->>DB: Execute query with session identity
+  DB->>DB: Apply grants, RLS and relational constraints
+  DB-->>Web: Scoped result or denial
+  Web-->>User: Authorized response
 ```
 
----
+## 2. RLS helper implementation
 
-## 2. Security Definer Helper Function
+The repository includes migration `00044_private_rls_security_definer_helpers.sql`. It defines narrowly scoped helper implementations in the `private` schema using SECURITY DEFINER and a fixed search_path, then exposes public SECURITY INVOKER wrappers for compatibility with policy expressions/application calls.
 
-To enforce high-performance, non-bypassable tenant isolation without trusting client-side headers:
+The private helper logic checks `auth.uid()`, active membership, excludes the legacy `super_admin` tenant role and requires an active tenant lifecycle state. Do not copy an older public SECURITY DEFINER example into a new migration.
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_auth_tenant_ids()
-RETURNS SETOF UUID
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-SET search_path = public
-AS $$
-    SELECT tenant_id 
-    FROM public.tenant_users 
-    WHERE user_id = auth.uid() 
-      AND is_active = true;
-$$;
-```
+Before changing the helper model:
+- inspect exact function owners and grants;
+- confirm private schema usage/execute privileges;
+- inspect wrapper grants and all call sites;
+- test unauthenticated, inactive, pending-activation, multi-tenant and cross-tenant cases;
+- ensure no client-controlled tenant identifier can widen access.
 
-### Architectural Defenses:
-- `SECURITY DEFINER`: Runs with the privileges of the creator to securely inspect membership records in `tenant_users`.
-- `SET search_path = public`: Permanently fixes the schema search path, defeating search-path injection vulnerabilities.
-- `STABLE`: Enables PostgreSQL query planner to cache the result within a single transaction, optimizing bulk query performance.
+RLS policy changes must account for PostgreSQL permissive policies combining with OR. Removing one broad policy does not prove the effective policy surface is narrow.
 
----
+## 3. Tenant-aware relationships
 
-## 3. Hostname & Custom Domain Resolution
+Use tenant-scoped unique constraints and composite foreign keys when parent and child both carry tenant identity. Where a child derives tenant identity from a parent, enforce the derivation at the database boundary. Test cross-tenant FK attempts using at least two isolated test tenants.
 
-MDI supports multiple routing options for tenants:
-1. **Platform Subdomain**: `[subdomain].sahitech-edu.com` (e.g. `darululoom.sahitech-edu.com`).
-2. **Custom Institutional Domain**: `[madrasa.edu.bd]` (e.g. `jamia-dhaka.edu.bd`).
-3. **Session Cookie Fallback**: Used during development or direct portal access (`localhost:3000/portals/admin`).
+## 4. Platform owner separation
 
-## 4. Background Job & Asynchronous Worker Tenant Isolation
+The Global Platform Owner is a platform-level principal, not a tenant role. Platform authorization is separate from tenant membership/RLS and must use its own trusted identity binding, MFA and narrow server-side checks. The historical `super_admin` enum value may remain for compatibility but must not be treated as an authorized current platform role.
 
-In asynchronous background processing (e.g. automated midnight fee invoice generation or bulk SMS alerts), `auth.uid()` is null. To prevent cross-tenant data pollution:
-1. Every background job queue payload specifies the exact target `tenant_id`.
-2. Worker execution wraps processing inside a transaction setting `SET LOCAL app.current_tenant_id = '<target_tenant_id>'`.
-3. Dedicated background worker RLS policies verify that `current_setting('app.current_tenant_id', true)::uuid == tenant_id`.
-4. Jobs for Tenant A cannot read, lock, or mutate records belonging to Tenant B.
+## 5. Background work
 
----
+Background jobs cannot assume that `auth.uid()` exists. Every job must:
+- carry a validated tenant identifier and a bounded job type;
+- use a transaction-local, trusted tenant context or a dedicated narrowly scoped worker authorization path;
+- reject unscoped jobs;
+- be idempotent and concurrency-safe;
+- avoid cross-tenant bulk operations;
+- log actor/service identity, outcome and correlation ID;
+- use least-privilege worker credentials.
 
-## 5. Controlled Institutional Support Access
-Platform engineers and super admins cannot view a tenant's internal records without an explicit, time-limited support grant issued by the institution's primary administrator. Support sessions are visually indicated with an un-dismissible red banner and logged in the immutable audit trail. (See [27. Institutional Support & Audit Protocol](file:///c:/Users/O%20MAMA/SahiTech-Education/docs/27_INSTITUTIONAL_SUPPORT_AND_AUDIT_PROTOCOL.md)).
+Do not assume a `SET LOCAL app.current_tenant_id` pattern works automatically: a corresponding policy and connection/transaction implementation must be present and tested.
 
+## 6. Custom-domain and routing behavior
 
+Subdomain/custom-domain routing is a target capability. Only advertise a custom host as supported after DNS/TLS, tenant resolution, cookie scope, auth callbacks and routing are tested for that domain. Invalid host-to-tenant mappings must fail closed.

@@ -1,42 +1,75 @@
 # 21. Deployment, Monitoring & Disaster Recovery
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Purpose:** reproducible environments, observable operations and rehearsed recovery  
+**Status:** operational targets require independent environment evidence
 
----
+## 1. Environment separation
 
-## 1. Cloud Infrastructure Architecture
+Maintain distinct local, development, preview/staging and production configuration. Do not use production credentials or data for routine development tests.
 
-```mermaid
-flowchart LR
-    Users[Global Users: Web & Mobile] --> Cloudflare[Cloudflare Edge: Anycast DNS, SSL for SaaS, WAF]
-    Cloudflare --> NextServer[Next.js 15 Production Server / Vercel]
-    NextServer --> SupabasePG[(Supabase PostgreSQL 17: ap-south-1 Mumbai)]
-    NextServer --> SupabaseStorage[(Supabase Storage: Student Photos & Docs)]
-```
+Environment variables must be classified:
+- Public browser variables: only values intentionally safe to expose.
+- Server-only variables: privileged Supabase, email, payment, signing, cron and HMAC secrets.
+- Build-time configuration: non-secret deployment settings.
 
-### Production Infrastructure Topology:
-- **Application Runtime**: Next.js 15 App Router deployed to low-latency serverless edge nodes or containerized Node.js.
-- **Database Engine**: Managed Supabase PostgreSQL 17 in `ap-south-1` (Mumbai), providing sub-40ms round-trip latency to users in Dhaka, Chittagong, and Sylhet.
-- **Custom Domain SSL**: Cloudflare for SaaS automatically provisions and renews TLS certificates for custom madrasa domains (`madrasa.edu.bd`).
+Never prefix a secret with `NEXT_PUBLIC_`. Store production secrets only in the approved hosting/provider secret manager.
 
----
+## 2. Deployment topology
 
-## 2. Observability & Monitoring
-1. **Health Checks**: `/api/health` probe verifying database connectivity, storage reachability, and memory utilization.
-2. **Structured Logging**: JSON structured log streams containing request ID, tenant ID, user role, latency, and status code.
-3. **Sensitive Data Redaction**: Passwords, guardian NID numbers, credit card details, and auth tokens are scrubbed from log outputs via regex filters.
+The repository uses a Next.js web application, Supabase PostgreSQL/Auth/Storage integration and Supabase Edge Function source. Hosting, DNS/CDN/WAF, backup plans and scheduled workers must be documented from the actual connected environment. A diagram or configuration file does not prove a service is live.
 
----
+Deploy to Preview first. Confirm exact commit SHA, environment target, auth callbacks, custom domain routing and runtime logs. Production release requires explicit approval.
 
-## 3. Disaster Recovery & Backup Protocol
+## 3. Observability
 
-| Metric | Target Standard | Operational Strategy |
-| :--- | :--- | :--- |
-| **Recovery Point Objective (RPO)** | **< 1 Hour** | Continuous WAL (Write-Ahead Log) archiving + daily automated full physical snapshot at 03:00 UTC. |
-| **Recovery Time Objective (RTO)** | **< 4 Hours** | Point-in-time recovery (PITR) to standby PostgreSQL replica or automated restore from S3 backup bucket. |
+For application and worker operations, capture structured, privacy-safe events:
+- request/correlation ID;
+- environment and deployment SHA;
+- route/action and normalized result;
+- latency and dependency outcome;
+- actor/tenant identifiers only where permitted and minimized.
 
-### Backup Restoration Drill:
-Bi-annual scheduled disaster recovery drill restoring database snapshots to a staging environment and executing test test suites to verify relational integrity.
+Redact passwords, bearer tokens, cookies, invitation/upload capabilities, NID data, student document contents and payment credentials. Avoid logging full payloads.
 
+Define readiness checks so a transient database or provider issue is represented accurately. Do not show “healthy” based solely on a page rendering.
+
+## 4. External workers and scheduled tasks
+
+Each worker needs:
+- documented deployment target and exact version;
+- server-only credentials and rotation process;
+- authenticated invocation method;
+- bounded job claims, lease recovery and retries;
+- idempotency and dead-letter handling;
+- tenant isolation and append-only operational audit;
+- alerting and runbook for prolonged failures.
+
+A worker source file existing in Git does not mean it has been deployed or scheduled.
+
+## 5. Backup and recovery
+
+Define Recovery Point Objective (RPO) and Recovery Time Objective (RTO) only after the Supabase plan/settings and backup architecture are confirmed. Verify:
+- database backup/PITR availability and retention;
+- Storage/object backup strategy;
+- encryption and access boundaries;
+- restoration dependencies and credentials;
+- restore to an isolated environment;
+- referential integrity and application smoke tests;
+- documented rollback/forward-fix procedure.
+
+A backup is not proven usable until a restore drill succeeds. Do not claim hourly recovery or a four-hour RTO without evidence.
+
+## 6. Incident response
+
+Maintain severity definitions, escalation contacts, evidence preservation, credential rotation, tenant/user communication and post-incident review. Never copy private student records or secrets into public issue trackers.
+
+## 7. Release checklist
+
+- [ ] Exact commit and Preview deployment verified.
+- [ ] Environment variables checked without exposing values.
+- [ ] Auth callbacks, cookies, locale and domain behavior tested.
+- [ ] Migrations reconciled, rehearsed and approved.
+- [ ] Security, performance and runtime logs reviewed.
+- [ ] External worker and email/payment integrations end-to-end tested.
+- [ ] Backup restore and rollback path rehearsed.
+- [ ] Production deployment/database change explicitly approved.

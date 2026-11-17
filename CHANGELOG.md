@@ -1,9 +1,20 @@
 # Changelog
 
-All notable changes to the Madrasa Digitalization Initiative (MDI) platform will be documented in this file.
+All notable changes to MDI are recorded here. This log describes repository changes; it is not proof that a deployment or database migration was applied.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format follows Keep a Changelog. Versions are assigned when a release is approved.
+
+## [Unreleased]
+
+### Documentation
+- Added mandatory documentation-sync policy and change-to-document map for coding agents.
+- Reworked the public website design specification around the current homepage/shared shell and honest feature-state labels.
+- Updated core architecture, database, authentication, security, localization, testing, operations and finance documents to match inspected source boundaries.
+- Replaced machine-local documentation links and refreshed the documentation index.
+- Added evidence labels and clarified that source presence, CI build and historical environment notes are not production verification.
+
+### Security review
+- Documented the static fallback credential path and credential-return behavior in migration 00045 as a release blocker. No application code, SQL migration or production configuration was changed in this documentation-only work.
 
 ## [1.0.0] - 2026-11-12
 

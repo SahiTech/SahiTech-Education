@@ -1,51 +1,63 @@
-# 18. Mobile & Offline-First Architecture
+# 18. Mobile & Offline Architecture
 
-**Program**: Madrasa Digitalization Initiative (MDI)  
-**Parent Brand**: SahiTech  
-**Division**: SahiTech Education  
+**Status:** Target architecture; offline-first attendance is not verified as implemented in the inspected source tree.
 
----
+## 1. Mobile-first principles
 
-## 1. Progressive Web App (PWA) Foundation
+The application must work on modest Android devices, narrow viewports and intermittent connections. Mobile responsiveness is not the same as offline functionality. Do not claim offline support solely because a page is responsive or browser cache exists.
 
-Recognizing that classroom teachers in rural brick-and-mortar campuses often encounter weak or zero cellular reception, MDI implements a **Progressive Web App (PWA)** offline architecture:
+## 2. Offline capability tiers
 
-```mermaid
-sequenceDiagram
-    actor Ustad as Ustad (In Classroom)
-    participant PWA as MDI PWA Client
-    participant IDB as IndexedDB Write Queue
-    participant Cloud as PostgreSQL Cloud Database
+Design workflows with explicit connectivity levels:
 
-    Note over Ustad,PWA: Offline / Cellular Network Dropped
-    Ustad->>PWA: Opens Daily Attendance for Dawra Class
-    PWA->>IDB: Fetches cached student roster
-    Ustad->>PWA: Marks 3 students absent, clicks "Save"
-    PWA->>IDB: Appends attendance payload to offline sync queue
-    PWA-->>Ustad: UI Badge: "সংরক্ষিত (অফলাইন মোড)" (Saved Offline)
+| Workflow | Intended offline posture | Guardrail |
+|---|---|---|
+| Attendance | Potential offline draft and later sync | Server confirms final accepted record |
+| Exam marks | Local draft only, cloud submission | Publication/ratification is online and authorized |
+| Student directory | Limited cached read-only data | Minimize sensitive data; protect device cache |
+| Fee collection | Online-only unless a reviewed offline settlement model exists | Never issue final receipt without authoritative sequence |
+| Sanad issuance/revocation | Online-only | Server-side authorization and verification required |
+| Owner review/activation | Online-only | Mandatory MFA, current state and audit |
 
-    Note over Ustad,PWA: Network Reconnected (e.g., in Staff Room)
-    PWA->>PWA: Background service worker detects navigator.onLine = true
-    PWA->>Cloud: Flushes queue via idempotent batch Server Action
-    Cloud-->>PWA: 200 OK (Batch Committed & Audit Logged)
-    PWA-->>Ustad: UI Badge updates to "ক্লাউডে সুসংগত" (Synced)
-```
+These are target behaviors, not claims of current implementation.
 
----
+## 3. Safe offline sync design
 
-## 2. Offline-Safe Workflows vs Cloud-Mandatory Workflows
+A future sync engine must include:
+- explicit queue schema and versioning;
+- client-generated idempotency UUIDs;
+- server-side tenant and actor revalidation on every sync;
+- timestamp and clock-skew handling;
+- per-record conflict policy;
+- retry/backoff and dead-letter visibility;
+- acknowledgement before local queue deletion;
+- local encryption or equivalent protection appropriate to data sensitivity;
+- logout/account-switch cache cleanup;
+- maximum offline retention and remote revocation behavior.
 
-| Operational Domain | Offline Capability | Storage Mechanism | Conflict Resolution Standard |
-| :--- | :--- | :--- | :--- |
-| **Daily Attendance** | **100% Offline Capable** | Local IndexedDB | Idempotent client-generated batch UUID (`batch_id`). Last write wins for daily date. |
-| **Exam Marks Entry Drafts** | **Offline Draft Capable** | Local IndexedDB | Drafts saved locally; formal submission and snapshot calculation require cloud sync. |
-| **Student Directory Lookup** | **Read-Only Offline** | Service Worker Cache | Cached active student roster for the assigned class/marhala. |
-| **Fee Collection & Cash** | **Cloud-Only (Online Required)**| None (Disabled offline) | Cash receipts create financial liability; strictly forbidden without verified server sequence number. |
-| **Sanad & Certificate Issuance**| **Cloud-Only (Online Required)**| None (Disabled offline) | Cryptographic signature requires server-side private key verification. |
+Never use a generic last-write-wins strategy for grades, finances, ownership or sensitive identity changes. Conflict resolution must follow domain rules.
 
----
+## 4. PWA and service worker requirements
 
-## 3. Conflict Handling & Idempotency Rules
-1. **Client UUIDs**: Every offline-created attendance row assigns a `client_uuid = crypto.randomUUID()`.
-2. **Deduplication**: When syncing to PostgreSQL, `ON CONFLICT (tenant_id, student_id, attendance_date) DO UPDATE` ensures no duplicate records are generated if retries occur.
+Before adding a service worker:
+- define exactly which routes/assets can be cached;
+- never cache privileged HTML or sensitive API responses in a shared/public cache;
+- version and invalidate caches;
+- handle user sign-out and tenant switching;
+- protect against stale authorization state;
+- test update and rollback behavior.
 
+No complete service worker, IndexedDB write queue or automatic attendance sync is claimed operational in this documentation snapshot.
+
+## 5. Testing
+
+- airplane-mode and flaky-network tests;
+- duplicated/reordered sync delivery;
+- expired session and membership revocation while offline;
+- two devices editing the same record;
+- tenant/account switch with cached data;
+- low-storage/private-browsing behavior;
+- server acknowledgement loss and retry;
+- keyboard/touch and 320–430px viewport checks.
+
+A local “saved” indicator must distinguish saved on device, queued for sync, accepted by server and rejected/conflicted.
