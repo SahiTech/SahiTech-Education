@@ -149,10 +149,10 @@ This dated addendum supersedes older environment snapshots above where they conf
 - Issue #13 remains open until the secure application and database release are live and verified.
 
 ### Database evidence
-- Production migration ledger: baseline through 00044 plus emergency 00051. Migrations 00045–00050 and 00052 are pending. Do not reapply 00051.
+- Production migration ledger: baseline through 00044 plus emergency 00051 and lifecycle hotfix 00052. Feature migrations 00045–00050 remain pending. Do not reapply 00051 or 00052.
 - Development ledger includes 00045–00051 in the reviewed dependency sequence, and 00052 has now been applied.
 - The targeted read-only SQL test packages/database/tests/owner_rpc_aal2_security_smoke.sql passed against the isolated Development project after 00052.
-- Production catalog check confirmed owner_direct_setup_madrasa_admin is absent. The legacy owner_direct_provision_tenant routine was found in Production and is removed by 00052; this remains pending in Production.
+- Read-only Production catalog checks confirmed owner_direct_setup_madrasa_admin and owner_direct_provision_tenant are both absent; the four targeted lifecycle Owner RPCs contain AAL2 guards.
 
 ### Deployment and configuration
 - PR #12's Production Vercel deployment is READY and its GitHub Vercel status is success.
@@ -165,7 +165,7 @@ This dated addendum supersedes older environment snapshots above where they conf
 2. Configure the missing server-only Auth Admin key and HMAC secret for the intended environments.
 3. Run real Supabase Auth E2E: create a manual admin, sign in using the generated .invalid alias, force the first password change, and exercise Owner-assisted recovery in Development.
 4. Review remaining Supabase Security Advisor findings and enable leaked-password protection where supported.
-5. Confirm Production backup/restore readiness and rehearse the exact migration order: 00046, 00045, 00047, 00048, 00049, 00050, 00052. Production already records 00051, so skip it.
+5. Confirm Production backup/restore readiness and rehearse the exact pending feature-migration order: 00046, 00045, 00047, 00048, 00049, 00050. Production already records 00051 and 00052, so skip both.
 6. Apply Production migrations, merge PR #15, deploy the secure app and run live smoke tests only after all gates above are evidenced.
 
 Production release status: NOT READY. Source implementation and Development database verification are not Production verification.
