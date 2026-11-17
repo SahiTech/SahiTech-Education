@@ -49,8 +49,18 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.headers.set('x-tenant-subdomain', resolvedTenantSubdomain);
   }
 
-  // Route protection
+  // Manual MDI accounts must replace their one-time credential before any other
+  // application route is accessible. This is enforced at the edge and again in
+  // server-side tenant context / permission helpers.
   const pathname = request.nextUrl.pathname;
+  if (user?.app_metadata?.mdi_force_password_change === true && pathname !== '/change-password' && pathname !== '/auth/callback') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/change-password';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Route protection
   const isProtectedPath = 
     pathname.startsWith('/dashboard') || 
     pathname.startsWith('/portals') ||
