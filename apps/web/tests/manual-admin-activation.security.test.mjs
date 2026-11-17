@@ -111,3 +111,33 @@ test('invitation and application upload token signing fail closed without a stro
   assert.match(applicationActions, /নিরাপদ application upload ব্যবস্থা প্রস্তুত নয়/);
 });
 
+
+const credentialRoute = read('src/app/api/platform/credential/route.ts');
+const credentialHelper = read('src/lib/security/manual-admin-credential.ts');
+const migration48 = read('../../packages/database/migrations/00048_single_use_manual_admin_credential_handoff.sql');
+const migration49 = read('../../packages/database/migrations/00049_enforce_aal2_manual_admin_owner_rpcs.sql');
+
+test('temporary credentials are delivered only through encrypted, Owner-bound, single-use handoff', () => {
+  assert.match(provisionRoute, /sealManualAdminCredential/);
+  assert.match(recoveryRoute, /sealManualAdminCredential/);
+  assert.match(provisionRoute, /owner_create_manual_admin_credential_handoff/);
+  assert.match(recoveryRoute, /owner_create_manual_admin_credential_handoff/);
+  assert.doesNotMatch(provisionRoute + recoveryRoute, /temporaryPassword,\s*$/);
+  assert.doesNotMatch(provisionRoute + recoveryRoute, /loginIdentifier:\s*completed\.login_identifier/);
+  assert.match(credentialHelper, /aes-256-gcm/);
+  assert.match(credentialHelper, /httpOnly:\s*true/);
+  assert.match(credentialHelper, /sameSite:\s*'strict'/);
+  assert.match(credentialRoute, /owner_consume_manual_admin_credential_handoff/);
+  assert.match(credentialRoute, /payload\.ownerUserId !== user\.id/);
+  assert.match(credentialRoute, /Cache-Control.*no-store/s);
+  assert.match(migration48, /consumed_at IS NULL/);
+  assert.match(migration48, /expires_at > now\(\)/);
+  assert.match(migration48, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
+});
+
+test('AAL2 is enforced inside database Owner RPCs, not only in HTTP handlers', () => {
+  for (const source of [migration46, migration47, migration49]) {
+    assert.match(source, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
+  }
+  assert.match(migration49, /Expected to harden 5 manual-admin Owner RPCs/);
+});
