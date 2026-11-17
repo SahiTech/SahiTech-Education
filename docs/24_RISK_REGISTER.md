@@ -21,7 +21,7 @@
 | RSK-12 | Documentation becomes stale after code changes | High | Mandatory policy in AGENTS.md, change-to-doc map, same-PR update and link validation |
 | RSK-13 | Backup/restore or RPO/RTO claims are unsupported | High | Verify provider plan/settings and complete restore drill before publishing objectives |
 | RSK-14 | Shariah or curriculum rules overstate authority/recognition | High | Make configuration explicit and require qualified institutional/board/Shariah review |
-| RSK-15 | Legacy owner_direct_provision_tenant and AAL1-capable Owner lifecycle RPCs remain in Production | Critical until migration 00052 is applied | Migration 00052 drops the unused direct-provision RPC and adds DB AAL2 guards to four lifecycle RPCs; Development migration and read-only SQL smoke test passed, Production application pending |
+| RSK-15 | Legacy owner_direct_provision_tenant and AAL1-capable Owner lifecycle RPCs in Production | Mitigated 2026-11-17; monitor through release | Production migration 00052 applied; read-only SQL verification confirmed the legacy RPC is absent and four lifecycle RPCs require DB AAL2. Recheck after application deployment and keep other manual-admin release blockers open |
 
 ## 2. Risk handling rules
 
@@ -34,7 +34,7 @@
 
 ## 3. Immediate release blockers from source review
 
-1. Production has emergency retirement migration 00051, but secure migrations 00045–00050 and 00052 remain pending; Production still has the legacy direct-tenant RPC until 00052 is applied.
+1. Production has emergency 00051 and security hotfix 00052, but secure feature migrations 00045–00050 remain pending; the new manual-admin provisioning workflow is not yet active.
 2. Production Vercel lacks the server-only Supabase Auth Admin key and MDI_EMAIL_TOKEN_HMAC_SECRET required by the secure workflow/application upload tokens.
 3. Real Supabase Auth create/login/forced-password-change/recovery E2E and backup/restore readiness remain unverified.
 4. Remaining Supabase Security Advisor findings, including leaked-password protection, need individual review.
