@@ -37,9 +37,10 @@ export async function issueApplicationInvitation(formData: FormData) {
   const applicationId = String(formData.get('applicationId') || '');
   if (!/^[0-9a-f-]{36}$/i.test(applicationId)) throw new Error('Invalid application.');
   const tokenNonce = randomBytes(32).toString('hex');
-  const hmacSecret = (process.env.MDI_EMAIL_TOKEN_HMAC_SECRET && Buffer.byteLength(process.env.MDI_EMAIL_TOKEN_HMAC_SECRET, 'utf8') >= 32)
-    ? process.env.MDI_EMAIL_TOKEN_HMAC_SECRET
-    : '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  if (!hmacSecret || Buffer.byteLength(hmacSecret, 'utf8') < 32) {
+    throw new Error('Secure invitation signing is not configured. Use the email-independent Manual Admin Activation workflow.');
+  }
   const rawToken = createHmac('sha256', hmacSecret).update(`mdi-invitation:${applicationId}:${tokenNonce}`).digest('hex').toUpperCase();
   const tokenHash = createHash('sha256').update(rawToken).digest('hex');
   const { error } = await (supabase.rpc as any)('owner_issue_invitation', {
@@ -71,52 +72,5 @@ export async function reviewApplicationDocument(formData: FormData) {
   });
   if (error) throw new Error('Could not save document verification decision.');
   revalidatePath('/platform');
-}
-
-export type DirectProvisionResult = {
-  success: boolean;
-  error?: string;
-  data?: {
-    tenant_id: string;
-    user_id: string;
-    email: string;
-    institution_name: string;
-    subdomain: string;
-    is_new_user: boolean;
-    activated: boolean;
-    password_used: string | null;
-  };
-};
-
-export async function directProvisionTenant(params: {
-  applicationId: string;
-  initialPassword?: string;
-  activateImmediately?: boolean;
-}): Promise<DirectProvisionResult> {
-  try {
-    const { supabase } = await requirePlatformOwner();
-    const { applicationId, initialPassword, activateImmediately = true } = params;
-
-    if (!/^[0-9a-f-]{36}$/i.test(applicationId)) {
-      return { success: false, error: 'অবৈধ আবেদন সনাক্তকারী (Invalid application ID)।' };
-    }
-
-    const { data, error } = await (supabase.rpc as any)('owner_direct_setup_madrasa_admin', {
-      p_application_id: applicationId,
-      p_initial_password: initialPassword?.trim() || null,
-      p_activate_immediately: activateImmediately,
-    });
-
-    if (error) {
-      console.error('owner_direct_setup_madrasa_admin error:', error);
-      return { success: false, error: error.message || 'অ্যাকাউন্ট সরাসরি সেটআপ করা যায়নি।' };
-    }
-
-    revalidatePath('/platform');
-    return { success: true, data };
-  } catch (err: any) {
-    console.error('directProvisionTenant failed:', err);
-    return { success: false, error: err?.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।' };
-  }
 }
 
