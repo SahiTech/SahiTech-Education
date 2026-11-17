@@ -97,3 +97,13 @@ This addendum updates the original source-only review; it does not rewrite its h
 - Remaining gates: configure SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY and MDI_EMAIL_TOKEN_HMAC_SECRET in Vercel Production; complete real Supabase Auth create/login/password-change/recovery tests; review Security Advisor warnings and leaked-password protection; verify backup/restore and run the final Production smoke test.
 
 Evidence labels: the workflow is source implemented on the feature branch, migration 00052 and the read-only SQL smoke test are Development verified, and the full secure workflow is not Production verified.
+
+
+## 2026-11-17 Production hotfix verification
+
+After the previous addendum, migration 00052 was applied to the Production Supabase project as an independent lifecycle-security hotfix.
+
+- Production ledger now contains baseline through 00044, emergency 00051 and hotfix 00052. Feature migrations 00045–00050 remain pending.
+- A read-only Production SQL check returned: legacy_direct_tenant_rpc_absent = true; all_lifecycle_rpcs_require_aal2 = true; lifecycle_rpc_count = 4.
+- The Development ledger contains the complete manual-admin migration sequence through 00052. It has two same-name ledger entries for 00052 from a repeated idempotent application; do not manually delete migration-history rows. Reconcile the ledger before a future CLI db push.
+- This hotfix does not deploy the new manual-admin application code, does not install the reservation/handoff schema in Production and does not prove real Auth provisioning/login/recovery. Those release gates remain open.
