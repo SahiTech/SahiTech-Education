@@ -105,7 +105,7 @@ test('existing Auth users at applicant contact email are protected from takeover
 });
 
 test('invitation and application upload token signing fail closed without a strong HMAC secret', () => {
-  assert.match(platformActions, /Secure invitation delivery is not configured/);
+  assert.match(platformActions, /Secure invitation signing is not configured/);
   assert.doesNotMatch(platformActions + ownerPage + applicationActions, /0123456789abcdef0123456789abcdef|DEFAULT_HMAC_SECRET/);
   assert.doesNotMatch(applicationActions, /NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(applicationActions, /নিরাপদ application upload ব্যবস্থা প্রস্তুত নয়/);
