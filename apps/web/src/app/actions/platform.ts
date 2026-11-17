@@ -107,7 +107,7 @@ export type ManualAdminCredentials = {
   institution_name: string;
   subdomain: string;
   activated: boolean;
-  contact_email_verified: false;
+  contact_email_verified: boolean;
   audit_warning?: string;
 };
 
@@ -225,6 +225,8 @@ export async function provisionMadrasaAdminManually(params: {
         const { error: deleteError } = await adminClient.auth.admin.deleteUser(createdAuthUserId);
         if (deleteError) {
           await adminClient.auth.admin.updateUserById(createdAuthUserId, { ban_duration: '876000h' });
+        } else {
+          createdAuthUserId = null;
         }
       }
       await (ownerClient.rpc as any)('owner_fail_manual_admin_provisioning', {
@@ -318,7 +320,7 @@ export async function resetMadrasaAdminPasswordManually(params: {
         institution_name: 'Madrasa Admin',
         subdomain: '',
         activated: true,
-        contact_email_verified: false,
+        contact_email_verified: Boolean(existingUser.email_confirmed_at),
         ...(finishError ? { audit_warning: 'Password reset হয়েছে, তবে completion audit নিশ্চিত করা যায়নি। পুনরায় Reset করবেন না; Owner Audit Trail যাচাই করুন।' } : {}),
       },
     };
