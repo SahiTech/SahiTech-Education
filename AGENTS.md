@@ -36,7 +36,37 @@
 
 ---
 
-## 5. Development Commands
+## 5. Mandatory Documentation Synchronization (Non-Optional)
+
+Documentation is part of the implementation. A code change is not complete until its relevant documentation has been reviewed and synchronized in the same change set.
+
+### Required agent workflow
+1. **Discover before editing:** inspect the current repository tree, the relevant source files, existing tests, migrations, configuration, and the linked documents in `docs/README.md`. Do not rely on old chat summaries or stale status claims.
+2. **Map change to documentation:** use the ownership map in `docs/DOCUMENTATION_GOVERNANCE.md`. Read every directly affected specification before changing code.
+3. **Implement and verify:** make the smallest safe code change; add/update tests; run the relevant checks. Never claim a check passed unless it was actually executed and its output inspected.
+4. **Synchronize docs in the same branch/PR:** update all affected specifications, diagrams, examples, route lists, environment-variable references, migration notes, operational runbooks, and acceptance criteria. Update `CHANGELOG.md` for user-visible or operationally meaningful changes and `IMPLEMENTATION_STATUS.md` only with freshly verified facts.
+5. **Record evidence:** state what changed, files affected, commands run, results, limitations, and any required human decision. Distinguish implemented, tested, deployed, and production-verified states.
+6. **Review drift:** search for stale names, removed routes, old versions, outdated counts, broken links, local-machine paths, and contradictory claims before finishing.
+
+### Documentation quality rules
+- Use repository-relative Markdown links; never commit `file:///`, local drive paths, machine-specific paths, or private workspace paths.
+- Do not invent features, integrations, metrics, compliance, uptime, test results, or deployment state.
+- Mark roadmap/target architecture separately from current implementation.
+- Every new module, route, permission, table, migration, environment variable, integration, background job, or security boundary must have an identified documentation owner.
+- Preserve backward-compatible migration history. Never rewrite an applied migration to make docs appear consistent.
+- Keep secrets, tokens, personal data, and real production credentials out of documentation and examples.
+- If a change has no documentation impact, record the reason in the PR/change summary.
+- Do not silently change approved business rules, academic policy, accounting rules, legal claims, or production infrastructure.
+
+### Completion checklist
+- [ ] Relevant specification(s) read before implementation.
+- [ ] Code, tests, and documentation updated together.
+- [ ] Docs index and internal links verified.
+- [ ] Current-state claims backed by repository/test/deployment evidence.
+- [ ] No unrelated documentation rewrite or unsupported claim.
+- [ ] Final summary includes code/docs paths and actual verification results.
+
+## 6. Development Commands
 - `pnpm install`: Install dependencies.
 - `pnpm dev`: Start development server.
 - `pnpm build`: Production build.
