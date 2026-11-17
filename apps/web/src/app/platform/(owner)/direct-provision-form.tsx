@@ -283,9 +283,9 @@ SahiTech Education Support: +8801601654316 | sahitecheducation@gmail.com`;
               </div>
             </div>
             <p className="rounded-lg border border-amber-300/30 bg-amber-300/10 p-2 text-[10px] leading-relaxed text-amber-100">
-              {result.contact_email_verified === false
-                ? 'আবেদনের Contact Email verified নয়। উপরের MDI Login ID একটি system-generated login identity; এটি কোনো ইমেইল গ্রহণ করে না।'
-                : ''}
+              {result.login_identifier.endsWith('@login.sahitech.invalid')
+                ? 'আবেদনের Contact Email verified নয়। MDI Login ID একটি system-generated sign-in identity; এটি কোনো ইমেইল গ্রহণ করে না।'
+                : 'MDI Login ID একটি verified email-based sign-in address।'}
               প্রথম Login-এ Admin-কে নিজের নতুন Password সেট করতেই হবে।
             </p>
             <p className="text-[10px] text-emerald-100/80">
