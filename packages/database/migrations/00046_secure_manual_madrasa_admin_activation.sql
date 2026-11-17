@@ -246,11 +246,12 @@ BEGIN
   WHERE id = p_auth_user_id;
 
   IF NOT FOUND
+     OR v_auth_email IS NULL
      OR v_auth_email_confirmed_at IS NULL
-     OR lower(v_auth_email) <> lower(v_res.login_identifier)
-     OR v_auth_app_metadata->>'mdi_manual_madrasa_admin' <> 'true'
-     OR v_auth_app_metadata->>'mdi_force_password_change' <> 'true'
-     OR v_auth_app_metadata->>'mdi_provisioning_reservation_id' <> p_reservation_id::TEXT THEN
+     OR lower(v_auth_email) IS DISTINCT FROM lower(v_res.login_identifier)
+     OR COALESCE(v_auth_app_metadata->>'mdi_manual_madrasa_admin', 'false') IS DISTINCT FROM 'true'
+     OR COALESCE(v_auth_app_metadata->>'mdi_force_password_change', 'false') IS DISTINCT FROM 'true'
+     OR COALESCE(v_auth_app_metadata->>'mdi_provisioning_reservation_id', '') IS DISTINCT FROM p_reservation_id::TEXT THEN
     RAISE EXCEPTION 'manual_admin_auth_identity_mismatch';
   END IF;
 
@@ -650,8 +651,8 @@ BEGIN
   WHERE id = v_user_id;
 
   IF NOT FOUND
-     OR v_app_metadata->>'mdi_manual_madrasa_admin' <> 'true'
-     OR v_app_metadata->>'mdi_force_password_change' <> 'false' THEN
+     OR COALESCE(v_app_metadata->>'mdi_manual_madrasa_admin', 'false') IS DISTINCT FROM 'true'
+     OR COALESCE(v_app_metadata->>'mdi_force_password_change', 'true') IS DISTINCT FROM 'false' THEN
     RAISE EXCEPTION 'manual_admin_password_change_not_eligible' USING ERRCODE = '42501';
   END IF;
 
