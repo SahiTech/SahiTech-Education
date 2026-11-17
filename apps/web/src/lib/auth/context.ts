@@ -25,6 +25,12 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return null;
+  if (user.app_metadata?.mdi_manual_madrasa_admin === true) {
+    const { data: passwordChangeRequired, error: passwordGateError } =
+      await (supabase.rpc as any)('mdi_manual_password_change_required');
+    if (passwordGateError || passwordChangeRequired === true) return null;
+  }
+  if (user.app_metadata?.mdi_force_password_change === true) return null;
 
   const [profileResult, cookieStore, headerStore] = await Promise.all([
     supabase
@@ -80,7 +86,7 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
   const profile = profileResult.data;
   return {
     userId: user.id,
-    userEmail: user.email || '',
+    userEmail: (typeof user.app_metadata?.mdi_contact_email === 'string' ? user.app_metadata.mdi_contact_email : user.email) || '',
     fullName: profile?.full_name_bn || profile?.full_name_en || user.email || 'ব্যবহারকারী',
     tenantId: active.tenant_id,
     tenantName: tenantData.name || 'মাদরাসা',

@@ -8,7 +8,7 @@
 | ID | Risk | Priority | Mitigation / required evidence |
 |---|---|---|---|
 | RSK-01 | Cross-tenant data exposure through policy/grant/function gaps | Critical | Reconcile live catalog; test RLS, table grants, function execution, views, Storage and cross-tenant references |
-| RSK-02 | Static fallback password and credential return path in migration 00045 | Critical | Replace with verified invitation/reset workflow; never return credentials; regression-test RPC output/logs |
+| RSK-02 | Legacy static credential and password-return path | Critical until secure Admin workflow is Production verified | Emergency 00051 and lifecycle hotfix 00052 are in Production; old credential RPC is removed, but secure feature migrations 00045–00050, required secrets and Auth E2E remain pending |
 | RSK-03 | Multi-step workflows may partially commit or report success after failed writes | High | Transactional RPCs, idempotency, failure injection and rollback tests |
 | RSK-04 | Financial journal invariants may rely on app validation | Critical | DB-enforced balanced posting, immutable posted entries and reversal chain; accountant review |
 | RSK-05 | Production/dev migration drift | High | Compare migration ledgers and database catalogs; test a replacement migration path on a production clone |
@@ -21,6 +21,7 @@
 | RSK-12 | Documentation becomes stale after code changes | High | Mandatory policy in AGENTS.md, change-to-doc map, same-PR update and link validation |
 | RSK-13 | Backup/restore or RPO/RTO claims are unsupported | High | Verify provider plan/settings and complete restore drill before publishing objectives |
 | RSK-14 | Shariah or curriculum rules overstate authority/recognition | High | Make configuration explicit and require qualified institutional/board/Shariah review |
+| RSK-15 | Legacy owner_direct_provision_tenant and AAL1-capable Owner lifecycle RPCs in Production | Mitigated 2026-11-17; monitor through release | Production migration 00052 applied; read-only SQL verification confirmed the legacy RPC is absent and four lifecycle RPCs require DB AAL2. Recheck after application deployment and keep other manual-admin release blockers open |
 
 ## 2. Risk handling rules
 
@@ -33,10 +34,9 @@
 
 ## 3. Immediate release blockers from source review
 
-1. Migration 00045 static fallback password / password response field.
-2. Current production/dev schema and migration compatibility not reconciled in this review.
-3. Transactional guarantees for privileged provisioning and finance workflows require implementation review/tests.
-4. Browser E2E and live email delivery remain unverified.
-5. DB test runner and CI coverage need improvement.
+1. Production has emergency 00051 and security hotfix 00052, but secure feature migrations 00045–00050 remain pending; the new manual-admin provisioning workflow is not yet active.
+2. Production Vercel lacks the server-only Supabase Auth Admin key and MDI_EMAIL_TOKEN_HMAC_SECRET required by the secure workflow/application upload tokens.
+3. Real Supabase Auth create/login/forced-password-change/recovery E2E and backup/restore readiness remain unverified.
+4. Remaining Supabase Security Advisor findings, including leaked-password protection, need individual review.
 
 See [Security & Threat Model](11_SECURITY_AND_THREAT_MODEL.md) and [Implementation Status](../IMPLEMENTATION_STATUS.md).

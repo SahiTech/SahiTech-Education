@@ -1,220 +1,393 @@
--- Migration 00045: owner_direct_setup_madrasa_admin
--- Enables the Global Platform Owner to directly set up and activate madrasa admin accounts
--- without requiring the applicant to go through email confirmation or invitation token hurdles.
+-- MDI 00045: secure, email-independent manual madrasa administrator provisioning.
+-- Replaces the pending unsafe direct-password migration. The connected Production
+-- and Development ledgers were both at 00044 during the 2026-11-17 review.
+-- Never store or return plaintext passwords from this migration.
 
-CREATE OR REPLACE FUNCTION public.owner_direct_setup_madrasa_admin(
+ALTER TABLE public.madrasa_applications
+  ADD COLUMN IF NOT EXISTS contact_person_verified_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS contact_person_verified_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS contact_person_verification_method TEXT;
+
+ALTER TABLE public.tenants
+  ADD COLUMN IF NOT EXISTS contact_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS manual_admin_provisioned BOOLEAN NOT NULL DEFAULT FALSE;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='public.madrasa_applications'::regclass
+      AND conname='madrasa_applications_contact_verification_method_check'
+  ) THEN
+    ALTER TABLE public.madrasa_applications
+      ADD CONSTRAINT madrasa_applications_contact_verification_method_check
+      CHECK (
+        contact_person_verification_method IS NULL
+        OR contact_person_verification_method IN ('phone_call','whatsapp','in_person')
+      );
+  END IF;
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.owner_direct_setup_madrasa_admin(UUID, TEXT, BOOLEAN);
+
+CREATE OR REPLACE FUNCTION public.owner_provision_manual_madrasa_admin(
   p_application_id UUID,
-  p_initial_password TEXT DEFAULT NULL,
-  p_activate_immediately BOOLEAN DEFAULT TRUE
+  p_admin_user_id UUID,
+  p_activate_immediately BOOLEAN DEFAULT TRUE,
+  p_contact_verification_method TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO 'pg_catalog', 'public', 'private', 'auth', 'extensions', 'pg_temp'
+SET search_path = pg_catalog, public, private, auth, extensions, pg_temp
 AS $$
 DECLARE
   v_owner UUID := auth.uid();
   v_app public.madrasa_applications%ROWTYPE;
-  v_user_id UUID;
-  v_enc_pass TEXT;
-  v_is_new_user BOOLEAN := FALSE;
+  v_auth_email TEXT;
+  v_auth_app_metadata JSONB;
   v_tenant_id UUID;
   v_branch_id UUID;
   v_year_id UUID;
   v_curriculum public.curriculum_type;
-  v_pass_to_use TEXT := COALESCE(NULLIF(TRIM(p_initial_password), ''), 'Sahitech@2026!');
+  v_activation_status TEXT;
 BEGIN
-  -- 1. Security Check: Must be platform owner or internal system caller
-  IF v_owner IS NULL THEN
-    SELECT auth_user_id INTO v_owner FROM private.platform_owner LIMIT 1;
-  ELSIF NOT private.is_platform_owner() THEN
-    RAISE EXCEPTION 'platform_owner_required' USING ERRCODE = '42501';
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
+    RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
+  END IF;
+  IF p_application_id IS NULL OR p_admin_user_id IS NULL OR p_activate_immediately IS NULL THEN
+    RAISE EXCEPTION 'invalid_provisioning_request';
+  END IF;
+  IF p_contact_verification_method IS NULL
+     OR p_contact_verification_method NOT IN ('phone_call','whatsapp','in_person') THEN
+    RAISE EXCEPTION 'owner_contact_verification_required';
   END IF;
 
-  -- 2. Fetch Application
-  SELECT * INTO v_app FROM public.madrasa_applications WHERE id = p_application_id FOR UPDATE;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'application_not_found';
+  IF (
+    SELECT count(*) FROM public.platform_audit_logs
+    WHERE actor_user_id=v_owner
+      AND action='tenant.manual_admin_credentials_issued'
+      AND created_at>now()-interval '1 hour'
+  ) >= 10 THEN
+    RAISE EXCEPTION 'manual_provisioning_rate_limit' USING ERRCODE='42501';
   END IF;
 
-  -- 3. Resolve or Create User in auth.users
-  SELECT id INTO v_user_id FROM auth.users WHERE LOWER(email) = LOWER(v_app.contact_email) LIMIT 1;
+  SELECT * INTO v_app
+  FROM public.madrasa_applications
+  WHERE id=p_application_id
+  FOR UPDATE;
 
-  IF v_user_id IS NOT NULL THEN
-    -- Existing user: verify email, and update password if custom one provided
-    IF p_initial_password IS NOT NULL AND length(TRIM(p_initial_password)) >= 6 THEN
-      v_enc_pass := extensions.crypt(TRIM(p_initial_password), extensions.gen_salt('bf', 10));
-      UPDATE auth.users
-        SET encrypted_password = v_enc_pass,
-            email_confirmed_at = COALESCE(email_confirmed_at, now()),
-            raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('email_verified', true, 'full_name_en', v_app.contact_person_name),
-            updated_at = now()
-        WHERE id = v_user_id;
-    ELSE
-      UPDATE auth.users
-        SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
-            raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('email_verified', true, 'full_name_en', v_app.contact_person_name),
-            updated_at = now()
-        WHERE id = v_user_id;
-    END IF;
-  ELSE
-    -- New user: create in auth.users and auth.identities
-    v_is_new_user := TRUE;
-    v_user_id := gen_random_uuid();
-    v_enc_pass := extensions.crypt(v_pass_to_use, extensions.gen_salt('bf', 10));
-
-    INSERT INTO auth.users (
-      instance_id, id, aud, role, email, encrypted_password,
-      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at
-    ) VALUES (
-      '00000000-0000-0000-0000-000000000000'::uuid,
-      v_user_id,
-      'authenticated',
-      'authenticated',
-      v_app.contact_email,
-      v_enc_pass,
-      now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      jsonb_build_object(
-        'sub', v_user_id,
-        'email', v_app.contact_email,
-        'full_name_en', v_app.contact_person_name,
-        'email_verified', true
-      ),
-      now(),
-      now()
-    );
-
-    INSERT INTO auth.identities (
-      id, user_id, identity_data, provider, provider_id,
-      last_sign_in_at, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(),
-      v_user_id,
-      jsonb_build_object(
-        'sub', v_user_id,
-        'email', v_app.contact_email,
-        'full_name_en', v_app.contact_person_name,
-        'email_verified', true
-      ),
-      'email',
-      v_user_id::text,
-      now(),
-      now(),
-      now()
-    )
-    ON CONFLICT (provider_id, provider) DO NOTHING;
+  IF NOT FOUND OR v_app.status NOT IN ('pending','under_review','info_requested','approved') THEN
+    RAISE EXCEPTION 'application_not_eligible_for_manual_provisioning';
+  END IF;
+  IF v_app.requested_code IS NULL OR v_app.requested_subdomain IS NULL THEN
+    RAISE EXCEPTION 'application_missing_tenant_identifiers';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.tenants WHERE source_application_id=v_app.id) THEN
+    RAISE EXCEPTION 'application_already_provisioned';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.tenants
+    WHERE upper(code)=upper(v_app.requested_code)
+       OR lower(COALESCE(subdomain,''))=lower(v_app.requested_subdomain)
+  ) THEN
+    RAISE EXCEPTION 'tenant_identifier_already_in_use';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.madrasa_application_documents
+    WHERE application_id=v_app.id AND verification_status='verified'
+  ) THEN
+    RAISE EXCEPTION 'at_least_one_application_document_must_be_verified';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.madrasa_application_documents
+    WHERE application_id=v_app.id AND verification_status='pending'
+  ) THEN
+    RAISE EXCEPTION 'pending_application_documents_must_be_reviewed';
   END IF;
 
-  -- 4. Update profile details
-  INSERT INTO public.profiles (id, full_name_en, full_name_bn, phone)
-  VALUES (v_user_id, v_app.contact_person_name, v_app.contact_person_name, v_app.contact_phone)
-  ON CONFLICT (id) DO UPDATE SET
-    full_name_en = EXCLUDED.full_name_en,
-    full_name_bn = COALESCE(public.profiles.full_name_bn, EXCLUDED.full_name_bn),
-    phone = COALESCE(public.profiles.phone, EXCLUDED.phone);
+  -- Never take over an existing Supabase Auth account registered to the real contact email.
+  IF EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE lower(email)=lower(v_app.contact_email)
+  ) THEN
+    RAISE EXCEPTION 'existing_contact_email_account_requires_separate_recovery';
+  END IF;
 
-  -- 5. Resolve or create Tenant
-  SELECT id INTO v_tenant_id FROM public.tenants WHERE source_application_id = v_app.id LIMIT 1;
+  -- The Auth Admin API creates a platform-owned login alias. The applicant's real
+  -- email remains unverified and is never used as the authentication identifier.
+  SELECT email,raw_app_meta_data
+  INTO v_auth_email,v_auth_app_metadata
+  FROM auth.users
+  WHERE id=p_admin_user_id;
+
+  IF NOT FOUND
+     OR v_auth_email IS NULL
+     OR v_auth_email !~ '^mdi-[a-f0-9]{24}@accounts[.]sahitech[.]invalid$'
+     OR COALESCE(v_auth_app_metadata->>'mdi_manual_provisioning','false') <> 'true'
+     OR COALESCE(v_auth_app_metadata->>'mdi_force_password_change','false') <> 'true' THEN
+    RAISE EXCEPTION 'invalid_manual_auth_identity';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.tenant_users WHERE user_id=p_admin_user_id) THEN
+    RAISE EXCEPTION 'manual_auth_identity_already_assigned';
+  END IF;
 
   v_curriculum := CASE v_app.institution_type
     WHEN 'alia' THEN 'alia'::public.curriculum_type
     WHEN 'hybrid' THEN 'hybrid'::public.curriculum_type
     ELSE 'qawmi'::public.curriculum_type
   END;
+  v_activation_status := CASE WHEN p_activate_immediately THEN 'active' ELSE 'pending_activation' END;
 
-  IF v_tenant_id IS NULL THEN
-    INSERT INTO public.tenants (
-      name, code, subdomain, curriculum_type, registration_no,
-      contact_email, contact_phone, division, district, address,
-      is_active, is_verified, onboarding_step, onboarding_completed_at,
-      platform_status, source_application_id
-    ) VALUES (
-      v_app.institution_name, v_app.requested_code, v_app.requested_subdomain,
-      v_curriculum, v_app.registration_number,
-      v_app.contact_email, v_app.contact_phone, v_app.division, v_app.district, v_app.address,
-      CASE WHEN p_activate_immediately THEN TRUE ELSE FALSE END,
-      CASE WHEN p_activate_immediately THEN TRUE ELSE FALSE END,
-      CASE WHEN p_activate_immediately THEN 6 ELSE 1 END,
-      CASE WHEN p_activate_immediately THEN now() ELSE NULL END,
-      CASE WHEN p_activate_immediately THEN 'active' ELSE 'pending_activation' END,
-      v_app.id
-    )
-    RETURNING id INTO v_tenant_id;
+  INSERT INTO public.profiles(id,full_name_en,full_name_bn,phone)
+  VALUES(p_admin_user_id,v_app.contact_person_name,v_app.contact_person_name,v_app.contact_phone)
+  ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO public.branches(tenant_id, name, code, is_main_branch, address, phone)
-    VALUES(v_tenant_id, 'প্রধান ক্যাম্পাস (Main Campus)', 'MAIN', TRUE, v_app.address, v_app.contact_phone)
-    RETURNING id INTO v_branch_id;
+  INSERT INTO public.tenants(
+    name,code,subdomain,curriculum_type,registration_no,
+    contact_email,contact_email_verified,manual_admin_provisioned,
+    contact_phone,division,district,address,
+    is_active,is_verified,onboarding_step,onboarding_completed_at,
+    platform_status,source_application_id
+  ) VALUES (
+    v_app.institution_name,v_app.requested_code,v_app.requested_subdomain,v_curriculum,v_app.registration_number,
+    v_app.contact_email,FALSE,TRUE,
+    v_app.contact_phone,v_app.division,v_app.district,v_app.address,
+    p_activate_immediately,p_activate_immediately,
+    CASE WHEN p_activate_immediately THEN 6 ELSE 1 END,
+    CASE WHEN p_activate_immediately THEN now() ELSE NULL END,
+    v_activation_status,v_app.id
+  ) RETURNING id INTO v_tenant_id;
 
-    INSERT INTO public.tenant_users(tenant_id, user_id, branch_id, role, is_active)
-    VALUES(v_tenant_id, v_user_id, v_branch_id, 'madrasa_admin', TRUE);
+  INSERT INTO public.branches(tenant_id,name,code,is_main_branch,address,phone)
+  VALUES(v_tenant_id,'প্রধান ক্যাম্পাস (Main Campus)','MAIN',TRUE,v_app.address,v_app.contact_phone)
+  RETURNING id INTO v_branch_id;
 
-    INSERT INTO public.academic_years(
-      tenant_id, name_bn, name_en, hijri_year, start_date, end_date, is_current
-    ) VALUES (
-      v_tenant_id, 'চলতি শিক্ষাবর্ষ', 'Current Academic Year', NULL,
-      date_trunc('year', current_date)::date,
-      (date_trunc('year', current_date) + interval '1 year - 1 day')::date,
-      TRUE
-    ) RETURNING id INTO v_year_id;
+  INSERT INTO public.tenant_users(tenant_id,user_id,branch_id,role,is_active)
+  VALUES(v_tenant_id,p_admin_user_id,v_branch_id,'madrasa_admin',TRUE);
 
-    IF v_curriculum IN ('qawmi', 'hybrid') THEN
-      INSERT INTO public.departments(tenant_id, name_bn, name_en, name_ar, code, curriculum_type)
-      VALUES
-        (v_tenant_id, 'কিতাব বিভাগ', 'Kitab Department', 'قسم الكتب الشرعية', 'KTB', 'qawmi'),
-        (v_tenant_id, 'হিফজুল কুরআন বিভাগ', 'Hifzul Quran', 'قسم تحفيظ القرآن', 'HFZ', 'qawmi'),
-        (v_tenant_id, 'নূরানী ও মক্তব বিভাগ', 'Nurani & Maktab', 'المكتب النوراني', 'NUR', 'qawmi');
-    END IF;
-    IF v_curriculum IN ('alia', 'hybrid') THEN
-      INSERT INTO public.departments(tenant_id, name_bn, name_en, name_ar, code, curriculum_type)
-      VALUES
-        (v_tenant_id, 'ইবতেদায়ি বিভাগ', 'Ebtedayee Primary Wing', 'المرحلة الابتدائية', 'EBT', 'alia'),
-        (v_tenant_id, 'দাখিল বিভাগ', 'Dakhil Secondary Wing', 'المرحلة الثانوية', 'DAK', 'alia'),
-        (v_tenant_id, 'আলিম বিভাগ', 'Alim Higher Secondary Wing', 'المرحلة العالية', 'ALM', 'alia');
-    END IF;
-  ELSE
-    -- Tenant exists: ensure admin membership exists and update status if requested
-    SELECT id INTO v_branch_id FROM public.branches WHERE tenant_id = v_tenant_id AND is_main_branch = TRUE LIMIT 1;
-    INSERT INTO public.tenant_users(tenant_id, user_id, branch_id, role, is_active)
-    VALUES(v_tenant_id, v_user_id, v_branch_id, 'madrasa_admin', TRUE)
-    ON CONFLICT (tenant_id, user_id, role) DO UPDATE SET is_active = TRUE;
+  INSERT INTO public.academic_years(
+    tenant_id,name_bn,name_en,hijri_year,start_date,end_date,is_current
+  ) VALUES (
+    v_tenant_id,'চলতি শিক্ষাবর্ষ','Current Academic Year',NULL,
+    date_trunc('year',current_date)::date,
+    (date_trunc('year',current_date)+interval '1 year - 1 day')::date,
+    TRUE
+  ) RETURNING id INTO v_year_id;
 
-    IF p_activate_immediately THEN
-      UPDATE public.tenants
-      SET
-        platform_status = 'active',
-        is_active = TRUE,
-        is_verified = TRUE,
-        onboarding_step = 6,
-        onboarding_completed_at = COALESCE(onboarding_completed_at, now()),
-        updated_at = now()
-      WHERE id = v_tenant_id;
-    END IF;
+  IF v_curriculum IN ('qawmi','hybrid') THEN
+    INSERT INTO public.departments(tenant_id,name_bn,name_en,name_ar,code,curriculum_type)
+    VALUES
+      (v_tenant_id,'কিতাব বিভাগ','Kitab Department','قسم الكتب الشرعية','KTB','qawmi'),
+      (v_tenant_id,'হিফজুল কুরআন বিভাগ','Hifzul Quran','قسم تحفيظ القرآن','HFZ','qawmi'),
+      (v_tenant_id,'নূরানী ও মক্তব বিভাগ','Nurani & Maktab','المكتب النوراني','NUR','qawmi');
   END IF;
 
-  -- 6. Update Application & Invitations
+  IF v_curriculum IN ('alia','hybrid') THEN
+    INSERT INTO public.departments(tenant_id,name_bn,name_en,name_ar,code,curriculum_type)
+    VALUES
+      (v_tenant_id,'ইবতেদায়ি বিভাগ','Ebtedayee Primary Wing','المرحلة الابتدائية','EBT','alia'),
+      (v_tenant_id,'দাখিল বিভাগ','Dakhil Secondary Wing','المرحلة الثانوية','DAK','alia'),
+      (v_tenant_id,'আলিম বিভাগ','Alim Higher Secondary Wing','المرحلة العالية','ALM','alia');
+  END IF;
+
   UPDATE public.madrasa_applications
-    SET status = 'approved', reviewed_by = v_owner, reviewed_at = now(), updated_at = now()
-    WHERE id = v_app.id;
+  SET status='approved',
+      reviewed_by=v_owner,
+      reviewed_at=now(),
+      contact_person_verified_at=now(),
+      contact_person_verified_by=v_owner,
+      contact_person_verification_method=p_contact_verification_method,
+      updated_at=now()
+  WHERE id=v_app.id;
 
   UPDATE public.platform_invitations
-    SET status = 'accepted', accepted_at = now()
-    WHERE application_id = v_app.id AND status IN ('pending', 'sent');
+  SET status='revoked',revoked_at=now()
+  WHERE application_id=v_app.id AND status IN ('pending','sent');
+
+  UPDATE public.email_outbox
+  SET status='cancelled',last_error='Superseded by Owner-approved manual activation'
+  WHERE status IN ('queued','failed')
+    AND payload->>'application_id'=v_app.id::TEXT
+    AND event_type='madrasa_invitation';
+
+  INSERT INTO public.platform_audit_logs(
+    actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,after_state
+  ) VALUES (
+    v_owner,auth.jwt()->>'aal','tenant.manual_admin_credentials_issued',
+    'tenant',v_tenant_id,v_tenant_id,
+    jsonb_build_object(
+      'application_id',v_app.id,
+      'admin_user_id',p_admin_user_id,
+      'login_identifier',v_auth_email,
+      'contact_person_verification_method',p_contact_verification_method,
+      'contact_email_verified',FALSE,
+      'activated',p_activate_immediately
+    )
+  );
 
   RETURN jsonb_build_object(
-    'success', TRUE,
-    'tenant_id', v_tenant_id,
-    'user_id', v_user_id,
-    'email', v_app.contact_email,
-    'institution_name', v_app.institution_name,
-    'subdomain', v_app.requested_subdomain,
-    'is_new_user', v_is_new_user,
-    'activated', p_activate_immediately,
-    'password_used', CASE WHEN v_is_new_user OR (p_initial_password IS NOT NULL AND length(TRIM(p_initial_password)) >= 6) THEN v_pass_to_use ELSE NULL END
+    'tenant_id',v_tenant_id,
+    'admin_user_id',p_admin_user_id,
+    'login_identifier',v_auth_email,
+    'institution_name',v_app.institution_name,
+    'subdomain',v_app.requested_subdomain,
+    'activation_status',v_activation_status
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.owner_direct_setup_madrasa_admin(UUID, TEXT, BOOLEAN) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.owner_direct_setup_madrasa_admin(UUID, TEXT, BOOLEAN) TO service_role;
+REVOKE ALL ON FUNCTION public.owner_provision_manual_madrasa_admin(UUID,UUID,BOOLEAN,TEXT) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.owner_provision_manual_madrasa_admin(UUID,UUID,BOOLEAN,TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.owner_prepare_manual_admin_recovery(
+  p_application_id UUID,
+  p_reason TEXT,
+  p_contact_verification_method TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog,public,private,auth,pg_temp
+AS $$
+DECLARE
+  v_owner UUID := auth.uid();
+  v_tenant_id UUID;
+  v_admin_id UUID;
+  v_login_identifier TEXT;
+  v_contact_email TEXT;
+BEGIN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
+    RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
+  END IF;
+  IF length(btrim(COALESCE(p_reason,''))) NOT BETWEEN 20 AND 500 THEN
+    RAISE EXCEPTION 'manual_recovery_reason_required';
+  END IF;
+  IF p_contact_verification_method IS NULL
+     OR p_contact_verification_method NOT IN ('phone_call','whatsapp','in_person') THEN
+    RAISE EXCEPTION 'owner_contact_verification_required';
+  END IF;
+
+  IF (
+    SELECT count(*) FROM public.platform_audit_logs
+    WHERE actor_user_id=v_owner
+      AND action IN (
+        'tenant.manual_admin_recovery_requested',
+        'tenant.manual_admin_recovery_succeeded',
+        'tenant.manual_admin_recovery_failed'
+      )
+      AND created_at>now()-interval '24 hours'
+  ) >= 5 THEN
+    RAISE EXCEPTION 'manual_recovery_rate_limit' USING ERRCODE='42501';
+  END IF;
+
+  SELECT t.id,t.contact_email,tu.user_id,u.email
+  INTO v_tenant_id,v_contact_email,v_admin_id,v_login_identifier
+  FROM public.tenants t
+  JOIN public.tenant_users tu
+    ON tu.tenant_id=t.id
+   AND tu.role='madrasa_admin'::public.user_role
+   AND tu.is_active=TRUE
+  JOIN auth.users u ON u.id=tu.user_id
+  WHERE t.source_application_id=p_application_id
+    AND t.manual_admin_provisioned=TRUE
+    AND u.email ~ '^mdi-[a-f0-9]{24}@accounts[.]sahitech[.]invalid$'
+    AND COALESCE(u.raw_app_meta_data->>'mdi_manual_provisioning','false')='true'
+  ORDER BY tu.created_at ASC
+  LIMIT 1
+  FOR UPDATE OF t;
+
+  IF v_tenant_id IS NULL OR v_admin_id IS NULL THEN
+    RAISE EXCEPTION 'manual_admin_account_not_found';
+  END IF;
+
+  INSERT INTO public.platform_audit_logs(
+    actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,after_state
+  ) VALUES (
+    v_owner,auth.jwt()->>'aal','tenant.manual_admin_recovery_requested',
+    'tenant',v_tenant_id,v_tenant_id,
+    jsonb_build_object(
+      'application_id',p_application_id,
+      'admin_user_id',v_admin_id,
+      'reason',btrim(p_reason),
+      'contact_verification_method',p_contact_verification_method
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'tenant_id',v_tenant_id,
+    'admin_user_id',v_admin_id,
+    'login_identifier',v_login_identifier,
+    'contact_email',v_contact_email
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.owner_finalize_manual_admin_recovery(
+  p_application_id UUID,
+  p_admin_user_id UUID,
+  p_outcome TEXT,
+  p_error_code TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog,public,private,auth,pg_temp
+AS $$
+DECLARE
+  v_owner UUID := auth.uid();
+  v_tenant_id UUID;
+BEGIN
+  IF v_owner IS NULL OR auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' OR NOT private.is_platform_owner() THEN
+    RAISE EXCEPTION 'platform_owner_required' USING ERRCODE='42501';
+  END IF;
+  IF p_outcome NOT IN ('succeeded','failed') THEN
+    RAISE EXCEPTION 'invalid_recovery_outcome';
+  END IF;
+
+  SELECT id INTO v_tenant_id
+  FROM public.tenants
+  WHERE source_application_id=p_application_id
+    AND manual_admin_provisioned=TRUE;
+
+  IF v_tenant_id IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.tenant_users tu
+    JOIN auth.users u ON u.id=tu.user_id
+    WHERE tu.tenant_id=v_tenant_id
+      AND tu.user_id=p_admin_user_id
+      AND tu.role='madrasa_admin'::public.user_role
+      AND u.email ~ '^mdi-[a-f0-9]{24}@accounts[.]sahitech[.]invalid$'
+      AND COALESCE(u.raw_app_meta_data->>'mdi_manual_provisioning','false')='true'
+  ) THEN
+    RAISE EXCEPTION 'manual_admin_account_not_found';
+  END IF;
+
+  INSERT INTO public.platform_audit_logs(
+    actor_user_id,actor_aal,action,entity_type,entity_id,tenant_id,after_state
+  ) VALUES (
+    v_owner,auth.jwt()->>'aal',
+    CASE WHEN p_outcome='succeeded' THEN 'tenant.manual_admin_recovery_succeeded' ELSE 'tenant.manual_admin_recovery_failed' END,
+    'tenant',v_tenant_id,v_tenant_id,
+    jsonb_build_object(
+      'application_id',p_application_id,
+      'admin_user_id',p_admin_user_id,
+      'error_code',left(COALESCE(p_error_code,''),80)
+    )
+  );
+
+  RETURN TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.owner_prepare_manual_admin_recovery(UUID,TEXT,TEXT) FROM PUBLIC,anon;
+REVOKE ALL ON FUNCTION public.owner_finalize_manual_admin_recovery(UUID,UUID,TEXT,TEXT) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.owner_prepare_manual_admin_recovery(UUID,TEXT,TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.owner_finalize_manual_admin_recovery(UUID,UUID,TEXT,TEXT) TO authenticated;
+
+COMMENT ON FUNCTION public.owner_provision_manual_madrasa_admin(UUID,UUID,BOOLEAN,TEXT) IS
+  'Owner-only, MFA-protected atomic provisioning. The Auth Admin API creates a platform-owned login alias; the applicant contact email remains unverified. No password is accepted or returned.';
+COMMENT ON FUNCTION public.owner_prepare_manual_admin_recovery(UUID,TEXT,TEXT) IS
+  'Owner-only preparation and audit record for manual administrator recovery after out-of-band contact verification.';
+COMMENT ON FUNCTION public.owner_finalize_manual_admin_recovery(UUID,UUID,TEXT,TEXT) IS
+  'Owner-only append-only outcome record for manual administrator credential recovery.';

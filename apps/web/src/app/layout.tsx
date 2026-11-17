@@ -61,7 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} dir={direction} suppressHydrationWarning>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
         <I18nProvider initialLocale={locale}>
-          <Navbar user={user ? { email: user.email || undefined } : null} />
+          <Navbar user={user ? { email: (typeof user.app_metadata?.mdi_contact_email === 'string' ? user.app_metadata.mdi_contact_email : user.email) || undefined } : null} />
           <main className="flex-1">{children}</main>
         </I18nProvider>
         <Analytics />

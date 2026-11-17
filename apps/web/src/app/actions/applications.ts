@@ -8,18 +8,9 @@ export type ApplicationResult = { success: boolean; error?: string; applicationI
 const clean = (value: FormDataEntryValue | null, max = 500) =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-const DEFAULT_HMAC_SECRET = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-
-function getHmacSecret(): string {
+function getHmacSecret(): string | null {
   const envSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
-  if (envSecret && Buffer.byteLength(envSecret, 'utf8') >= 32) {
-    return envSecret;
-  }
-  const fallbackKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (fallbackKey && Buffer.byteLength(fallbackKey, 'utf8') >= 32) {
-    return createHash('sha256').update(`mdi-token:${fallbackKey}`).digest('hex');
-  }
-  return DEFAULT_HMAC_SECRET;
+  return envSecret && Buffer.byteLength(envSecret, 'utf8') >= 32 ? envSecret : null;
 }
 
 export async function submitMadrasaApplication(
@@ -60,6 +51,9 @@ export async function submitMadrasaApplication(
   const applicationId = randomUUID();
   const tokenNonce = randomBytes(32).toString('hex');
   const hmacSecret = getHmacSecret();
+  if (!hmacSecret) {
+    return { success: false, error: 'নিরাপদ application upload ব্যবস্থা প্রস্তুত নয়। Platform configuration সম্পন্ন হলে আবার চেষ্টা করুন।' };
+  }
 
   const uploadToken = createHmac('sha256', hmacSecret).update(`mdi-upload:${applicationId}:${tokenNonce}`).digest('hex').toUpperCase();
   const tokenHash = createHash('sha256').update(uploadToken).digest('hex');

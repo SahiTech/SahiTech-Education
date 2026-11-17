@@ -59,6 +59,7 @@ This index lists the Markdown documentation tracked in the repository. Specifica
 | [Domain Models Overview](DOMAIN_MODELS.md) | Domain summary; documents 07, 12 and 13 are authoritative |
 | [MDI Requirements Overview](MDI_REQUIREMENTS.md) | Consolidated requirement summary; documents 02, 03 and 05 are authoritative |
 | [November 2026 Security Audit](SECURITY_AUDIT_2026-11.md) | Dated source-review observations and remediation evidence boundaries |
+| [Secure Manual Madrasa Admin Activation](30_SECURE_MANUAL_ADMIN_ACTIVATION.md) | AAL2-protected, email-independent Owner provisioning, one-time credentials and recovery runbook |
 
 ## Architecture implementation records
 

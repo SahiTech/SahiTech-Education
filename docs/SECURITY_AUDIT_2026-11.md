@@ -81,3 +81,29 @@ No development or production Supabase catalog/migration ledger was queried in th
 - Reconcile effective RLS policies, grants, function ownership/execution, Storage policies and applied migrations in isolated development, then rehearse any production path against a clone/restore.
 - Replace placeholder DB tests and add cross-tenant, transactional workflow and browser E2E gates.
 - Revalidate historical findings against the current deployed schema; do not assume previous “fixed in source” statements imply production rollout.
+
+
+---
+
+## 2026-11-17 follow-up — manual-admin and Owner RPC remediation
+
+This addendum updates the original source-only review; it does not rewrite its historical 2026-11-12 observations.
+
+- Source branch security/manual-admin-activation contains the server-side email-independent manual Admin flow and migrations 00045–00052.
+- Emergency migration 00051 was applied to Production and Development; a read-only Production catalog check confirmed the old owner_direct_setup_madrasa_admin(UUID,TEXT,BOOLEAN) routine is absent.
+- Production catalog inspection found an additional unused owner_direct_provision_tenant(UUID,UUID) RPC and four existing lifecycle RPCs without database-level AAL2 checks. Migration 00052 drops the former and hardens the latter four.
+- Migration 00052 was applied to Development; packages/database/tests/owner_rpc_aal2_security_smoke.sql passed in that isolated project. CI Run #332 passed for the earlier head; the current head including 00052 requires its own successful CI verification.
+- Production migration ledger at the time of review: 00044 and emergency 00051; migrations 00045–00050 and 00052 are pending. The Production site is not yet running the secure Owner UI.
+- Remaining gates: configure SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY and MDI_EMAIL_TOKEN_HMAC_SECRET in Vercel Production; complete real Supabase Auth create/login/password-change/recovery tests; review Security Advisor warnings and leaked-password protection; verify backup/restore and run the final Production smoke test.
+
+Evidence labels: the workflow is source implemented on the feature branch, migration 00052 and the read-only SQL smoke test are Development verified, and the full secure workflow is not Production verified.
+
+
+## 2026-11-17 Production hotfix verification
+
+After the previous addendum, migration 00052 was applied to the Production Supabase project as an independent lifecycle-security hotfix.
+
+- Production ledger now contains baseline through 00044, emergency 00051 and hotfix 00052. Feature migrations 00045–00050 remain pending.
+- A read-only Production SQL check returned: legacy_direct_tenant_rpc_absent = true; all_lifecycle_rpcs_require_aal2 = true; lifecycle_rpc_count = 4.
+- The Development ledger contains the complete manual-admin migration sequence through 00052. It has two same-name ledger entries for 00052 from a repeated idempotent application; do not manually delete migration-history rows. Reconcile the ledger before a future CLI db push.
+- This hotfix does not deploy the new manual-admin application code, does not install the reservation/handoff schema in Production and does not prove real Auth provisioning/login/recovery. Those release gates remain open.

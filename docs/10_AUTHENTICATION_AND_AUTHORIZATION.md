@@ -44,7 +44,7 @@ The legacy database enum value `super_admin` may remain during compatibility cle
 
 The platform owner identity is held separately from tenant membership and requires the trusted owner binding plus mandatory MFA/AAL2 checks in the accepted platform workflow. Every owner page and server action must re-check authorization. Browser metadata or email equality alone must never grant owner access.
 
-Owner lifecycle, invitation issuance, application review and final tenant activation are high-impact operations. They require validation of state transitions, authorization, idempotency and immutable audit records.
+Owner lifecycle, invitation issuance, application review and final tenant activation are high-impact operations. Their database RPCs must independently enforce the bound Global Owner identity and AAL2; HTTP/server-action checks alone are not a database authorization boundary. The reviewed lifecycle RPCs are hardened by migration `00052`, while the five manual-admin provisioning/recovery RPCs are guarded by migrations `00046`–`00050`.
 
 ## 5. Authorization enforcement checklist
 
@@ -63,7 +63,11 @@ For every protected operation:
 
 Never hard-code initial passwords, return passwords from privileged RPCs, log reset tokens, or store raw invitation tokens where hashes can be used. Initial account activation should use verified invitations or a secure reset/onboarding flow. Secrets belong in server-only environment/secret stores.
 
-Migration `00045_owner_direct_setup_madrasa_admin.sql` currently contains a static fallback credential path and a response field that may return the password used. Treat this as a release blocker pending code/migration remediation and review. Do not invoke this routine to provision real users until the issue is corrected.
+Email-independent Madrasa Admin activation is implemented as a separate Owner-approved workflow documented in [Secure Manual Madrasa Admin Activation](30_SECURE_MANUAL_ADMIN_ACTIVATION.md). It requires Global Platform Owner AAL2 at both the HTTP and database RPC boundaries, explicit out-of-band identity verification, a server-only Supabase Auth Admin API call, and a platform-generated non-routable Login ID. The applicant's contact email remains unverified.
+
+Temporary credentials are generated server-side, encrypted with AES-256-GCM in a 90-second HttpOnly cookie, and shown only after the MFA-verified Owner atomically consumes a one-time database nonce. Plaintext passwords are never returned by RPCs/JSON or persisted in database tables/logs. The first-login password-change gate is enforced at middleware, server context and database-policy levels.
+
+Migrations 00046, 00045, 00047, 00048, 00049, 00050, 00051 and 00052 form the reviewed Development sequence. Production has emergency 00051 and independent security hotfix 00052; 00052 removes the unused legacy owner_direct_provision_tenant RPC and hardens four existing lifecycle Owner RPCs. Production feature migrations 00045–00050 remain pending. Inspect the actual target ledger and follow the dependency order in the runbook before any Production rollout. The transitional compatibility RPCs created in `00045` are dropped by `00047`. Never restore the retired direct-password or direct-tenant provisioning routines.
 
 ## 7. Verification expectations
 
