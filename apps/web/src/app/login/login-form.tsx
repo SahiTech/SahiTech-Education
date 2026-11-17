@@ -25,7 +25,7 @@ export function LoginForm() {
 
       <div>
         <label className="block text-xs font-bold text-slate-700 mb-1">
-          ইমেইল এড্রেস (Email Address)
+          MDI Login ID (প্রতিষ্ঠান থেকে পাওয়া Login ID)
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -35,7 +35,7 @@ export function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            placeholder="muhtamim@madrasa.edu.bd"
+            placeholder="mdi-xxxxxxxxxxxxxxxxxxxxxxxx@accounts.sahitech.invalid"
             className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
           />
         </div>
