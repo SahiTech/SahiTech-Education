@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Performance
+- Remove the large decorative Islamic pattern image from the homepage hero critical path and replace it with a CSS-only texture; prioritize the hero campus image. Fresh PageSpeed measurement remains required.
+
+
 All notable changes to MDI are recorded here. This log describes repository changes; it is not proof that a deployment or database migration was applied.
 
 The format follows Keep a Changelog. Versions are assigned when a release is approved.
