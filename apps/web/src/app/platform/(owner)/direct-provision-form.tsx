@@ -105,7 +105,7 @@ Temporary password: ${result.temporary_password}
 
 Please sign in and immediately create a new private password when prompted. Do not share your new password with anyone.
 
-Application contact email (${contactEmail}): ${result.contact_email_verified ? 'previously verified' : 'not email-verified'}. The MDI Login ID above is a system-generated login identifier and does not receive email.
+Application contact email (${contactEmail}): ${result.contact_email_verified ? 'previously verified' : 'not email-verified'}. ${result.login_identifier.endsWith('@login.sahitech.invalid') ? 'The MDI Login ID is a non-routable system-generated sign-in identifier and does not receive email.' : 'The MDI Login ID is the verified email-based sign-in address.'}
 
 SahiTech Education Support: +8801601654316 | sahitecheducation@gmail.com`;
 
