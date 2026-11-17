@@ -27,7 +27,10 @@ const verificationOptions = [
   { value: 'phone_call', label: 'ফোন কলে পরিচয় যাচাই করেছি' },
   { value: 'whatsapp', label: 'WhatsApp-এ পরিচয় যাচাই করেছি' },
   { value: 'in_person', label: 'সরাসরি উপস্থিতিতে পরিচয় যাচাই করেছি' },
+  { value: 'signed_authorization', label: 'স্বাক্ষরিত অনুমোদনপত্র যাচাই করেছি' },
 ];
+
+const recoveryVerificationOptions = verificationOptions.filter((option) => option.value !== 'whatsapp');
 
 export function DirectProvisionForm({
   applicationId,
@@ -41,7 +44,7 @@ export function DirectProvisionForm({
   const [isOpen, setIsOpen] = useState(false);
   const [verificationMethod, setVerificationMethod] = useState('phone_call');
   const [manualContactVerified, setManualContactVerified] = useState(false);
-  const [reason, setReason] = useState('');
+  const [verificationNote, setVerificationNote] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +74,7 @@ export function DirectProvisionForm({
           activateImmediately: !isAlreadyProvisioned && activateImmediately,
           manualContactVerified,
           verificationMethod,
-          reason,
+          verificationNote,
         }),
       });
       const payload = await response.json();
@@ -192,7 +195,7 @@ SahiTech Education Support
                 onChange={(event) => setVerificationMethod(event.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
               >
-                {verificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {(isAlreadyProvisioned ? recoveryVerificationOptions : verificationOptions).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </div>
 
@@ -210,21 +213,25 @@ SahiTech Education Support
               </span>
             </label>
 
-            {isAlreadyProvisioned ? (
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700">Recovery-এর কারণ (কমপক্ষে ২০ অক্ষর)</label>
-                <textarea
-                  value={reason}
-                  onChange={(event) => setReason(event.target.value)}
-                  minLength={20}
-                  maxLength={500}
-                  required
-                  rows={3}
-                  placeholder="যেমন: দায়িত্বপ্রাপ্ত মুহতামিম ফোনে পরিচয় নিশ্চিত করেছেন এবং আগের অস্থায়ী পাসওয়ার্ড হারিয়েছেন।"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-              </div>
-            ) : (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700">
+                {isAlreadyProvisioned ? 'Recovery-এর যাচাইয়ের বিস্তারিত নোট' : 'পরিচয় যাচাইয়ের বিস্তারিত নোট'} (২০–৫০০ অক্ষর)
+              </label>
+              <textarea
+                value={verificationNote}
+                onChange={(event) => setVerificationNote(event.target.value)}
+                minLength={20}
+                maxLength={500}
+                required
+                rows={3}
+                placeholder={isAlreadyProvisioned
+                  ? 'কার সঙ্গে, কোন নম্বরে বা কীভাবে পরিচয় পুনরায় যাচাই করেছেন এবং Reset-এর কারণ লিখুন...'
+                  : 'কার সঙ্গে, কোন নম্বরে বা কীভাবে মাদ্রাসার দায়িত্বপ্রাপ্ত ব্যক্তির পরিচয় ও Admin Account গ্রহণের অনুমতি যাচাই করেছেন তা লিখুন...'}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+              />
+            </div>
+
+            {!isAlreadyProvisioned && (
               <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-emerald-200 bg-white p-2.5 text-xs">
                 <input
                   type="checkbox"
@@ -247,7 +254,7 @@ SahiTech Education Support
               >বাতিল</button>
               <button
                 type="submit"
-                disabled={isSubmitting || !manualContactVerified || (isAlreadyProvisioned && reason.trim().length < 20)}
+                disabled={isSubmitting || !manualContactVerified || verificationNote.trim().length < 20}
                 className="inline-flex flex-[2] items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:opacity-50"
               >
                 {isSubmitting ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" />প্রসেস হচ্ছে…</> :
@@ -300,7 +307,7 @@ SahiTech Education Support
             <button type="button" onClick={handleCopyCredentials} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-slate-950 transition hover:bg-emerald-400">
               {copied ? <><Check className="h-3.5 w-3.5" />কপি হয়েছে</> : <><Copy className="h-3.5 w-3.5" />WhatsApp/SMS মেসেজ কপি</>}
             </button>
-            <button type="button" onClick={() => { setResult(null); setIsOpen(false); setReason(''); setManualContactVerified(false); }} className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20">
+            <button type="button" onClick={() => { setResult(null); setIsOpen(false); setVerificationNote(''); setManualContactVerified(false); }} className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20">
               Credential মুছুন
             </button>
           </div>
