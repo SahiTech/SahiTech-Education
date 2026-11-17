@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { assertCredentialDisplayKey, createCredentialNonce, sealManualAdminCredential } from '@/lib/security/manual-admin-credential';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,8 @@ export async function POST(request: NextRequest) {
     return json({ error: 'Recovery-এর আগে পরিচয় পুনরায় যাচাইয়ের পদ্ধতি এবং ২০–৫০০ অক্ষরের কারণ লিখুন।' }, 400);
   }
 
+  try { assertCredentialDisplayKey(); } catch { return json({ error: 'Credential display encryption key সার্ভারে কনফিগার করা নেই।' }, 503); }
+
   const { data: reservation, error: reserveError } = await owner.supabase.rpc(
     'owner_reserve_manual_admin_password_reset',
     {
@@ -71,6 +74,19 @@ export async function POST(request: NextRequest) {
     return json({
       error: 'এই আবেদন থেকে তৈরি MDI Manual Admin Account পাওয়া যায়নি, অথবা Recovery limit অতিক্রম হয়েছে।',
     }, 409);
+  }
+
+  const handoff = createCredentialNonce();
+  const { error: handoffError } = await owner.supabase.rpc('owner_create_manual_admin_credential_handoff', {
+    p_nonce_hash: handoff.nonceHash,
+  });
+  if (handoffError) {
+    await owner.supabase.rpc('owner_complete_manual_admin_password_reset', {
+      p_reset_request_id: reservation.reset_request_id,
+      p_succeeded: false,
+      p_error_code: 'audit_finalize_failed',
+    });
+    return json({ error: 'একবার ব্যবহারযোগ্য Credential নিরাপদ ব্যবস্থা প্রস্তুত করা যায়নি। Password পরিবর্তন করা হয়নি।' }, 503);
   }
 
   let admin: ReturnType<typeof createAdminClient>;
@@ -147,13 +163,18 @@ export async function POST(request: NextRequest) {
 
   try { revalidatePath('/platform'); } catch { /* Credential remains available in this no-store response. */ }
 
-  return json({
-    success: true,
+  const credentialCookie = sealManualAdminCredential({
+    ownerUserId: owner.user.id,
+    nonce: handoff.nonce,
     loginIdentifier: target.email,
     temporaryPassword,
     institutionName: reservation.institution_name,
     contactEmail: reservation.contact_email,
     contactEmailVerified: false,
-    message: 'নতুন Temporary Password একবার দেখানো হচ্ছে। প্রথম Login-এ Password পরিবর্তন বাধ্যতামূলক।',
+    activationStatus: reservation.is_active === true ? 'active' : 'pending_activation',
+    issuedAt: Date.now(),
   });
+  const response = json({ success: true, credentialPath: '/api/platform/credential' });
+  response.cookies.set(credentialCookie.name, credentialCookie.value, credentialCookie.options);
+  return response;
 }
