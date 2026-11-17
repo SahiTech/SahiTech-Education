@@ -9,10 +9,10 @@ export default async function FirstLoginPasswordPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
-  if (user.app_metadata?.mdi_manual_madrasa_admin !== true
-    || user.app_metadata?.mdi_force_password_change !== true) {
-    redirect('/dashboard');
-  }
+  const { data: passwordChangeRequired, error } =
+    await (supabase.rpc as any)('mdi_manual_password_change_required');
+  if (error) redirect('/login');
+  if (passwordChangeRequired !== true) redirect('/dashboard');
 
   return (
     <main className="flex min-h-[75vh] items-center justify-center bg-slate-50 px-4 py-12">
