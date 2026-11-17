@@ -44,6 +44,11 @@ BEGIN
     RAISE EXCEPTION 'internal_password_gate_helper_must_not_be_directly_callable';
   END IF;
 
+  IF has_function_privilege('anon', 'public.mdi_manual_password_change_required()', 'EXECUTE')
+     OR NOT has_function_privilege('authenticated', 'public.mdi_manual_password_change_required()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'caller_scoped_password_gate_rpc_grants_invalid';
+  END IF;
+
   IF NOT has_function_privilege('authenticated', 'private.get_auth_tenant_ids()', 'EXECUTE')
      OR NOT has_function_privilege('authenticated', 'private.has_tenant_role(uuid,public.user_role[])', 'EXECUTE') THEN
     RAISE EXCEPTION 'existing_rls_helper_grants_must_be_preserved';
