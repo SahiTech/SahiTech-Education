@@ -35,7 +35,7 @@ export function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            placeholder="mdi-xxxxxxxxxxxxxxxxxxxxxxxx@accounts.sahitech.invalid"
+            placeholder="mdi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@login.sahitech.invalid"
             className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition"
           />
         </div>
