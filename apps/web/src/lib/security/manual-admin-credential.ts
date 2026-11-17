@@ -25,6 +25,8 @@ function encryptionKey(): Buffer {
   return key;
 }
 
+export function assertCredentialDisplayKey() { encryptionKey(); }
+
 export function createCredentialNonce() {
   const nonce = randomBytes(32).toString('hex');
   const nonceHash = createHash('sha256').update(nonce).digest('hex');
