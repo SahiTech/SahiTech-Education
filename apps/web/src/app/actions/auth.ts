@@ -76,10 +76,13 @@ export async function changeInitialMadrasaAdminPassword(
 
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user
-    || user.app_metadata?.mdi_manual_madrasa_admin !== true
-    || user.app_metadata?.mdi_force_password_change !== true) {
+  if (userError || !user) {
     return { success: false, error: 'এই অ্যাকাউন্টের প্রথম Login Password Change অনুমোদিত নয়।' };
+  }
+  const { data: passwordChangeRequired, error: gateError } =
+    await (supabase.rpc as any)('mdi_manual_password_change_required');
+  if (gateError || passwordChangeRequired !== true) {
+    return { success: false, error: 'এই অ্যাকাউন্টে আর প্রাথমিক Password Change প্রয়োজন নেই, অথবা নিরাপদ যাচাই সম্পন্ন হয়নি।' };
   }
 
   const admin = createAdminClient();
