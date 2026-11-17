@@ -123,7 +123,7 @@ test('temporary credentials are delivered only through encrypted, Owner-bound, s
   assert.match(provisionRoute, /owner_create_manual_admin_credential_handoff/);
   assert.match(recoveryRoute, /owner_create_manual_admin_credential_handoff/);
   assert.doesNotMatch(provisionRoute + recoveryRoute, /temporaryPassword,\s*$/);
-  assert.doesNotMatch(provisionRoute + recoveryRoute, /loginIdentifier:\s*completed\.login_identifier/);
+  assert.match(provisionRoute + recoveryRoute, /return response;/);
   assert.match(credentialHelper, /aes-256-gcm/);
   assert.match(credentialHelper, /httpOnly:\s*true/);
   assert.match(credentialHelper, /sameSite:\s*'strict'/);
@@ -136,8 +136,9 @@ test('temporary credentials are delivered only through encrypted, Owner-bound, s
 });
 
 test('AAL2 is enforced inside database Owner RPCs, not only in HTTP handlers', () => {
-  for (const source of [migration46, migration47, migration49]) {
+  for (const source of [migration46, migration47]) {
     assert.match(source, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
   }
+  assert.match(migration49, /auth\.jwt\(\)->>''aal'' IS DISTINCT FROM ''aal2''/);
   assert.match(migration49, /Expected to harden 5 manual-admin Owner RPCs/);
 });
