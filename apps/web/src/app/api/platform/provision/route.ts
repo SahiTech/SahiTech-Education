@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
   if (!/^[0-9a-f-]{36}$/i.test(applicationId)) {
     return json({ error: 'আবেদনের পরিচিতি সঠিক নয়।' }, 400);
   }
-  if (!['phone_call', 'whatsapp', 'in_person', 'signed_authorization'].includes(verificationMethod)
+  if (body?.manualContactVerified !== true
+      || !['phone_call', 'whatsapp', 'in_person', 'signed_authorization'].includes(verificationMethod)
       || verificationNote.length < 20) {
     return json({ error: 'প্রথমে আবেদনকারীর পরিচয় ফোন, WhatsApp, সরাসরি সাক্ষাৎ বা স্বাক্ষরিত অনুমোদনের মাধ্যমে যাচাই করুন এবং ২০–৫০০ অক্ষরের নোট দিন।' }, 400);
   }
