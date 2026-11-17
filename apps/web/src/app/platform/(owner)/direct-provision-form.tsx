@@ -178,7 +178,11 @@ SahiTech Education Support: +8801601654316 | sahitecheducation@gmail.com`;
           <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs">
             <p className="font-bold text-slate-800">{institutionName}</p>
             <p className="mt-1 text-slate-600">Application contact email: <span className="font-mono">{contactEmail}</span></p>
-            <p className="mt-1 text-[10px] font-semibold text-amber-700">Contact email is not verified and will not be used as the login identity.</p>
+            {!isAlreadyProvisioned ? (
+              <p className="mt-1 text-[10px] font-semibold text-amber-700">New manual accounts use a separate MDI Login ID. This application contact email remains unverified.</p>
+            ) : (
+              <p className="mt-1 text-[10px] text-slate-500">Existing account recovery will retain its current login identity. No password changes until you verify the account holder and explicitly submit the reset.</p>
+            )}
           </div>
 
           {isAlreadyProvisioned ? (
