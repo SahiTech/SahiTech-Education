@@ -5,70 +5,109 @@ import path from 'node:path';
 
 const read = (relativePath) => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8');
 
-const route = read('src/app/api/platform/provision/route.ts');
-const recovery = read('src/app/api/platform/recover/route.ts');
+const provisionRoute = read('src/app/api/platform/provision/route.ts');
+const recoveryRoute = read('src/app/api/platform/recover/route.ts');
 const adminClient = read('src/lib/supabase/admin.ts');
 const middleware = read('src/lib/supabase/middleware.ts');
 const authAction = read('src/app/actions/auth.ts');
+const authContext = read('src/lib/auth/context.ts');
 const form = read('src/app/platform/(owner)/direct-provision-form.tsx');
-const migration = read('../../packages/database/migrations/00045_owner_direct_setup_madrasa_admin.sql');
+const migration45 = read('../../packages/database/migrations/00045_owner_direct_setup_madrasa_admin.sql');
+const migration46 = read('../../packages/database/migrations/00046_secure_manual_madrasa_admin_activation.sql');
+const migration47 = read('../../packages/database/migrations/00047_manual_admin_contact_verification_and_recovery_scope.sql');
 const platformActions = read('src/app/actions/platform.ts');
 const ownerPage = read('src/app/platform/(owner)/page.tsx');
 const applicationActions = read('src/app/actions/applications.ts');
+const firstLoginPage = read('src/app/first-login-password/page.tsx');
 
-test('temporary credentials are generated only with cryptographic randomness', () => {
-  assert.match(route, /randomBytes\(12\)/);
-  assert.match(route, /randomBytes\(32\)/);
-  assert.doesNotMatch(route + form, /Math\.random\s*\(/);
+test('temporary credentials use cryptographic randomness and a non-routable MDI login alias', () => {
+  assert.match(provisionRoute, /randomBytes\(16\)/);
+  assert.match(provisionRoute, /randomBytes\(32\)/);
+  assert.match(recoveryRoute, /randomBytes\(32\)/);
+  assert.match(provisionRoute, /@login\.sahitech\.invalid/);
+  assert.doesNotMatch(provisionRoute + recoveryRoute + form, /Math\.random\s*\(/);
 });
 
-test('manual login uses a platform-owned alias and leaves the applicant contact email unverified', () => {
-  assert.match(route, /@accounts\.sahitech\.invalid/);
-  assert.match(route, /email_confirm:\s*true/);
-  assert.match(route, /mdi_contact_email_verified:\s*false/);
-  assert.match(migration, /contact_email_verified/);
-  assert.match(migration, /contact_email_verified,manual_admin_provisioned/);
-  assert.match(migration, /v_app\.contact_email,FALSE,TRUE,/);
+test('applicant contact email is not confirmed by manual activation', () => {
+  assert.match(provisionRoute, /email_confirm:\s*true/); // Only the MDI-issued alias is confirmed.
+  assert.match(provisionRoute, /mdi_contact_email_verified:\s*false/);
+  assert.match(migration46, /contact_email_verified.*FALSE/s);
+  assert.match(migration47, /contact_email_verified\s*:=\s*FALSE/);
+  assert.match(form, /এই ইমেইলটি Supabase Auth-এ Verified করা হবে না/);
 });
 
-test('temporary credentials are not persisted or returned by database functions', () => {
-  assert.doesNotMatch(migration, /password_used|Sahitech@2026|INSERT\s+INTO\s+auth\.users|UPDATE\s+auth\.users/i);
-  assert.doesNotMatch(platformActions, /directProvisionTenant|password_used|owner_direct_setup_madrasa_admin/);
-  assert.match(route, /Cache-Control':\s*'no-store, no-cache, must-revalidate, private'/);
-});
-
-test('privileged Supabase Auth client is server-only and uses only server environment secrets', () => {
+test('provisioning is reservation-based, idempotent, and server-admin only', () => {
+  assert.match(provisionRoute, /owner_reserve_manual_admin_provisioning/);
+  assert.match(provisionRoute, /owner_complete_manual_admin_provisioning/);
+  assert.match(provisionRoute, /owner_fail_manual_admin_provisioning/);
+  assert.match(migration46, /INTERVAL '15 minutes'/i);
+  assert.match(migration46, /manual_provisioning_already_in_progress/);
+  assert.match(migration46, /attempt_count >= 3/);
   assert.match(adminClient, /import 'server-only'/);
-  assert.match(adminClient, /SUPABASE_SERVICE_ROLE_KEY\s*\|\|\s*process\.env\.SUPABASE_SECRET_KEY/);
-  assert.doesNotMatch(adminClient, /NEXT_PUBLIC_.*SERVICE_ROLE|NEXT_PUBLIC_.*SECRET/);
+  assert.match(provisionRoute, /admin\.auth\.admin\.createUser/);
 });
 
-test('manual provisioning and recovery require an AAL2 Global Owner session', () => {
-  assert.match(route, /currentLevel !== 'aal2'/);
-  assert.match(route, /'is_platform_owner'/);
-  assert.match(recovery, /currentLevel !== 'aal2'/);
-  assert.match(recovery, /'is_platform_owner'/);
-  assert.match(migration, /NOT private\.is_platform_owner\(\)/);
+test('temporary credentials are not persisted in SQL or returned by Server Actions', () => {
+  assert.doesNotMatch(migration45 + migration46 + migration47, /password_used|Sahitech@2026!/);
+  assert.doesNotMatch(migration45 + migration46 + migration47, /INSERT\s+INTO\s+auth\.users|UPDATE\s+auth\.users/i);
+  assert.doesNotMatch(platformActions, /provisionMadrasaAdminManually|resetMadrasaAdminPasswordManually|temporary_password/);
+  assert.match(provisionRoute + recoveryRoute, /Cache-Control/);
+  assert.match(provisionRoute + recoveryRoute, /no-store/);
 });
 
-test('manual accounts are gated until first-login password change completes', () => {
-  assert.match(middleware, /mdi_force_password_change === true/);
-  assert.match(middleware, /pathname !== '\/change-password'/);
-  assert.match(authAction, /mdi_force_password_change: false/);
-  assert.match(authAction, /auth\.admin\.updateUserById/);
+test('provisioning and recovery require the MFA-verified Global Platform Owner', () => {
+  for (const source of [provisionRoute, recoveryRoute]) {
+    assert.match(source, /currentLevel !== 'aal2'/);
+    assert.match(source, /'is_platform_owner'/);
+    assert.match(source, /request\.headers\.get\('origin'\)/);
+  }
+  assert.match(migration46, /NOT private\.is_platform_owner\(\)/);
+  assert.match(migration47, /NOT private\.is_platform_owner\(\)/);
 });
 
-test('manual recovery requires a reason and renewed out-of-band contact verification', () => {
-  assert.match(recovery, /reason\.length < 20/);
-  assert.match(recovery, /manualContactVerified !== true/);
-  assert.match(migration, /owner_prepare_manual_admin_recovery/);
-  assert.match(migration, /tenant\.manual_admin_recovery_requested/);
-  assert.match(migration, /tenant\.manual_admin_recovery_succeeded/);
+test('initial provisioning records explicit out-of-band identity verification', () => {
+  assert.match(form, /manualContactVerified/);
+  assert.match(form, /verificationNote/);
+  assert.match(provisionRoute, /verificationNote\.length < 20/);
+  assert.match(provisionRoute, /p_contact_verification_method/);
+  assert.match(provisionRoute, /p_contact_verification_note/);
+  assert.match(migration47, /contact_verification_method/);
+  assert.match(migration47, /contact_verification_note/);
+  assert.match(migration47, /tenant\.manual_admin_provisioning_reserved/);
 });
 
-test('invitation signing fails closed when the HMAC secret is absent', () => {
-  assert.match(platformActions, /Secure invitation signing is not configured/);
+test('first-login password change is enforced by the database-backed gate', () => {
+  assert.match(middleware, /mdi_manual_password_change_required/);
+  assert.match(middleware, /pathname !== '\/first-login-password'/);
+  assert.match(authContext, /mdi_manual_password_change_required/);
+  assert.match(authAction, /mdi_manual_password_change_required/);
+  assert.match(authAction, /record_manual_admin_password_change/);
+  assert.match(migration46, /private\.can_use_mdi_tenant_features/);
+  assert.match(migration46, /public\.mdi_manual_password_change_required/);
+  assert.match(firstLoginPage, /mdi_manual_password_change_required/);
+});
+
+test('manual recovery cannot reset invitation-created or unrelated administrator accounts', () => {
+  assert.match(recoveryRoute, /mdi_manual_madrasa_admin === true/);
+  assert.match(recoveryRoute, /@login\\.sahitech\\.invalid/);
+  assert.match(migration47, /manual_admin_provisioned=TRUE/);
+  assert.match(migration47, /JOIN private\.manual_admin_provisionings mp/);
+  assert.match(migration47, /mp\.auth_user_id=tu\.user_id/);
+  assert.match(migration47, /mdi_manual_madrasa_admin/);
+  assert.match(migration46, /manual_password_reset_rate_limited/);
+});
+
+test('existing Auth users at applicant contact email are protected from takeover', () => {
+  assert.match(migration46, /owner_reserve_manual_admin_provisioning/);
+  assert.match(migration46, /manual_login_identifier_already_exists/);
+  assert.match(provisionRoute, /admin\.auth\.admin\.createUser/);
+  assert.doesNotMatch(provisionRoute, /updateUserById\(.*application\.contact_email/s);
+});
+
+test('invitation and application upload token signing fail closed without a strong HMAC secret', () => {
+  assert.match(platformActions, /Secure invitation delivery is not configured/);
   assert.doesNotMatch(platformActions + ownerPage + applicationActions, /0123456789abcdef0123456789abcdef|DEFAULT_HMAC_SECRET/);
   assert.doesNotMatch(applicationActions, /NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(applicationActions, /নিরাপদ application upload ব্যবস্থা প্রস্তুত নয়/);
 });
+
