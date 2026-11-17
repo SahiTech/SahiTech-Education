@@ -105,3 +105,26 @@ Never restore a “production-ready” label based only on a successful build or
 | Backup/restore and Auth security settings | Production restore readiness and leaked-password-protection setting remain unverified/disabled per Security Advisor | Not verified |
 
 The Production database must not be represented as having the full secure manual activation workflow until migrations, server-only configuration, real Auth E2E and live smoke tests are complete. The old direct-provision path is intentionally not restored.
+
+---
+
+## Production lifecycle security hotfix — 2026-11-17
+
+**Production project:** sahitech-mdi (xbswamfmslhliayoowlo)  
+**Applied migration:** 00052_retire_legacy_owner_direct_provision_and_enforce_lifecycle_aal2  
+**Verification:** read-only SQL executed after migration application
+
+| Check | Production result |
+|---|---|
+| Legacy owner_direct_provision_tenant(UUID,UUID) | Absent |
+| owner_activate_tenant database AAL2 guard | Present |
+| owner_issue_invitation database AAL2 guard | Present |
+| owner_review_application_document database AAL2 guard | Present |
+| owner_update_application_status database AAL2 guard | Present |
+| Lifecycle RPC count verified | 4 |
+
+Production migration ledger now has 00044, emergency 00051 and security hotfix 00052. Feature migrations 00045–00050 remain pending. This is a Production-verified lifecycle hardening hotfix only; it is not evidence that the manual-admin provisioning workflow is active.
+
+Development also has migration 00052 and its eleven-RPC read-only smoke test passed. The Development ledger has two rows named 00052 from repeat application of the idempotent migration. Do not delete migration history manually; reconcile before any future CLI push.
+
+The secure Admin workflow still requires the feature migrations 00045–00050, server-only Auth Admin key, matching HMAC secret, real Auth E2E, final Preview/Production checks and post-deployment smoke testing.
