@@ -45,15 +45,18 @@ export default async function PlatformOwnerDashboard({ searchParams }: { searchP
   }
 
   const inviteLinkByApp = new Map<string, string>();
-  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-  for (const row of (outboxRows || [])) {
-    const p = row.payload;
-    if (p?.application_id && p?.token_nonce && !inviteLinkByApp.has(p.application_id)) {
-      const rawToken = createHmac('sha256', hmacSecret)
-        .update(`mdi-invitation:${p.application_id}:${p.token_nonce}`)
-        .digest('hex')
-        .toUpperCase();
-      inviteLinkByApp.set(p.application_id, `/platform/accept#token=${rawToken}`);
+  const hmacSecret = process.env.MDI_EMAIL_TOKEN_HMAC_SECRET;
+  // Fail closed: invitation bearer tokens are never reconstructed with a fallback secret.
+  if (hmacSecret && Buffer.byteLength(hmacSecret, 'utf8') >= 32) {
+    for (const row of (outboxRows || [])) {
+      const p = row.payload;
+      if (p?.application_id && p?.token_nonce && !inviteLinkByApp.has(p.application_id)) {
+        const rawToken = createHmac('sha256', hmacSecret)
+          .update(`mdi-invitation:${p.application_id}:${p.token_nonce}`)
+          .digest('hex')
+          .toUpperCase();
+        inviteLinkByApp.set(p.application_id, `/platform/accept#token=${rawToken}`);
+      }
     }
   }
 
