@@ -49,13 +49,30 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.headers.set('x-tenant-subdomain', resolvedTenantSubdomain);
   }
 
-  // Manual MDI accounts must replace their one-time credential before any other
-  // application route is accessible. This is enforced at the edge and again in
-  // server-side tenant context / permission helpers.
+  // The database-backed gate catches Owner-assisted resets even when the current
+  // access token contains stale app_metadata. Only MDI manual-admin identities
+  // need this additional round-trip; unrelated users keep the existing fast path.
   const pathname = request.nextUrl.pathname;
-  if (user?.app_metadata?.mdi_force_password_change === true && pathname !== '/change-password' && pathname !== '/auth/callback') {
+  let requiresInitialPasswordChange = false;
+  if (user?.app_metadata?.mdi_manual_madrasa_admin === true) {
+    const { data: passwordChangeRequired, error: passwordGateError } =
+      await (supabase.rpc as any)('mdi_manual_password_change_required');
+    requiresInitialPasswordChange = passwordGateError ? true : passwordChangeRequired === true;
+  }
+
+  if (user && requiresInitialPasswordChange
+      && pathname !== '/first-login-password'
+      && !pathname.startsWith('/_next/')
+      && !pathname.startsWith('/api/')) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/change-password';
+    redirectUrl.pathname = '/first-login-password';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && !requiresInitialPasswordChange && pathname === '/first-login-password') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/dashboard';
     redirectUrl.search = '';
     return NextResponse.redirect(redirectUrl);
   }
