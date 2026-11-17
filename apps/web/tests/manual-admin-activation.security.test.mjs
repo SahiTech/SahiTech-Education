@@ -117,6 +117,7 @@ const credentialHelper = read('src/lib/security/manual-admin-credential.ts');
 const migration48 = read('../../packages/database/migrations/00048_single_use_manual_admin_credential_handoff.sql');
 const migration49 = read('../../packages/database/migrations/00049_enforce_aal2_manual_admin_owner_rpcs.sql');
 const migration50 = read('../../packages/database/migrations/00050_rate_limit_manual_admin_credential_handoffs.sql');
+const migration52 = read('../../packages/database/migrations/00052_retire_legacy_owner_direct_provision_and_enforce_lifecycle_aal2.sql');
 
 test('temporary credentials are delivered only through encrypted, Owner-bound, single-use handoff', () => {
   assert.match(provisionRoute, /sealManualAdminCredential/);
@@ -151,4 +152,16 @@ test('credential handoff creation is rate-limited and its owner lookup is indexe
   assert.match(migration50, /created_at>now\(\)-interval '1 hour'/);
   assert.match(migration50, /manual_admin_credential_handoffs_owner_created_idx/);
   assert.match(migration50, /auth\.jwt\(\)->>'aal' IS DISTINCT FROM 'aal2'/);
+});
+
+
+test('legacy direct tenant provisioning is retired and all lifecycle Owner RPCs require database AAL2', () => {
+  assert.match(migration52, /DROP FUNCTION IF EXISTS public\.owner_direct_provision_tenant\(UUID, UUID\)/);
+  assert.match(migration52, /owner_activate_tenant/);
+  assert.match(migration52, /owner_issue_invitation/);
+  assert.match(migration52, /owner_review_application_document/);
+  assert.match(migration52, /owner_update_application_status/);
+  assert.match(migration52, /AAL2 guard missing in %/);
+  assert.match(migration52, /v_found <> cardinality\(v_required\)/);
+  assert.match(migration52, /v_guarded <> cardinality\(v_required\)/);
 });
