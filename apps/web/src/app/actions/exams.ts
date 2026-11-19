@@ -27,7 +27,7 @@ export async function createExam(input: CreateExamInput) {
     const context = await requirePermission('manage_curriculum');
     const supabase = await createClient();
 
-    if (!input.nameBn?.trim() || !input.nameEn?.trim()) {
+    if (!input.nameBn?.trim()) {
       return { success: false, error: 'পরীক্ষার নাম বাংলা ও ইংরেজিতে দিন।' };
     }
     if (!ALLOWED_TERM_CODES.has(input.termCode) || !isValidDate(input.startDate) || !isValidDate(input.endDate) || input.endDate < input.startDate) {
@@ -51,7 +51,7 @@ export async function createExam(input: CreateExamInput) {
         tenant_id: context.tenantId,
         academic_year_id: curYear.id,
         name_bn: input.nameBn.trim(),
-        name_en: input.nameEn.trim(),
+        name_en: input.nameEn?.trim() || input.nameBn.trim(),
         term_code: input.termCode,
         start_date: input.startDate,
         end_date: input.endDate,
