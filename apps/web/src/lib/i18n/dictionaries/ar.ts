@@ -504,6 +504,7 @@ export const ar: Translations = {
     assignedClass: 'الصف أو المرحلة المعينة',
     assignedSection: 'اختر الشعبة',
     selectSection: 'اختر الشعبة',
+    rollNo: 'رقم الجلوس',
     noSectionsAvailable: 'لم يتم إنشاء شعب لهذا الصف بعد. سيتم حفظ ملف الطالب دون تسجيله في الصف.',
     confirmAdmissionBtn: 'تأكيد قبول الطالب وحفظ السجل',
     saving: 'جاري الحفظ...',
