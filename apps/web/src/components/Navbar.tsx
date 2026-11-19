@@ -20,7 +20,8 @@ export function Navbar({ user }: NavbarProps) {
   const isWorkspaceExperience = ['/dashboard', '/portals', '/public-site'].some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   // The Global Platform Owner has a dedicated restricted shell, not the public navbar.
-  if (isPlatformRoute) return null;
+  const isInstitutionPublicSite = pathname.startsWith('/m/');
+  if (isPlatformRoute || isInstitutionPublicSite) return null;
 
   const portalLinks = [
     { name: t.nav.overview, href: '/dashboard' },
