@@ -355,7 +355,7 @@ export interface Translations {
     faculty: {
       title: string; badge: string; subtitle: string; todayDate: string;
       attendanceTitle: string; attendanceSubtitle: string; presentToday: string;
-      studentsSuffix: string; admissionNo: string; studentName: string; boarding: string;
+      studentsSuffix: string; teacherLabel: string; roleLabel: string; admissionNo: string; studentName: string; boarding: string;
       todayStatus: string; present: string; pending: string; residential: string;
       nonResidential: string; noStudents: string; noStudentsDescription: string;
     };
