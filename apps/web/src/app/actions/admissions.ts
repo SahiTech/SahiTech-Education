@@ -205,7 +205,7 @@ export async function enrollApplicantToStudent(params: {
     if (rollError) return { success: false, error: 'রোল নম্বর যাচাই করা যায়নি। আবার চেষ্টা করুন।' };
     if (existingRoll) return { success: false, error: 'এই সেকশনে রোল নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে।' };
 
-    const admissionNo = `ADM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const admissionNo = `ADM-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const { data: student, error: studentError } = await supabase
       .from('students')
       .insert({
@@ -274,7 +274,7 @@ export async function enrollApplicantToStudent(params: {
         : 'ক্লাসে ভর্তি ব্যর্থ হয়েছে এবং অসম্পূর্ণ রেকর্ড সম্পূর্ণ পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
     }
 
-    const { error: updateError } = await supabase
+    const { data: enrolledApplication, error: updateError } = await supabase
       .from('student_admissions')
       .update({
         status: 'enrolled',
@@ -285,12 +285,14 @@ export async function enrollApplicantToStudent(params: {
       })
       .eq('id', app.id)
       .eq('tenant_id', context.tenantId)
-      .eq('status', 'passed');
+      .eq('status', 'passed')
+      .select('id')
+      .maybeSingle();
 
-    if (updateError) {
+    if (updateError || !enrolledApplication) {
       const cleaned = await rollbackStudent();
       return { success: false, error: cleaned
-        ? `ভর্তি আবেদন আপডেট করা যায়নি: ${updateError.message}`
+        ? `ভর্তি আবেদন আপডেট করা যায়নি: ${updateError?.message || 'আবেদনটির অবস্থা পরিবর্তিত হয়েছে।'}`
         : 'ভর্তি আবেদন আপডেট ব্যর্থ এবং অসম্পূর্ণ রেকর্ড পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
     }
 
