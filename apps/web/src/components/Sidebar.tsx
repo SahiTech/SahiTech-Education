@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { WorkspaceLogoutButton } from '@/components/WorkspaceLogoutButton';
 import {
   LayoutDashboard,
   BookMarked,
@@ -154,6 +155,11 @@ export function Sidebar() {
                       <div className="text-[11px] text-slate-500 font-mono">Postgres 17 (ap-south-1)</div>
                       <div className="text-[10px] text-slate-400 mt-0.5">{t.nav.tenantRlsActive}</div>
                     </div>
+                    <WorkspaceLogoutButton
+                      label={locale === 'bn' ? 'লগ আউট' : locale === 'ar' ? 'تسجيل الخروج' : 'Log out'}
+                      formClassName="mt-3"
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                    />
                 </div>
                 );
 
