@@ -194,3 +194,36 @@ The fail-closed behavior for invalid tenant-selection cookies and multiple membe
 | Development/Preview and Production verification | GitHub Actions run #359 (tests, TypeScript, lint, build) passed; Vercel Preview `dpl_xmJsFmmwyhtqG9UcbbPVDXjumVEF` is READY | Development/Preview verified; Production release pending |
 
 No assertion that the manager's Production browser journey is verified should be made until a live authenticated login, dashboard load and logout test completes.
+
+---
+
+## 2026-11-19 — Student registry, localization and institution website corrections
+
+**Production evidence reviewed:** Supabase Production project `xbswamfmslhliayoowlo`, Vercel Production commit `16667153b679bbfcaa7a687e6908b04a7fc95d3e`.
+
+**Root causes confirmed from source/schema:**
+- `createStudent` mapped the UI's `bloodGroup` value to a non-existent camelCase column. Production `public.students` exposes nullable `blood_group`; the database did not need a new column or schema-cache refresh.
+- The shared Navbar displayed three wide always-visible language buttons. The Faculty and other institutional portals contained many Bengali literals rather than resolving their content from the active server dictionary.
+- The former `/public-site` route selected the latest active tenant globally. Production has several active tenants, each with its own unique `subdomain`. Notice rendering used `title/content` even though the table columns are `title_bn/title_en/content_bn/content_en`.
+- `student_enrollments.section_id` is NOT NULL; the new-student form previously selected a Class but did not offer a Section, so it could not create a valid class enrollment.
+- Student/Guardian self-service login is not present as a complete verified workflow. Public admission submission creates an application only; it does not create an Auth account.
+
+**Fix branch:** `fix/student-schema-i18n-and-institution-websites`
+
+| Area | Source change | Verification state |
+|---|---|---|
+| Student record save | Use `blood_group` for the existing Production column | Source implemented; CI pending |
+| Class enrollment | Load tenant sections, select a section and submit the required `section_id`; if a class has no sections, preserve the student record without falsely claiming enrollment | Source implemented; CI pending |
+| Language selector | Compact accessible globe/current-locale menu; no oversized inline pills | Source implemented; CI pending |
+| Portal localization | Dictionary-driven shared portal shell and Admin, Academic, Faculty and Bursar page copy in bn/en/ar | Source implemented; CI pending |
+| Tenant public site | Add `/m/[subdomain]`, exact active-tenant lookup and tenant-scoped public notices | Source implemented; CI pending |
+| Public notice fields | Read the existing bilingual `title_bn/title_en/content_bn/content_en` columns | Source implemented; CI pending |
+| Public admission | Verify exact tenant ID + slug + active platform state before INSERT | Source implemented; CI pending |
+| Facebook/share URL | Display `https://sahitech.dpdns.org/m/{subdomain}` in the institution Admin portal | Source implemented; CI pending |
+| Student/Guardian login | No account-provisioning or self-service login route added; documented as a separate identity-verified feature | Not implemented / not verified |
+| Database/Auth/DNS | No Production schema, data, Auth configuration, secrets or DNS changes | Confirmed no change |
+| CI, Preview, Production | Full CI and exact-commit Preview/Production release | Pending |
+
+Current database evidence confirms that `Taste Madrasa One` uses slug `tasteonegghx`; the expected public path is `https://sahitech.dpdns.org/m/tasteonegghx`. This is a shared-domain path, not a custom domain. DNS/TLS and verified ownership are still required before custom-domain support can be claimed.
+
+A successful build or deployment will not by itself prove public admission end-to-end, the student insert browser journey, guardian login, or full locale/RTL quality. Those require authenticated/public browser tests after deployment.
