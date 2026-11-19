@@ -53,8 +53,11 @@ export async function signInWithEmail(prevState: any, formData: FormData): Promi
   // A previous user's tenant selection must not leak into this new sign-in.
   cookieStore.delete('m_active_tenant');
 
+  // This query intentionally reads only the user's own active membership rows.
+  // During first login, tenant-feature RLS remains gated until the temporary password
+  // is changed, so joining tenant records here would incorrectly hide the membership.
   const { data: memberships, error: membershipError } = await (supabase.from('tenant_users') as any)
-    .select('tenant_id, tenants:tenants!tenant_users_tenant_id_fkey ( id, is_active, platform_status )')
+    .select('tenant_id')
     .eq('user_id', data.user.id)
     .eq('is_active', true);
 
@@ -63,16 +66,12 @@ export async function signInWithEmail(prevState: any, formData: FormData): Promi
     return { success: false, error: 'আপনার মাদরাসার সদস্যপদ যাচাই করা যায়নি। আবার চেষ্টা করুন।' };
   }
 
-  const selectableMemberships = (memberships || []).filter((membership: any) =>
-    membership.tenants &&
-    (membership.tenants.is_active === true || membership.tenants.platform_status === 'pending_activation')
-  );
-
+  const selectableMemberships = memberships || [];
   if (selectableMemberships.length === 0) {
     await supabase.auth.signOut();
     return {
       success: false,
-      error: 'এই MDI Login ID-এর সঙ্গে কোনো সক্রিয় বা অনুমোদিত মাদরাসার সদস্যপদ পাওয়া যায়নি। প্রতিষ্ঠানের Owner-এর সঙ্গে যোগাযোগ করুন।',
+      error: 'এই MDI Login ID-এর সঙ্গে কোনো সক্রিয় মাদরাসার সদস্যপদ পাওয়া যায়নি। প্রতিষ্ঠানের Owner-এর সঙ্গে যোগাযোগ করুন।',
     };
   }
 
