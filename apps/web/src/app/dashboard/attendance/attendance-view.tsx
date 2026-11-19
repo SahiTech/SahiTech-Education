@@ -19,21 +19,19 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
   const [refreshing, setRefreshing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Initialize attendance state mapping
+  const sectionStudents = students.filter((student) => student.section_id === selectedSectionId);
+
+  // Initialize saved attendance without coupling it to the first rendered section.
   const [attendanceMap, setAttendanceMap] = useState<Record<string, { status: 'present' | 'absent' | 'late' | 'excused'; remark: string }>>(() => {
     const map: Record<string, { status: 'present' | 'absent' | 'late' | 'excused'; remark: string }> = {};
     for (const rec of initialRecords) {
       map[rec.student_id] = { status: rec.status, remark: rec.remark || '' };
     }
-    for (const st of sectionStudents) {
-      if (!map[st.id]) {
-        map[st.id] = { status: 'present', remark: '' };
-      }
+    for (const student of students) {
+      if (!map[student.id]) map[student.id] = { status: 'present', remark: '' };
     }
     return map;
   });
-
-  const sectionStudents = students.filter((student) => student.section_id === selectedSectionId);
   const hasMounted = useRef(false);
 
   useEffect(() => {
@@ -74,7 +72,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
       });
 
     return () => { active = false; };
-  }, [selectedDate, selectedSectionId, students, t]);
+  }, [selectedDate, selectedSectionId, students, t.common.error]);
 
   const updateStudentStatus = (studentId: string, status: 'present' | 'absent' | 'late' | 'excused') => {
     setAttendanceMap((prev) => ({
@@ -86,7 +84,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
   const markAll = (status: 'present' | 'absent') => {
     setAttendanceMap((prev) => {
       const next = { ...prev };
-      for (const st of students) {
+      for (const st of sectionStudents) {
         next[st.id] = { ...next[st.id], status };
       }
       return next;
