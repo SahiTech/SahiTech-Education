@@ -69,3 +69,13 @@ journey
 5. The Admin can sign out from the shared desktop header, workspace Sidebar or mobile navigation. Sign-out ends the Supabase session and removes the selected-tenant cookie.
 
 Invitation-based accounts follow the separate verified-email invitation acceptance journey; an invitation token is not used by the email-independent manual-admin workflow.
+
+## 4. Public institution website and admission journey
+
+1. Each active Madrasa has a unique public path, `https://sahitech.dpdns.org/m/{subdomain}`, based on its unique tenant slug.
+2. The institution can share that exact URL on its Facebook Page, prospectus and other public channels. The link is public and does not require an MDI staff login.
+3. Visitors see that institution's profile and its own public notices. The notice query is scoped to the resolved tenant and public notices only.
+4. A prospective family submits an online admission application from that institution's page. The server verifies that the supplied tenant ID and URL slug identify the same active institution.
+5. The application enters the tenant's admissions workflow. Authorized admission staff review and evaluate it; an accepted application is then enrolled as a student by the institution's authorized staff.
+
+**Student/Guardian account status:** a public application is not a student login account. The current Production schema has an optional `students.user_id` link, but no verified student/guardian account-provisioning and sign-in journey has been confirmed. Student/Guardian login must be built as a separate, identity-verified workflow after admission, with tenant-scoped memberships and guardian-to-student relationship checks.
