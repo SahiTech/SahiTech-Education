@@ -393,6 +393,8 @@ export const ar: Translations = {
       "attendanceSubtitle": "تسجيل حضور الطلاب في الدروس والحصص اليومية.",
       "presentToday": "الحاضرون اليوم",
       "studentsSuffix": "طلاب",
+      "teacherLabel": "المعلم",
+      "roleLabel": "الدور",
       "admissionNo": "رقم القيد",
       "studentName": "اسم الطالب",
       "boarding": "الإقامة",
