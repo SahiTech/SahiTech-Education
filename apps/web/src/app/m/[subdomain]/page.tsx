@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PublicSiteView } from '@/app/public-site/public-site-view';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getServerDictionary } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ async function getPublicInstitution(subdomain: string) {
     .eq('platform_status', 'active')
     .maybeSingle();
 
-  if (error || !tenant) return null;
+  if (error || !tenant || !tenant.subdomain) return null;
 
   const { data: notices } = await supabase
     .from('tenant_notices')
@@ -72,9 +73,12 @@ export default async function MadrasaPublicWebsitePage({ params }: RouteProps) {
               <span className="block text-[10px] text-slate-400">{copy.siteLabel} · {result.tenant.code}</span>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <a href="/login" className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
             {copy.adminLogin}
           </a>
+          </div>
         </header>
 
         <PublicSiteView tenant={result.tenant} notices={result.notices} />
