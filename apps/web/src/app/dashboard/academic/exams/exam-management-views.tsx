@@ -9,9 +9,11 @@ interface ExamManagementProps {
   students: Array<{ id: string; full_name_bn: string; full_name_en?: string | null; admission_no: string }>;
   subjects: Array<{ id: string; name_bn: string; name_en?: string | null; name_ar?: string | null; code: string; total_marks?: number }>;
   exams: Array<any>;
+  canManageCurriculum: boolean;
+  canInputMarks: boolean;
 }
 
-export function ExamManagementViews({ students, subjects, exams }: ExamManagementProps) {
+export function ExamManagementViews({ students, subjects, exams, canManageCurriculum, canInputMarks }: ExamManagementProps) {
   const { t, locale, direction } = useI18n();
   const termOptions: Array<[string, string]> = locale === 'en'
     ? [['chala_1', 'Chala 1 (Term 1)'], ['chala_2', 'Chala 2 (Term 2)'], ['chala_3', 'Chala 3 (Annual)'], ['annual', 'Annual Examination'], ['semester_1', 'Semester 1'], ['semester_2', 'Semester 2']]
@@ -136,7 +138,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
         </div>
       )}
 
-      <div className="flex justify-end gap-2">
+      {canManageCurriculum && <div className="flex justify-end gap-2">
         <button
           onClick={() => setShowCreateModal(true)}
           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
@@ -144,10 +146,10 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
           <Plus className="h-4 w-4" />
           {t.academic.newExam}
         </button>
-      </div>
+      </div>}
 
       {/* Create Exam Modal */}
-      {showCreateModal && (
+      {canManageCurriculum && showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
@@ -238,7 +240,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
       )}
 
       {/* Marks Entry Modal */}
-      {showMarksModal && selectedExam && (
+      {canInputMarks && showMarksModal && selectedExam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
@@ -390,7 +392,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  {canInputMarks && <button
                     onClick={() => {
                       setSelectedExam(exam);
                       setShowMarksModal(true);
@@ -399,9 +401,9 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                     className="rounded-lg border border-emerald-600 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition"
                   >
                     {t.academic.enterMarks}
-                  </button>
+                  </button>}
 
-                  {!exam.is_published && (
+                  {canManageCurriculum && !exam.is_published && (
                     <button
                       onClick={() => handlePublish(exam.id)}
                       className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
