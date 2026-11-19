@@ -417,6 +417,7 @@ export interface Translations {
     assignedClass: string;
     assignedSection: string;
     selectSection: string;
+    rollNo: string;
     noSectionsAvailable: string;
     confirmAdmissionBtn: string;
     saving: string;
