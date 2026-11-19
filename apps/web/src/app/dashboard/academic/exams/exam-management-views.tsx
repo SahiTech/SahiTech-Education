@@ -13,7 +13,7 @@ interface ExamManagementProps {
 
 export function ExamManagementViews({ students, subjects, exams }: ExamManagementProps) {
   const { t, locale, direction } = useI18n();
-  const termOptions = locale === 'en'
+  const termOptions: Array<[string, string]> = locale === 'en'
     ? [['chala_1', 'Chala 1 (Term 1)'], ['chala_2', 'Chala 2 (Term 2)'], ['chala_3', 'Chala 3 (Annual)'], ['annual', 'Annual Examination'], ['semester_1', 'Semester 1'], ['semester_2', 'Semester 2']]
     : locale === 'ar'
       ? [['chala_1', 'المرحلة الأولى'], ['chala_2', 'المرحلة الثانية'], ['chala_3', 'المرحلة الثالثة'], ['annual', 'الامتحان السنوي'], ['semester_1', 'الفصل الأول'], ['semester_2', 'الفصل الثاني']]
@@ -23,13 +23,14 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
     locale === 'en' ? subject.name_en || subject.name_bn : subject.name_bn;
   const studentName = (student: ExamManagementProps['students'][number]) =>
     locale === 'en' ? student.full_name_en || student.full_name_bn : student.full_name_bn;
-  const dharjaName = (value?: string) => ({
+  const dharjaLabels: Record<string, string> = {
     mumtaz: t.academic.dharjaMumtaz,
     jayyid_jiddan: t.academic.dharjaJayyidJiddan,
     jayyid: t.academic.dharjaJayyid,
     maqbool: t.academic.dharjaMaqbool,
     rasib: t.academic.dharjaRasib,
-  }[value || ''] || value || '');
+  };
+  const dharjaName = (value?: string) => dharjaLabels[value || ''] || value || '';
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMarksModal, setShowMarksModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<any>(null);
@@ -252,7 +253,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
             <form onSubmit={handleSubmitMark} className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">{t.students.formTitle} *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.common.name} *</label>
                 <select
                   required
                   value={markStudentId}
