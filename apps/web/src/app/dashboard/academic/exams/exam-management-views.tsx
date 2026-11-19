@@ -1,16 +1,38 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { createExam, submitStudentMark, publishExamResults } from '@/app/actions/exams';
 import { Plus, Award, CheckCircle2, AlertCircle, X, Check, Send } from 'lucide-react';
 
 interface ExamManagementProps {
-  students: Array<{ id: string; full_name_bn: string; admission_no: string }>;
-  subjects: Array<{ id: string; name_bn: string; code: string }>;
+  students: Array<{ id: string; full_name_bn: string; full_name_en?: string | null; admission_no: string }>;
+  subjects: Array<{ id: string; name_bn: string; name_en?: string | null; name_ar?: string | null; code: string; total_marks?: number }>;
   exams: Array<any>;
+  canManageCurriculum: boolean;
+  canInputMarks: boolean;
 }
 
-export function ExamManagementViews({ students, subjects, exams }: ExamManagementProps) {
+export function ExamManagementViews({ students, subjects, exams, canManageCurriculum, canInputMarks }: ExamManagementProps) {
+  const { t, locale, direction } = useI18n();
+  const termOptions: Array<[string, string]> = locale === 'en'
+    ? [['chala_1', 'Chala 1 (Term 1)'], ['chala_2', 'Chala 2 (Term 2)'], ['chala_3', 'Chala 3 (Annual)'], ['annual', 'Annual Examination'], ['semester_1', 'Semester 1'], ['semester_2', 'Semester 2']]
+    : locale === 'ar'
+      ? [['chala_1', 'المرحلة الأولى'], ['chala_2', 'المرحلة الثانية'], ['chala_3', 'المرحلة الثالثة'], ['annual', 'الامتحان السنوي'], ['semester_1', 'الفصل الأول'], ['semester_2', 'الفصل الثاني']]
+      : [['chala_1', '১ম ছালা (১ম সাময়িক)'], ['chala_2', '২য় ছালা (২য় সাময়িক)'], ['chala_3', '৩য় ছালা (বার্ষিক)'], ['annual', 'বার্ষিক পরীক্ষা'], ['semester_1', 'সেমিস্টার ১'], ['semester_2', 'সেমিস্টার ২']];
+  const subjectName = (subject: ExamManagementProps['subjects'][number]) =>
+    locale === 'ar' ? subject.name_ar || subject.name_en || subject.name_bn :
+    locale === 'en' ? subject.name_en || subject.name_bn : subject.name_bn;
+  const studentName = (student: ExamManagementProps['students'][number]) =>
+    locale === 'en' ? student.full_name_en || student.full_name_bn : student.full_name_bn;
+  const dharjaLabels: Record<string, string> = {
+    mumtaz: t.academic.dharjaMumtaz,
+    jayyid_jiddan: t.academic.dharjaJayyidJiddan,
+    jayyid: t.academic.dharjaJayyid,
+    maqbool: t.academic.dharjaMaqbool,
+    rasib: t.academic.dharjaRasib,
+  };
+  const dharjaName = (value?: string) => dharjaLabels[value || ''] || value || '';
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMarksModal, setShowMarksModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<any>(null);
@@ -47,24 +69,24 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
     setLoading(false);
     if (res.success) {
-      setStatusMessage({ type: 'success', text: 'পরীক্ষা সফলভাবে তৈরি হয়েছে!' });
+      setStatusMessage({ type: 'success', text: t.common.success });
       setShowCreateModal(false);
       setNameBn('');
       setNameEn('');
     } else {
-      setStatusMessage({ type: 'error', text: res.error || 'পরীক্ষা তৈরিতে ব্যর্থতা।' });
+      setStatusMessage({ type: 'error', text: res.error || t.common.error });
     }
   };
 
   const handlePublish = async (examId: string) => {
-    if (!confirm('আপনি কি নিশ্চিতভাবে এই পরীক্ষার ফলাফল প্রকাশ করতে চান?')) return;
+    if (!confirm(locale === 'en' ? 'Publish these examination results?' : locale === 'ar' ? 'هل تريد نشر نتائج هذا الامتحان؟' : 'আপনি কি পরীক্ষার ফলাফল প্রকাশ করতে চান?')) return;
     setLoading(true);
     const res = await publishExamResults(examId);
     setLoading(false);
     if (res.success) {
-      setStatusMessage({ type: 'success', text: 'পরীক্ষার ফলাফল সফলভাবে প্রকাশিত হয়েছে।' });
+      setStatusMessage({ type: 'success', text: t.common.success });
     } else {
-      setStatusMessage({ type: 'error', text: res.error || 'প্রকাশনা ব্যর্থ।' });
+      setStatusMessage({ type: 'error', text: res.error || t.common.error });
     }
   };
 
@@ -85,15 +107,15 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
     setLoading(false);
     if (res.success) {
-      setCalculatedGrade(`দরজা: ${res.dharja?.toUpperCase()} | জিপিএ: ${res.gpa}`);
-      setStatusMessage({ type: 'success', text: `নম্বর সংরক্ষিত! অর্জিত মর্যাদা: ${res.dharja}` });
+      setCalculatedGrade(`${dharjaName(res.dharja)} · GPA: ${res.gpa}`);
+      setStatusMessage({ type: 'success', text: t.common.success });
     } else {
-      setStatusMessage({ type: 'error', text: res.error || 'নম্বর এন্ট্রি ব্যর্থ।' });
+      setStatusMessage({ type: 'error', text: res.error || t.common.error });
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={direction}>
       {statusMessage && (
         <div
           className={`rounded-lg p-4 text-xs font-medium flex items-center justify-between ${
@@ -116,22 +138,22 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
         </div>
       )}
 
-      <div className="flex justify-end gap-2">
+      {canManageCurriculum && <div className="flex justify-end gap-2">
         <button
           onClick={() => setShowCreateModal(true)}
           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
         >
           <Plus className="h-4 w-4" />
-          নতুন পরীক্ষা সূচি তৈরি
+          {t.academic.newExam}
         </button>
-      </div>
+      </div>}
 
       {/* Create Exam Modal */}
-      {showCreateModal && (
+      {canManageCurriculum && showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <h3 className="text-base font-bold text-slate-900">নতুন পরীক্ষা সূচি তৈরি</h3>
+              <h3 className="text-base font-bold text-slate-900">{t.academic.newExam}</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
@@ -139,11 +161,11 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
             <form onSubmit={handleCreateExam} className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">পরীক্ষার নাম (বাংলায়) *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.academic.examName} (বাংলা) *</label>
                 <input
                   type="text"
                   required
-                  placeholder="যেমন: ১ম সাময়িক পরীক্ষা / ১ম ছালা ইমতিহান ১৪৪৬ হি."
+                  placeholder={locale === 'en' ? 'e.g. Annual Examination' : locale === 'ar' ? 'مثال: الامتحان السنوي' : 'যেমন: বার্ষিক পরীক্ষা'}
                   value={nameBn}
                   onChange={(e) => setNameBn(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 p-2 text-sm focus:border-emerald-600 focus:outline-none"
@@ -151,10 +173,10 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">পরীক্ষার নাম (ইংরেজিতে)</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.academic.examName} (English)</label>
                 <input
                   type="text"
-                  placeholder="e.g. 1st Term Examination 2026"
+                  placeholder="e.g. Annual Examination 2026"
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 p-2 text-sm focus:border-emerald-600 focus:outline-none"
@@ -163,23 +185,18 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">টার্ম বা পর্যায়</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.academic.termCode}</label>
                   <select
                     value={termCode}
                     onChange={(e) => setTermCode(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
                   >
-                    <option value="chala_1">১ম ছালা (১ম সাময়িক)</option>
-                    <option value="chala_2">২য় ছালা (২য় সাময়িক)</option>
-                    <option value="chala_3">৩য় ছালা (বার্ষিক)</option>
-                    <option value="annual">বার্ষিক পরীক্ষা</option>
-                    <option value="semester_1">সেমিস্টার ১</option>
-                    <option value="semester_2">সেমিস্টার ২</option>
+                    {termOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">শুরুর তারিখ *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.academic.startDate} *</label>
                   <input
                     type="date"
                     required
@@ -190,7 +207,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">সমাপ্তির তারিখ *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.academic.endDate} *</label>
                   <input
                     type="date"
                     required
@@ -207,14 +224,14 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                   onClick={() => setShowCreateModal(false)}
                   className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  বাতিল
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="rounded-lg bg-emerald-700 px-5 py-2 font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                 >
-                  {loading ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
+                  {loading ? t.common.loading : t.common.save}
                 </button>
               </div>
             </form>
@@ -223,12 +240,12 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
       )}
 
       {/* Marks Entry Modal */}
-      {showMarksModal && selectedExam && (
+      {canInputMarks && showMarksModal && selectedExam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900">নম্বর এন্ট্রি ও ফলাফল গণনা</h3>
+                <h3 className="text-base font-bold text-slate-900">{t.academic.enterMarks}</h3>
                 <span className="text-xs text-emerald-700 font-medium">{selectedExam.name_bn}</span>
               </div>
               <button onClick={() => setShowMarksModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -238,34 +255,34 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
             <form onSubmit={handleSubmitMark} className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">শিক্ষার্থী নির্বাচন *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.common.name} *</label>
                 <select
                   required
                   value={markStudentId}
                   onChange={(e) => setMarkStudentId(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
                 >
-                  <option value="">-- তালিবুল ইলম বেছে নিন --</option>
+                  <option value="">{t.common.select}</option>
                   {students.map((st) => (
                     <option key={st.id} value={st.id}>
-                      {st.full_name_bn} (দাখেলা নং: {st.admission_no})
+                      {studentName(st)} ({st.admission_no})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">বিষয় বা কিতাব নির্বাচন *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.academic.canonicalKitabs} *</label>
                 <select
                   required
                   value={markSubjectId}
-                  onChange={(e) => setMarkSubjectId(e.target.value)}
+                  onChange={(e) => { setMarkSubjectId(e.target.value); const subject = subjects.find((item) => item.id === e.target.value); setMarkTotal(String(subject?.total_marks || 100)); }}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
                 >
-                  <option value="">-- বিষয় / কিতাব বেছে নিন --</option>
+                  <option value="">{t.common.select}</option>
                   {subjects.map((sub) => (
                     <option key={sub.id} value={sub.id}>
-                      {sub.name_bn} (কোড: {sub.code})
+                      {subjectName(sub)} ({sub.code})
                     </option>
                   ))}
                 </select>
@@ -273,11 +290,11 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">প্রাপ্ত নম্বর *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.academic.obtainedMarks} *</label>
                   <input
                     type="number"
                     min="0"
-                    max="100"
+                    max={Number(markTotal) || 100}
                     required
                     disabled={isAbsent}
                     value={markObtained}
@@ -287,7 +304,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">পূর্ণমান</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.academic.totalMarks}</label>
                   <input
                     type="number"
                     disabled
@@ -306,7 +323,7 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                   className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 <label htmlFor="absent" className="font-bold text-slate-700">
-                  পরীক্ষায় অনুপস্থিত (Absent)
+                  {t.academic.absent}
                 </label>
               </div>
 
@@ -322,14 +339,14 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                   onClick={() => setShowMarksModal(false)}
                   className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  বন্ধ করুন
+                  {t.common.close}
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="rounded-lg bg-emerald-700 px-5 py-2 font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                 >
-                  {loading ? 'সংরক্ষণ হচ্ছে...' : 'নম্বর সংরক্ষণ করুন'}
+                  {loading ? t.common.loading : t.common.save}
                 </button>
               </div>
             </form>
@@ -342,14 +359,14 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Award className="h-4 w-4 text-emerald-700" />
-            নির্ধারিত ইমতিহান ও পরীক্ষা সূচিসমূহ
+            {t.academic.examsTitle}
           </h2>
-          <span className="text-xs text-slate-500 font-mono">মোট: {exams.length}টি পরীক্ষা</span>
+          <span className="text-xs text-slate-500 font-mono">{t.common.total}: {exams.length}</span>
         </div>
 
         {exams.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500">
-            এখনো কোনো পরীক্ষা তৈরি করা হয়নি। নতুন পরীক্ষা সূচি তৈরি করুন।
+            {locale === 'en' ? 'No examinations have been created.' : locale === 'ar' ? 'لم يتم إنشاء أي امتحان بعد.' : 'এখনো কোনো পরীক্ষা তৈরি করা হয়নি।'}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -360,22 +377,22 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                     <span className="font-bold text-slate-900">{exam.name_bn}</span>
                     {exam.is_published ? (
                       <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
-                        ফলাফল প্রকাশিত
+                        {t.academic.published}
                       </span>
                     ) : (
                       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                        খসড়া / চলমান
+                        {t.academic.draft}
                       </span>
                     )}
                   </div>
                   <div className="text-xs text-slate-500 mt-1 flex items-center gap-4">
-                    <span>টার্ম: <span className="font-mono font-bold text-slate-700 uppercase">{exam.term_code}</span></span>
-                    <span>সময়সীমা: {exam.start_date} হতে {exam.end_date}</span>
+                    <span>{t.academic.termCode}: <span className="font-mono font-bold text-slate-700 uppercase">{exam.term_code}</span></span>
+                    <span>{t.academic.startDate}: {exam.start_date} · {t.academic.endDate}: {exam.end_date}</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  {canInputMarks && <button
                     onClick={() => {
                       setSelectedExam(exam);
                       setShowMarksModal(true);
@@ -383,15 +400,15 @@ export function ExamManagementViews({ students, subjects, exams }: ExamManagemen
                     }}
                     className="rounded-lg border border-emerald-600 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition"
                   >
-                    নম্বর এন্ট্রি
-                  </button>
+                    {t.academic.enterMarks}
+                  </button>}
 
-                  {!exam.is_published && (
+                  {canManageCurriculum && !exam.is_published && (
                     <button
                       onClick={() => handlePublish(exam.id)}
                       className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-800 transition"
                     >
-                      ফল প্রকাশ করুন
+                      {t.academic.publishResults}
                     </button>
                   )}
                 </div>

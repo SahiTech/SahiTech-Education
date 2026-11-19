@@ -65,3 +65,16 @@ The web test suite includes source-level regression checks for:
 - exposing workspace Logout on desktop, mobile navigation and Sidebar while preserving the separate Owner shell.
 
 These tests protect code contracts. They do not replace an authenticated browser E2E test using a real disposable tenant identity.
+
+### Student schema, localization and public-site regression coverage
+
+The web regression suite checks:
+- student create maps `bloodGroup` input to the actual `blood_group` column;
+- the compact language menu remains accessible and wired to the locale provider;
+- portal and public-site dictionary contracts exist in bn/en/ar;
+- Admin, Academic, Faculty and Bursar pages use the server dictionary;
+- the tenant public route resolves one exact active slug, scopes notices by tenant, and uses the database's bilingual notice column names;
+- public admission submissions revalidate both tenant ID and slug server-side;
+- student class enrollment only receives a section selection when an actual section is selected.
+
+These source-level checks do not replace authenticated browser testing of student insert, class enrollment, public admission and all three locale/RTL layouts against a disposable tenant.

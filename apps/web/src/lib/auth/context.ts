@@ -9,6 +9,7 @@ export interface TenantContext {
   tenantId: string;
   tenantName: string;
   tenantCode: string;
+  tenantSubdomain: string | null;
   role: UserRole;
   curriculumType: string;
 }
@@ -88,6 +89,7 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
     tenantId: active.tenant_id,
     tenantName: tenantData.name || 'মাদরাসা',
     tenantCode: tenantData.code || 'MDI',
+    tenantSubdomain: typeof tenantData.subdomain === 'string' ? tenantData.subdomain : null,
     role: active.role as UserRole,
     curriculumType: tenantData.curriculum_type || 'qawmi',
   };

@@ -131,3 +131,8 @@ The format follows Keep a Changelog. Versions are assigned when a release is app
   - Established initial database schema with 15 public tables, 30 foreign keys, 29 btree indexes, and zero-trust RLS policies.
   - Created pnpm monorepo architecture with `@sahitech/domain`, `@sahitech/database`, and `apps/web`.
 
+### Student registry, localization & institutional public websites
+- Fix student creation to send `blood_group`, the actual PostgreSQL column, instead of camelCase `bloodGroup`; add section selection so class enrollment supplies the required `section_id`.
+- Replace the oversized inline locale pills with an accessible compact language menu and add dictionary-driven Admin, Academic, Faculty, Bursar and tenant public-site copy for bn/en/ar.
+- Add per-institution public websites at `/m/{subdomain}`, render tenant-scoped public notices from the bilingual schema columns, expose the exact shareable URL in the Admin portal and validate tenant ID/slug before public admission submission.
+- Student/Guardian self-service login remains a separate not-yet-implemented capability; public admission submission does not create an Auth account.

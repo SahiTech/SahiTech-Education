@@ -21,12 +21,19 @@ export default async function NewStudentPage() {
 
   const supabase = await createClient();
 
-  // Fetch classes and sections for selection
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('id, name_bn, name_en')
-    .eq('tenant_id', context.tenantId)
-    .order('level_order', { ascending: true });
+  // Fetch classes and their available sections for a real class enrollment.
+  const [classesResult, sectionsResult] = await Promise.all([
+    supabase.from('classes')
+      .select('id, name_bn, name_en, name_ar')
+      .eq('tenant_id', context.tenantId)
+      .order('level_order', { ascending: true }),
+    supabase.from('sections')
+      .select('id, class_id, name')
+      .eq('tenant_id', context.tenantId)
+      .order('name', { ascending: true }),
+  ]);
+  const classes = classesResult.data || [];
+  const sections = sectionsResult.data || [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -48,7 +55,7 @@ export default async function NewStudentPage() {
       </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-          <NewStudentForm classes={classes || []} />
+          <NewStudentForm classes={classes} sections={sections} />
         </div>
       </div>
       );

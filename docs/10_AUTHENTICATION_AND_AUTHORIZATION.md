@@ -83,3 +83,15 @@ Test:
 - teacher, parent, student and accountant see only their authorized records and fields;
 - tokens/invitations expire, revoke and cannot be replayed;
 - owner and tenant lifecycle actions are auditable.
+
+## 8. Student and guardian login — current implementation boundary
+
+The `student` and `parent` role keys describe intended institution roles, not proof that self-service student or guardian login is live. The current student record contains an optional `user_id` association, but the reviewed application has no complete verified account-provisioning and login journey for students or guardians. Public admission submission creates an admission application; it does not create an Auth identity.
+
+A future student/guardian account workflow must be explicitly designed and tested before release:
+- provision or invite an account only after the student's admission identity is verified by the institution;
+- require verified contact ownership (for example, a supported OTP/email verification flow) before enabling recovery;
+- link the Auth identity to the exact student record and active tenant membership server-side;
+- limit a student to their own permitted records;
+- link a parent/guardian account only through a verified `student_guardians` relationship and constrain access to the linked ward(s);
+- never treat a public admission number, unverified phone number, tenant ID or caller-supplied student ID as authentication.

@@ -60,3 +60,11 @@ Test all visible routes and states in all locales:
 - date/number/currency display and copy/paste behavior.
 
 The presence of dictionary modules and RTL CSS is source evidence only. Do not claim full application-wide translation or verified RTL quality until browser-based route coverage is completed.
+
+## 7. Compact language selection and institutional portal coverage
+
+The shared public/workspace Navbar uses the compact `LanguageSwitcher` control: a globe icon, current locale code and an accessible dropdown for Bangla, English and Arabic. It replaces the previous three always-visible locale pills. The restricted Global Platform Owner shell remains separate.
+
+Institutional Admin, Academic Dean, Faculty and Bursar portals now resolve their page copy from the server dictionary. The shared portal navigation and each of these page sections use the same `Translations.portals` contract. The tenant public website uses `Translations.publicSite` for its application and notice-board UI. Academic entities use their stored `name_bn/name_en/name_ar` values where present; fields without an Arabic source fall back to English or Bangla rather than inventing a translation.
+
+**Verification boundary:** dictionary types and source-level regression checks are part of the code change. Full browser verification of every page, form state, long-text layout and Arabic RTL remains a release/manual test requirement; do not claim all routes are fully localized until that route-by-route review is completed.
