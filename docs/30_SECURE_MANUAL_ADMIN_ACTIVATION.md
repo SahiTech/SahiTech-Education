@@ -25,7 +25,9 @@ This workflow lets the Global Platform Owner approve and activate a madrasa with
 
 - Manual accounts carry a server-controlled Auth `app_metadata` marker.
 - Middleware, server-side tenant context, and database-backed tenant-feature checks enforce the first-login password-change gate. The database RPC reads current Auth metadata so a stale access token cannot bypass an Owner-assisted password reset.
-- The administrator must set a new password of at least 12 characters. A successful change is recorded in the private password-change event table and the platform audit trail before normal tenant access is restored.
+- The first-login form requires the Owner-issued temporary password, a new password, and confirmation of the new password. The server passes the temporary password as Supabase Auth `current_password` and the new password as `password`; this preserves the project's current-password verification policy.
+- The new password must be at least 12 characters and include uppercase, lowercase, and numeric characters. The new password must differ from the temporary password.
+- A successful change is recorded in Auth app metadata, the private password-change event table, and the platform audit trail before normal tenant access is restored. Password values are never logged.
 
 ## Owner-assisted recovery
 

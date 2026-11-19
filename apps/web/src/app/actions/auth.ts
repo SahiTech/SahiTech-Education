@@ -65,9 +65,13 @@ export async function changeInitialMadrasaAdminPassword(
   _previousState: InitialPasswordChangeState,
   formData: FormData,
 ): Promise<InitialPasswordChangeState> {
+  const currentPassword = formData.get('currentPassword');
   const password = formData.get('password');
   const confirmation = formData.get('confirmPassword');
 
+  if (typeof currentPassword !== 'string' || currentPassword.length === 0 || currentPassword.length > 1024) {
+    return { success: false, error: 'Owner-এর দেওয়া Temporary Password দিন।' };
+  }
   if (typeof password !== 'string' || typeof confirmation !== 'string' || password !== confirmation) {
     return { success: false, error: 'দুটি Password মিলছে না।' };
   }
@@ -90,8 +94,25 @@ export async function changeInitialMadrasaAdminPassword(
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  const { error: passwordError } = await supabase.auth.updateUser({ password });
+  // Supabase Auth is configured to require proof of the current password.
+  // Never log either password; only record the provider error code and HTTP status.
+  const { error: passwordError } = await supabase.auth.updateUser({
+    password,
+    current_password: currentPassword,
+  });
   if (passwordError) {
+    const errorCode = passwordError.code ?? 'unknown';
+    console.warn('[mdi:first-login-password] Supabase rejected password update', {
+      code: errorCode,
+      status: passwordError.status ?? null,
+    });
+
+    if (errorCode === 'current_password_required' || errorCode === 'current_password_mismatch') {
+      return { success: false, error: 'Temporary Password সঠিক নয়। Owner-এর দেওয়া Temporary Password আবার যাচাই করুন।' };
+    }
+    if (errorCode === 'same_password') {
+      return { success: false, error: 'নতুন Password অবশ্যই Temporary Password থেকে আলাদা হতে হবে।' };
+    }
     return { success: false, error: 'নতুন Password সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' };
   }
 

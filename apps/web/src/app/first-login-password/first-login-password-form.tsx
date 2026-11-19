@@ -26,6 +26,11 @@ export default function FirstLoginPasswordForm() {
         </p>
       )}
       <div>
+        <label htmlFor="currentPassword" className="mb-1 block text-xs font-bold text-slate-700">Owner-এর দেওয়া Temporary Password</label>
+        <input id="currentPassword" name="currentPassword" type="password" required autoComplete="current-password"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+      </div>
+      <div>
         <label htmlFor="password" className="mb-1 block text-xs font-bold text-slate-700">নতুন পাসওয়ার্ড</label>
         <input id="password" name="password" type="password" required minLength={12} autoComplete="new-password"
           className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600" />

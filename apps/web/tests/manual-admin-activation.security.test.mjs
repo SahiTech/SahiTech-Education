@@ -19,6 +19,7 @@ const platformActions = read('src/app/actions/platform.ts');
 const ownerPage = read('src/app/platform/(owner)/page.tsx');
 const applicationActions = read('src/app/actions/applications.ts');
 const firstLoginPage = read('src/app/first-login-password/page.tsx');
+const firstLoginForm = read('src/app/first-login-password/first-login-password-form.tsx');
 
 test('temporary credentials use cryptographic randomness and a non-routable MDI login alias', () => {
   assert.match(provisionRoute, /randomBytes\(16\)/);
@@ -85,6 +86,16 @@ test('first-login password change is enforced by the database-backed gate', () =
   assert.match(migration46, /private\.can_use_mdi_tenant_features/);
   assert.match(migration46, /public\.mdi_manual_password_change_required/);
   assert.match(firstLoginPage, /mdi_manual_password_change_required/);
+});
+
+test('first-login password updates verify the Owner-issued temporary password with Supabase Auth', () => {
+  assert.match(firstLoginForm, /name="currentPassword"/);
+  assert.match(firstLoginForm, /autoComplete="current-password"/);
+  assert.match(authAction, /current_password:\s*currentPassword/);
+  assert.match(authAction, /current_password_required/);
+  assert.match(authAction, /current_password_mismatch/);
+  assert.match(authAction, /same_password/);
+  assert.doesNotMatch(authAction, /console\.(?:log|warn|error)\([^)]*currentPassword/);
 });
 
 test('manual recovery cannot reset invitation-created or unrelated administrator accounts', () => {
