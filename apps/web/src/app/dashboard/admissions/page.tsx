@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { getActiveTenantContext } from '@/lib/auth/context';
+import { hasPermission } from '@sahitech/domain';
 import { createClient } from '@/lib/supabase/server';
 import { UserCheck, Plus, Search, Filter, Phone, Calendar, CheckCircle2, Clock, XCircle, ArrowRight } from 'lucide-react';
 import { AdmissionEvaluationModal } from './admission-modal';
@@ -50,6 +51,7 @@ export default async function AdmissionsPage() {
       .order('name', { ascending: true }),
   ]);
 
+  const canManageAdmissions = hasPermission(context.role, 'manage_admissions');
   const admissions = admissionsRes.data || [];
   const classes = classesRes.data || [];
   const sections = sectionsRes.data || [];
@@ -132,7 +134,7 @@ export default async function AdmissionsPage() {
                         <span>{dict.admissions.oralScore}: {app.oral_exam_marks != null ? app.oral_exam_marks : '—'}</span>
                       </div>
 
-                      <AdmissionEvaluationModal application={app} classes={classes} sections={sections} />
+                      {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                 );
