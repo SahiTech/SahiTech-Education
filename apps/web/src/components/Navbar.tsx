@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { Locale } from '@/lib/i18n/types';
 import { BookOpen, Globe, User, PlusCircle, Menu, X, LayoutDashboard } from 'lucide-react';
+import { WorkspaceLogoutButton } from '@/components/WorkspaceLogoutButton';
 
 interface NavbarProps {
   user?: { email?: string } | null;
@@ -79,6 +80,11 @@ export function Navbar({ user }: NavbarProps) {
             {user ? <LayoutDashboard className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
             {destinationLabel}
           </Link>
+          {user && <WorkspaceLogoutButton
+            label={locale === 'bn' ? 'লগ আউট' : locale === 'ar' ? 'تسجيل الخروج' : 'Log out'}
+            formClassName="hidden sm:block"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+          />}
           <button type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 transition hover:bg-[#eeeade] lg:hidden" aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen} aria-controls="site-mobile-navigation">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -99,6 +105,11 @@ export function Navbar({ user }: NavbarProps) {
             <Link href={destination} onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-semibold text-[#174c3d]">
               {destinationLabel}
             </Link>
+            {user && <WorkspaceLogoutButton
+              label={locale === 'bn' ? 'লগ আউট' : locale === 'ar' ? 'تسجيل الخروج' : 'Log out'}
+              formClassName="mt-2 border-t border-[#e9e3d7] pt-2"
+              className="inline-flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+            />}
           </nav>
         </div>
       )}

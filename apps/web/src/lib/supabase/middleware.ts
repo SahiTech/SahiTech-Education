@@ -31,23 +31,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Extract host to determine subdomain/custom domain for multi-tenancy
-  const host = request.headers.get('host') || '';
-  let resolvedTenantSubdomain: string | null = null;
-
-  // e.g. darululoom.sahitech-edu.com or darululoom.localhost:3000
-  const parts = host.split('.');
-  if (parts.length > 2 || (host.includes('localhost') && parts.length > 1)) {
-    const candidate = parts[0]?.toLowerCase();
-    if (candidate && candidate !== 'www' && candidate !== 'app' && candidate !== 'admin') {
-      resolvedTenantSubdomain = candidate;
-    }
-  }
-
-  // Stamp tenant subdomain on response header for Server Components
-  if (resolvedTenantSubdomain) {
-    supabaseResponse.headers.set('x-tenant-subdomain', resolvedTenantSubdomain);
-  }
+  // Tenant selection is resolved from the authenticated user's active membership
+  // and a server-issued m_active_tenant cookie. Do not infer tenants from arbitrary
+  // host labels: the production root sahitech.dpdns.org has three DNS labels and is
+  // the platform host, not a Madrasa subdomain. Custom-domain routing remains a
+  // separately configured capability and is not inferred from request.host.
 
   // The database-backed gate catches Owner-assisted resets even when the current
   // access token contains stale app_metadata. Only MDI manual-admin identities
@@ -78,10 +66,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Route protection
-  const isProtectedPath = 
-    pathname.startsWith('/dashboard') || 
+  const isProtectedPath =
+    pathname.startsWith('/dashboard') ||
     pathname.startsWith('/portals') ||
-    pathname.startsWith('/onboarding');
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/select-tenant');
   const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/forgot-password');
 
   if (isProtectedPath && !user) {
@@ -103,19 +92,17 @@ export async function updateSession(request: NextRequest) {
   if (user && isTenantOperationalPath) {
     let membershipQuery = supabase
       .from('tenant_users')
-      .select('tenant_id, tenants:tenant_id ( platform_status )')
+      .select('tenant_id, tenants:tenants!tenant_users_tenant_id_fkey ( platform_status )')
       .eq('user_id', user.id)
       .eq('is_active', true);
 
     const selectedTenantId = request.cookies.get('m_active_tenant')?.value;
     if (selectedTenantId) {
       membershipQuery = membershipQuery.eq('tenant_id', selectedTenantId);
-    } else if (resolvedTenantSubdomain) {
-      membershipQuery = membershipQuery.eq('tenants.subdomain', resolvedTenantSubdomain);
     }
 
     const { data: memberships } = await membershipQuery;
-    const selectedMembership = selectedTenantId || resolvedTenantSubdomain
+    const selectedMembership = selectedTenantId
       ? memberships?.[0]
       : memberships?.length === 1 ? memberships[0] : null;
     const tenant = selectedMembership?.tenants as { platform_status?: string } | null;

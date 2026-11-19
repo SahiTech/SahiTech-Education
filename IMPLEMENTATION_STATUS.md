@@ -172,3 +172,25 @@ The fix preserves Supabase's current-password policy; it does not disable or wea
 | Database/Auth changes | None required or performed |
 
 The fail-closed behavior for invalid tenant-selection cookies and multiple memberships is intentionally preserved; no tenant fallback or cross-tenant access was introduced.
+---
+
+## 2026-11-19 — Workspace tenant routing and logout correction
+
+**Production baseline:** Vercel deployment `dpl_8bPH9KvWBr9UciwFwFuVVGb9cCLF`, commit `23df6b46b1c7bb4d08c7f789952e619769c14b47`.
+**Database evidence:** Production Admin identity has one active `madrasa_admin` membership for active, verified tenant `Taste Madrasa One` (code `TAS-02`).
+**Source diagnosis:** Middleware inferred a tenant subdomain from the first hostname label whenever the host had more than two labels. Thus the platform root `sahitech.dpdns.org` could be misread as tenant subdomain `sahitech`. The tenant context also depended on a selection cookie which the ordinary email/password sign-in action did not initialize. Workspace navigation had no sign-out control even though a Server Action existed.
+
+**Fix branch:** `fix/workspace-tenant-routing-and-logout`
+
+| Area | Source change | Verification state |
+|---|---|---|
+| Host routing | Removed arbitrary hostname-label tenant inference; fixed Middleware tenant embed to the declared FK | CI #359 passed; Preview READY |
+| Sign-in tenant selection | Clear stale selection, query only authenticated user's active membership rows, set Secure/HttpOnly cookie for a sole membership | CI #359 passed; Preview READY |
+| Multiple memberships | Added server-verified `/select-tenant` page and selection action | CI #359 passed; Preview READY |
+| Tenant context | Resolve from selected cookie or sole active membership; preserve fail-closed validation | CI #359 passed; Preview READY |
+| Workspace Logout | Shared control in desktop Navbar, mobile navigation and workspace Sidebar; sign-out removes selection cookie | CI #359 passed; Preview READY |
+| Global Owner shell | Existing restricted Owner layout and Owner logout remain separate and unchanged | Source inspection |
+| Database/Auth/DNS | No Production schema, data, Auth settings, secrets or DNS changes in this change | Confirmed no change |
+| Development/Preview and Production verification | GitHub Actions run #359 (tests, TypeScript, lint, build) passed; Vercel Preview `dpl_xmJsFmmwyhtqG9UcbbPVDXjumVEF` is READY | Development/Preview verified; Production release pending |
+
+No assertion that the manager's Production browser journey is verified should be made until a live authenticated login, dashboard load and logout test completes.

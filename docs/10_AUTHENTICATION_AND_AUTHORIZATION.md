@@ -8,6 +8,9 @@ MDI has two distinct authorization domains:
 2. **Institution identity:** authenticated users with active tenant-scoped memberships and roles in `tenant_users`.
 
 An authenticated session alone does not grant platform or tenant access.
+For institution workspaces, the sign-in action clears any prior `m_active_tenant` selection, reads the authenticated user's own active `tenant_users` memberships, and stores the sole membership ID in a Secure (Production), HttpOnly, SameSite=Lax cookie. Accounts with multiple active memberships must select an institution through `/select-tenant`; the selection action revalidates the submitted tenant against the authenticated user's active membership and tenant lifecycle. The cookie is a selector, never an authorization grant. Tenant context, server permissions and PostgreSQL RLS continue to validate access. Arbitrary request host labels must not be used to infer the tenant.
+
+The shared Madrasa workspace navigation exposes Logout on desktop and mobile. The sign-out Server Action ends the Supabase session, deletes `m_active_tenant`, revalidates the application layout and redirects to `/login`. The restricted Global Platform Owner shell remains separate and retains its own logout control.
 
 ## 2. Authentication
 

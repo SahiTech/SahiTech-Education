@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Authentication & Workspace Access
+- Stop deriving tenant identity from arbitrary request host labels; resolve a sole active membership from the authenticated session and require explicit selection for multi-tenant users.
+- Add desktop, mobile and Sidebar Logout controls for Madrasa workspaces; clear the active-tenant selection cookie on sign-out while retaining the separate Global Owner shell.
+
 ### Tenancy
 - Resolve the active tenant context using the explicit `tenant_users_tenant_id_fkey` relationship so active Madrasa Admin memberships can load their tenant dashboard.
 

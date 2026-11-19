@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { hasPermission, Permission, UserRole } from '@sahitech/domain';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 export interface TenantContext {
   userId: string;
@@ -32,20 +32,19 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
   }
   if (user.app_metadata?.mdi_force_password_change === true) return null;
 
-  const [profileResult, cookieStore, headerStore] = await Promise.all([
+  const [profileResult, cookieStore] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name_en, full_name_bn, phone')
       .eq('id', user.id)
       .maybeSingle(),
     cookies(),
-    headers(),
   ]);
 
-  // Resolve exactly one explicitly selected tenant, or the sole membership.
-  // An invalid tenant cookie must fail closed; never fall back to another tenant.
+  // Resolve only a server-issued selected tenant, or the user's sole active membership.
+  // Host labels are not tenant authority: root domains such as sahitech.dpdns.org
+  // must never be interpreted as tenant subdomains. An invalid cookie fails closed.
   const activeTenantCookie = cookieStore.get('m_active_tenant')?.value;
-  const subdomainHeader = headerStore.get('x-tenant-subdomain');
 
   let tenantQuery = supabase
     .from('tenant_users')
@@ -67,15 +66,13 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
 
   if (activeTenantCookie) {
     tenantQuery = tenantQuery.eq('tenant_id', activeTenantCookie);
-  } else if (subdomainHeader) {
-    tenantQuery = tenantQuery.eq('tenants.subdomain', subdomainHeader);
   }
 
   const { data: memberships, error } = await tenantQuery;
   if (error || !memberships || memberships.length === 0) return null;
 
   // Multiple memberships require an explicit tenant selection.
-  if (!activeTenantCookie && !subdomainHeader && memberships.length !== 1) return null;
+  if (!activeTenantCookie && memberships.length !== 1) return null;
 
   const active = memberships[0];
   const tenantData = active.tenants as any;

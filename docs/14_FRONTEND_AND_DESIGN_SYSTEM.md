@@ -99,3 +99,8 @@ For visual or component changes, inspect:
 - States: loading, empty, error, validation, success, long content and slow network.
 
 There is no browser E2E/viewport suite confirmed in the current workflow review. Add one before describing these checks as automated gates.
+## 8. Authenticated workspace navigation
+
+Authenticated institution workspaces share a Logout control in the global navigation and the responsive Sidebar. Desktop users can sign out from the header or workspace Sidebar; mobile users can sign out from the navigation menu or mobile Sidebar drawer. The control invokes the shared `signOutUser` Server Action, which clears the Supabase session and selected-tenant cookie.
+
+The Global Platform Owner console is a separate restricted shell. It does not render the shared workspace Navbar or workspace Logout control; its Owner-specific logout remains unchanged.
