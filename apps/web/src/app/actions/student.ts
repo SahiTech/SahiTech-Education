@@ -75,7 +75,7 @@ export async function createStudent(input: CreateStudentInput): Promise<StudentA
         full_name_en: input.fullNameEn.trim(),
         date_of_birth: input.dateOfBirth || null,
         gender: input.gender || 'male',
-        bloodGroup: input.bloodGroup || null,
+        blood_group: input.bloodGroup || null,
         father_name_bn: input.fatherNameBn?.trim() || null,
         father_name_en: input.fatherNameEn?.trim() || null,
         mother_name_bn: input.motherNameBn?.trim() || null,
