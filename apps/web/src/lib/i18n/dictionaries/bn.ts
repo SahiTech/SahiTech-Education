@@ -393,6 +393,8 @@ export const bn: Translations = {
       "attendanceSubtitle": "তালিবুল ইলমদের দৈনন্দিন সবক ও তালিমে উপস্থিতি সংরক্ষণ।",
       "presentToday": "আজ উপস্থিত",
       "studentsSuffix": "জন",
+      "teacherLabel": "শিক্ষক",
+      "roleLabel": "দায়িত্ব",
       "admissionNo": "ভর্তি নং",
       "studentName": "শিক্ষার্থীর নাম",
       "boarding": "আবাসন",
