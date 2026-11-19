@@ -198,7 +198,7 @@ export default async function AdmissionsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right rtl:text-left text-xs">
-                        <AdmissionEvaluationModal application={app} classes={classes} />
+                        <AdmissionEvaluationModal application={app} classes={classes} sections={sections} />
                       </td>
                     </tr>
                   );
