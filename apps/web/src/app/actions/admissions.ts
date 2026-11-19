@@ -34,7 +34,7 @@ export async function createAdmissionApplication(input: CreateAdmissionInput) {
       return { success: false, error: 'শিক্ষার্থীর নাম ও অভিভাবকের মোবাইল নম্বর আবশ্যক।' };
     }
 
-    const applicationNo = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const applicationNo = `APP-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
     const { data: app, error } = await supabase
       .from('student_admissions')
