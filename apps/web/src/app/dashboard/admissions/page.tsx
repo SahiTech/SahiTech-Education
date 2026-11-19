@@ -134,7 +134,7 @@ export default async function AdmissionsPage() {
                         <span>{dict.admissions.oralScore}: {app.oral_exam_marks != null ? app.oral_exam_marks : '—'}</span>
                       </div>
 
-                      {canManageAdmissions ? {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>} : <span className="text-slate-400">—</span>}
+                      {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                 );
