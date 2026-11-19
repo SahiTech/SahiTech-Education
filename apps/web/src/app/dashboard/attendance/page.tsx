@@ -90,7 +90,7 @@ export default async function AttendancePage() {
         </div>
       </div>
       {!currentYear?.id && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{dict.attendance.noCurrentYear || dict.attendance.subtitle}</p>
+        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{dict.attendance.subtitle}</p>
       )}
       <AttendanceView students={students} sections={sections} initialRecords={initialRecords} />
     </div>
