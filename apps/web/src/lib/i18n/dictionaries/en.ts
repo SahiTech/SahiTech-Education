@@ -393,6 +393,8 @@ export const en: Translations = {
       "attendanceSubtitle": "Record students' daily lesson and class attendance.",
       "presentToday": "Present today",
       "studentsSuffix": "students",
+      "teacherLabel": "Teacher",
+      "roleLabel": "Role",
       "admissionNo": "Admission No.",
       "studentName": "Student name",
       "boarding": "Boarding",
