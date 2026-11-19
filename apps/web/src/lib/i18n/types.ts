@@ -331,6 +331,53 @@ export interface Translations {
     signatoryMuhtamim: string;
     signatoryDean: string;
   };
+  portals: {
+    layout: {
+      backToDashboard: string; secureAccess: string;
+      admin: string; academic: string; faculty: string; bursar: string;
+    };
+    admin: {
+      title: string; badge: string; subtitle: string; profileTitle: string;
+      institutionName: string; institutionCode: string; publicWebsite: string;
+      curriculum: string; contactPhone: string; contactEmail: string; notConnected: string;
+      branches: string; branchCount: string; mainBranch: string; branchCode: string;
+      addressNotSet: string; staff: string; staffCount: string; userFallback: string;
+      auditTitle: string; immutableLog: string; noAudit: string; actor: string;
+      publicWebsiteHelp: string;
+    };
+    academic: {
+      title: string; badge: string; subtitle: string; academicYear: string;
+      yearName: string; hijriYear: string; startDate: string; endDate: string;
+      hijriSuffix: string; noCurrentYear: string; departments: string; noDepartments: string;
+      classes: string; noClasses: string; levelOrder: string; qawmiMapTitle: string;
+      qawmiMapDescription: string;
+    };
+    faculty: {
+      title: string; badge: string; subtitle: string; todayDate: string;
+      attendanceTitle: string; attendanceSubtitle: string; presentToday: string;
+      studentsSuffix: string; admissionNo: string; studentName: string; boarding: string;
+      todayStatus: string; present: string; pending: string; residential: string;
+      nonResidential: string; noStudents: string; noStudentsDescription: string;
+    };
+    bursar: {
+      title: string; badge: string; subtitle: string; policyTitle: string;
+      policyDescription: string; generalFund: string; fundOne: string; generalFundDescription: string;
+      lillahFund: string; fundTwo: string; lillahFundDescription: string;
+      donationFund: string; fundThree: string; donationFundDescription: string;
+      feeCategories: string; noFeeCategories: string; monthly: string; oneTime: string;
+      invoices: string; cashLedger: string; noInvoices: string; receiptNo: string;
+      studentName: string; feeHead: string; amount: string; status: string; general: string;
+    };
+  };
+  publicSite: {
+    siteLabel: string; adminLogin: string; poweredBy: string; qawmi: string; alia: string;
+    establishedYear: string; applyOnline: string; verifySanad: string; noticeBoard: string;
+    officialAnnouncements: string; noticeCountSuffix: string; noNotices: string;
+    applyFormTitle: string; studentNameBn: string; studentNameEn: string; fatherNameBn: string;
+    guardianPhone: string; residentialSeat: string; lillahSupport: string; cancel: string;
+    submit: string; submitting: string; accepted: string; trackingLabel: string;
+    trackingInstruction: string; applicationFailed: string; adminPortal: string;
+  };
   students: {
     directoryTitle: string;
     directorySubtitle: string;
