@@ -32,13 +32,13 @@ export default async function ExamsPage() {
       .order('start_date', { ascending: false }),
     supabase
       .from('students')
-      .select('id, full_name_bn, admission_no')
+      .select('id, full_name_bn, full_name_en, admission_no')
       .eq('tenant_id', context.tenantId)
       .order('full_name_bn', { ascending: true })
       .limit(100),
     supabase
       .from('subjects')
-      .select('id, name_bn, code')
+      .select('id, name_bn, name_en, name_ar, code, total_marks')
       .eq('tenant_id', context.tenantId)
       .order('name_bn', { ascending: true }),
   ]);
