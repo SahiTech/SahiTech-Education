@@ -61,7 +61,7 @@ test('workspace logout signs out and clears the selected tenant cookie', () => {
 
 test('tenant workspace has logout controls on desktop and mobile while Owner shell stays separate', () => {
   assert.match(navbar, /WorkspaceLogoutButton/);
-  assert.match(navbar, /if \(isPlatformRoute\) return null/);
+  assert.match(navbar, /if \(isPlatformRoute \|\| isInstitutionPublicSite\) return null/);
   assert.match(sidebar, /WorkspaceLogoutButton/);
   assert.match(sidebar, /মাদরাসা নেভিগেশন/);
 });
