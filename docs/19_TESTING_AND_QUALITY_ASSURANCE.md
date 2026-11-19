@@ -54,3 +54,14 @@ Recommended future gates:
 A successful build proves compilation, not correct authorization, migration compatibility, live integration or production readiness. No release should proceed with unresolved critical/high security issues, unverified migrations, broken E2E workflows or missing backup/rollback plan.
 
 Every test report must state command, commit, environment, timestamp, outcome and skipped checks. Never invent coverage percentages or passing test counts.
+### Workspace authentication regression coverage
+
+The web test suite includes source-level regression checks for:
+- preventing arbitrary root-host labels from being interpreted as tenant subdomains;
+- using the declared `tenant_users_tenant_id_fkey` relationship;
+- selecting tenants only from the authenticated user's active membership;
+- explicit selection for users with multiple memberships;
+- clearing the selected-tenant cookie during logout;
+- exposing workspace Logout on desktop, mobile navigation and Sidebar while preserving the separate Owner shell.
+
+These tests protect code contracts. They do not replace an authenticated browser E2E test using a real disposable tenant identity.
