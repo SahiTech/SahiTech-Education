@@ -80,8 +80,18 @@ export default async function DashboardOverviewPage() {
     },
   };
 
-  // If user is authenticated but does not have a provisioned madrasa tenant yet
+  // An account with multiple active memberships must choose its institution;
+  // do not show the misleading "No Active Madrasa" state for an ambiguous context.
   if (!context) {
+    const authClient = await createClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (user) {
+      const { data: memberships } = await (authClient.from('tenant_users') as any)
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      if ((memberships || []).length > 1) redirect('/select-tenant');
+    }
     return (
       <div className="max-w-4xl mx-auto py-12 px-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-8 text-center shadow-sm">
