@@ -1,13 +1,20 @@
 import React from 'react';
 import { requirePermission } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
-import { GraduationCap, CheckCircle, Clock, Calendar, Users } from 'lucide-react';
+import { CheckCircle, Clock, Calendar, Users } from 'lucide-react';
+import { getServerDictionary, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function FacultyPortalPage() {
   // Enforce teacher / attendance authority
-  const context = await requirePermission('record_attendance');
+  const [context, dict, locale] = await Promise.all([
+    requirePermission('record_attendance'),
+    getServerDictionary(),
+    getServerLocale(),
+  ]);
+  const copy = dict.portals.faculty;
+  const dateLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'bn-BD';
   const supabase = await createClient();
 
   const today = new Date().toISOString().split('T')[0];
@@ -15,7 +22,7 @@ export default async function FacultyPortalPage() {
   const [studentsRes, attendanceRes] = await Promise.all([
     supabase
       .from('students')
-      .select('id, admission_no, full_name_bn, full_name_en, is_residential')
+      .select('id, admission_no, full_name_bn, full_name_en, full_name_ar, is_residential')
       .eq('tenant_id', context.tenantId)
       .eq('is_active', true)
       .limit(20),
@@ -38,20 +45,20 @@ export default async function FacultyPortalPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              আসতিযা হাজিরা ও পাঠদান পোর্টাল
+              {copy.title}
             </h1>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-              দৈনিক হাজিরা ও সাবজেক্ট নোট
+              {copy.badge}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · উস্তাদ: <strong>{context.fullName}</strong> · দায়িত্ব: {context.role}
+            {context.tenantName} · {copy.teacherLabel}: <strong>{context.fullName}</strong> · {copy.roleLabel}: {context.role}
           </p>
         </div>
 
         <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-1.5 shadow-sm text-xs text-slate-600">
           <Calendar className="h-4 w-4 text-emerald-700" />
-          <span>আজকের তারিখ: <strong>{new Date().toLocaleDateString('bn-BD')}</strong> ({today})</span>
+          <span>{copy.todayDate}: <strong>{new Date().toLocaleDateString(dateLocale)}</strong> ({today})</span>
         </div>
       </div>
 
@@ -61,30 +68,30 @@ export default async function FacultyPortalPage() {
           <div>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Users className="h-4 w-4 text-emerald-700" />
-              দৈনিক জামাত হাজিরা খাতা
+              {copy.attendanceTitle}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              তালিবুল ইলমদের দৈনন্দিন সবক ও তালিমে উপস্থিতি সংরক্ষণ।
+              {copy.attendanceSubtitle}
             </p>
           </div>
           <span className="text-xs font-mono bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">
-            আজ উপস্থিত: {presentStudentIds.size} / {students.length} জন
+            {copy.presentToday}: {presentStudentIds.size} / {students.length} {copy.studentsSuffix}
           </span>
         </div>
 
         {students.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-xs">
-            হাজিরা নেওয়ার জন্য এখনো কোনো সক্রিয় শিক্ষার্থী নেই।
+            {copy.noStudents}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-[11px] uppercase text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3">ভর্তি নং</th>
-                  <th className="px-5 py-3">শিক্ষার্থীর নাম</th>
-                  <th className="px-5 py-3">আবাসন</th>
-                  <th className="px-5 py-3">আজকের হাজিরা স্ট্যাটাস</th>
+                  <th className="px-5 py-3">{copy.admissionNo}</th>
+                  <th className="px-5 py-3">{copy.studentName}</th>
+                  <th className="px-5 py-3">{copy.boarding}</th>
+                  <th className="px-5 py-3">{copy.todayStatus}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -96,26 +103,26 @@ export default async function FacultyPortalPage() {
                         {st.admission_no}
                       </td>
                       <td className="px-5 py-3">
-                        <div className="font-semibold text-slate-900">{st.full_name_bn}</div>
-                        <div className="text-xs text-slate-400">{st.full_name_en}</div>
+                        <div className="font-semibold text-slate-900">{locale === 'ar' ? (st.full_name_ar || st.full_name_en || st.full_name_bn) : locale === 'en' ? (st.full_name_en || st.full_name_bn) : st.full_name_bn}</div>
+                        {locale === 'bn' && st.full_name_en && <div className="text-xs text-slate-400">{st.full_name_en}</div>}
                       </td>
                       <td className="px-5 py-3 text-xs">
                         {st.is_residential ? (
-                          <span className="text-blue-700 font-medium">আবাসিক</span>
+                          <span className="text-blue-700 font-medium">{copy.residential}</span>
                         ) : (
-                          <span className="text-slate-500">অনাবাসিক</span>
+                          <span className="text-slate-500">{copy.nonResidential}</span>
                         )}
                       </td>
                       <td className="px-5 py-3">
                         {isPresent ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
                             <CheckCircle className="h-3 w-3 text-emerald-600" />
-                            উপস্থিত (Present)
+                            {copy.present}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                             <Clock className="h-3 w-3 text-slate-400" />
-                            অপেক্ষমান / তালিকাভুক্ত
+                            {copy.pending}
                           </span>
                         )}
                       </td>
