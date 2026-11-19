@@ -6,6 +6,7 @@ import path from 'node:path';
 const read = (file) => fs.readFileSync(path.resolve(process.cwd(), file), 'utf8');
 
 const studentAction = read('src/app/actions/student.ts');
+const newStudentForm = read('src/app/dashboard/students/new/new-student-form.tsx');
 const navbar = read('src/components/Navbar.tsx');
 const languageSwitcher = read('src/components/LanguageSwitcher.tsx');
 const types = read('src/lib/i18n/types.ts');
@@ -25,6 +26,8 @@ const admissionsAction = read('src/app/actions/admissions.ts');
 test('student create maps blood group to the real snake_case database column', () => {
   assert.match(studentAction, /blood_group:\\s*input\\.bloodGroup/);
   assert.doesNotMatch(studentAction, /bloodGroup:\\s*input\\.bloodGroup/);
+  assert.match(newStudentForm, /sectionId:\\s*formData\\.sectionId/);
+  assert.match(newStudentForm, /sections\\.filter\\(\\(section\\) => section\\.class_id === formData\\.classId\\)/);
 });
 
 test('language selector is compact and exposes an accessible locale menu', () => {
@@ -65,6 +68,8 @@ test('institution public site is addressed by an exact active tenant slug', () =
   assert.match(publicSiteRoute, /notFound\\(\\)/);
   assert.match(publicSiteShortcut, /context\\.tenantSubdomain/);
   assert.match(publicSiteShortcut, /redirect\\(/);
+  assert.match(publicSiteRoute, /<LanguageSwitcher \/>/);
+  assert.match(navbar, /isInstitutionPublicSite/);
 });
 
 test('public notices use the actual bilingual database columns', () => {
