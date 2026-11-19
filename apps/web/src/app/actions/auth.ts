@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface AuthActionResult {
@@ -36,25 +37,104 @@ export async function signInWithEmail(prevState: any, formData: FormData): Promi
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
     password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     return {
       success: false,
-      error: 'ভুল ইমেইল বা পাসওয়ার্ড। পুনরায় চেষ্টা করুন।',
+      error: 'ভুল MDI Login ID বা পাসওয়ার্ড। পুনরায় চেষ্টা করুন।',
     };
+  }
+
+  const cookieStore = await cookies();
+  // A previous user's tenant selection must not leak into this new sign-in.
+  cookieStore.delete('m_active_tenant');
+
+  const { data: memberships, error: membershipError } = await (supabase.from('tenant_users') as any)
+    .select('tenant_id, tenants:tenants!tenant_users_tenant_id_fkey ( id, is_active, platform_status )')
+    .eq('user_id', data.user.id)
+    .eq('is_active', true);
+
+  if (membershipError) {
+    await supabase.auth.signOut();
+    return { success: false, error: 'আপনার মাদরাসার সদস্যপদ যাচাই করা যায়নি। আবার চেষ্টা করুন।' };
+  }
+
+  const selectableMemberships = (memberships || []).filter((membership: any) =>
+    membership.tenants &&
+    (membership.tenants.is_active === true || membership.tenants.platform_status === 'pending_activation')
+  );
+
+  if (selectableMemberships.length === 0) {
+    await supabase.auth.signOut();
+    return {
+      success: false,
+      error: 'এই MDI Login ID-এর সঙ্গে কোনো সক্রিয় বা অনুমোদিত মাদরাসার সদস্যপদ পাওয়া যায়নি। প্রতিষ্ঠানের Owner-এর সঙ্গে যোগাযোগ করুন।',
+    };
+  }
+
+  if (selectableMemberships.length === 1) {
+    cookieStore.set('m_active_tenant', selectableMemberships[0].tenant_id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  } else {
+    revalidatePath('/', 'layout');
+    redirect('/select-tenant');
   }
 
   revalidatePath('/', 'layout');
   redirect(redirectTo);
 }
 
-export async function signOutUser() {
+export async function selectTenantForCurrentUser(formData: FormData): Promise<void> {
+  const tenantId = formData.get('tenantId');
+  if (typeof tenantId !== 'string' || !/^[0-9a-f-]{36}$/i.test(tenantId)) {
+    redirect('/select-tenant?error=invalid-selection');
+  }
+
   const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) redirect('/login');
+
+  // The submitted tenant ID is only a selector. Membership, active status and
+  // tenant lifecycle are re-verified against the authenticated database session.
+  const { data: membership, error } = await (supabase.from('tenant_users') as any)
+    .select('tenant_id, tenants:tenants!tenant_users_tenant_id_fkey ( id, is_active, platform_status )')
+    .eq('user_id', user.id)
+    .eq('tenant_id', tenantId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  const tenant = membership?.tenants;
+  if (error || !membership || !tenant ||
+      (tenant.is_active !== true && tenant.platform_status !== 'pending_activation')) {
+    redirect('/select-tenant?error=invalid-selection');
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set('m_active_tenant', membership.tenant_id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
+}
+
+export async function signOutUser() {
+  const [supabase, cookieStore] = await Promise.all([createClient(), cookies()]);
   await supabase.auth.signOut();
+  // Tenant selection is not an authorization grant, but it must not survive logout.
+  cookieStore.delete('m_active_tenant');
   revalidatePath('/', 'layout');
   redirect('/login');
 }
