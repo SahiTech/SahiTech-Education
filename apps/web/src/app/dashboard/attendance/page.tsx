@@ -1,5 +1,6 @@
 import React from 'react';
 import { getActiveTenantContext } from '@/lib/auth/context';
+import { hasPermission } from '@sahitech/domain';
 import { createClient } from '@/lib/supabase/server';
 import { AttendanceView } from './attendance-view';
 import { getServerDictionary } from '@/lib/i18n/server';
@@ -16,6 +17,10 @@ export default async function AttendancePage() {
         {dict.attendance.subtitle}
       </div>
     );
+  }
+
+  if (!hasPermission(context.role, 'record_attendance')) {
+    return <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">{dict.common.error}</div>;
   }
 
   const supabase = await createClient();
