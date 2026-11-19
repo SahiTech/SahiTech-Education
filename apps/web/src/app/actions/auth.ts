@@ -75,18 +75,18 @@ export async function signInWithEmail(prevState: any, formData: FormData): Promi
     };
   }
 
-  if (selectableMemberships.length === 1) {
-    cookieStore.set('m_active_tenant', selectableMemberships[0].tenant_id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    });
-  } else {
+  if (selectableMemberships.length > 1) {
     revalidatePath('/', 'layout');
     redirect('/select-tenant');
   }
+
+  cookieStore.set('m_active_tenant', selectableMemberships[0].tenant_id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  });
 
   revalidatePath('/', 'layout');
   redirect(redirectTo);
