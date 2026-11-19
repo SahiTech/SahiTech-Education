@@ -415,6 +415,9 @@ export interface Translations {
     residentialCheckbox: string;
     lillahCheckbox: string;
     assignedClass: string;
+    assignedSection: string;
+    selectSection: string;
+    noSectionsAvailable: string;
     confirmAdmissionBtn: string;
     saving: string;
     successMessage: string;
