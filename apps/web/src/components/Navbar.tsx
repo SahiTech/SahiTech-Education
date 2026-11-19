@@ -4,16 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { Locale } from '@/lib/i18n/types';
-import { BookOpen, Globe, User, PlusCircle, Menu, X, LayoutDashboard } from 'lucide-react';
+import { BookOpen, User, PlusCircle, Menu, X, LayoutDashboard } from 'lucide-react';
 import { WorkspaceLogoutButton } from '@/components/WorkspaceLogoutButton';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface NavbarProps {
   user?: { email?: string } | null;
 }
 
 export function Navbar({ user }: NavbarProps) {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const isPlatformRoute = pathname === '/platform' || pathname.startsWith('/platform/');
@@ -39,7 +39,6 @@ export function Navbar({ user }: NavbarProps) {
     ? (locale === 'bn' ? 'ড্যাশবোর্ড' : locale === 'ar' ? 'لوحة التحكم' : 'Workspace')
     : t.nav.login;
 
-  const handleLocaleChange = (newLocale: Locale) => setLocale(newLocale);
   const closeMenu = () => setMobileMenuOpen(false);
 
   return (
@@ -68,14 +67,7 @@ export function Navbar({ user }: NavbarProps) {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center rounded-xl border border-[#e5dfd2] bg-white p-1 text-xs">
-            <Globe className="mx-1 h-3.5 w-3.5 shrink-0 text-slate-400" />
-            {(['bn', 'en', 'ar'] as Locale[]).map((code) => (
-              <button key={code} type="button" onClick={() => handleLocaleChange(code)} aria-pressed={locale === code} className={`rounded-lg px-2 py-1.5 font-medium transition ${locale === code ? 'bg-[#17604b] font-bold text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-                {code === 'bn' ? 'বাংলা' : code === 'en' ? 'EN' : 'العربية'}
-              </button>
-            ))}
-          </div>
+          <LanguageSwitcher />
           <Link href={destination} className="hidden min-h-10 items-center gap-2 rounded-lg border border-[#d8e2dc] px-3 py-2 text-xs font-semibold text-[#174c3d] transition hover:bg-[#edf4ef] sm:inline-flex">
             {user ? <LayoutDashboard className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
             {destinationLabel}
