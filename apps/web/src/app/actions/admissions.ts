@@ -138,41 +138,83 @@ export async function updateAdmissionEvaluation(params: {
 
 export async function enrollApplicantToStudent(params: {
   applicationId: string;
-  sectionId?: string;
+  classId: string;
+  sectionId: string;
   rollNo: number;
 }) {
   try {
     const context = await requirePermission('manage_admissions');
     const supabase = await createClient();
 
-    // Fetch application details
-    const { data: app } = await supabase
+    if (!params.applicationId || !params.classId || !params.sectionId || !Number.isSafeInteger(params.rollNo) || params.rollNo < 1) {
+      return { success: false, error: 'জামাত, সেকশন ও সঠিক রোল নম্বর নির্বাচন করুন।' };
+    }
+
+    const { data: app, error: applicationError } = await supabase
       .from('student_admissions')
       .select('*')
       .eq('id', params.applicationId)
       .eq('tenant_id', context.tenantId)
-      .single();
+      .maybeSingle();
 
-    if (!app) {
-      return { success: false, error: 'আবেদন পাওয়া যায়নি।' };
+    if (applicationError || !app) {
+      return { success: false, error: 'ভর্তি আবেদনটি পাওয়া যায়নি।' };
+    }
+    if (app.status === 'enrolled' || app.enrolled_student_id) {
+      return { success: false, error: 'এই আবেদন থেকে শিক্ষার্থী ইতিমধ্যে ভর্তি হয়েছে।' };
+    }
+    if (app.status !== 'passed') {
+      return { success: false, error: 'ভর্তি নিশ্চিত করার আগে আবেদনটির অবস্থা “উত্তীর্ণ” করুন।' };
     }
 
-    if (app.status === 'enrolled') {
-      return { success: false, error: 'এই শিক্ষার্থী ইতিমধ্যে ভর্তি সম্পন্ন হয়েছে।' };
+    let academicYearId = app.target_academic_year_id as string | null;
+    if (!academicYearId) {
+      const { data: currentYear, error: yearError } = await supabase
+        .from('academic_years')
+        .select('id')
+        .eq('tenant_id', context.tenantId)
+        .eq('is_current', true)
+        .maybeSingle();
+      if (yearError || !currentYear) {
+        return { success: false, error: 'ভর্তি নিশ্চিত করার আগে চলতি শিক্ষাবর্ষ নির্ধারণ করুন।' };
+      }
+      academicYearId = currentYear.id;
     }
 
-    const admissionNo = `ADM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const [{ data: year, error: yearCheckError }, { data: section, error: sectionError }] = await Promise.all([
+      supabase.from('academic_years').select('id').eq('id', academicYearId).eq('tenant_id', context.tenantId).maybeSingle(),
+      supabase.from('sections').select('id').eq('id', params.sectionId).eq('class_id', params.classId).eq('tenant_id', context.tenantId).maybeSingle(),
+    ]);
 
-    // 1. Insert into students
+    if (yearCheckError || !year) {
+      return { success: false, error: 'নির্বাচিত শিক্ষাবর্ষটি এই প্রতিষ্ঠানের জন্য বৈধ নয়।' };
+    }
+    if (sectionError || !section) {
+      return { success: false, error: 'নির্বাচিত সেকশনটি এই জামাতের নয়।' };
+    }
+
+    const { data: existingRoll, error: rollError } = await supabase
+      .from('student_enrollments')
+      .select('id')
+      .eq('tenant_id', context.tenantId)
+      .eq('academic_year_id', academicYearId)
+      .eq('section_id', params.sectionId)
+      .eq('roll_no', params.rollNo)
+      .maybeSingle();
+
+    if (rollError) return { success: false, error: 'রোল নম্বর যাচাই করা যায়নি। আবার চেষ্টা করুন।' };
+    if (existingRoll) return { success: false, error: 'এই সেকশনে রোল নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে।' };
+
+    const admissionNo = `ADM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
     const { data: student, error: studentError } = await supabase
       .from('students')
       .insert({
         tenant_id: context.tenantId,
         admission_no: admissionNo,
         full_name_bn: app.full_name_bn,
-        full_name_en: app.full_name_en,
+        full_name_en: app.full_name_en || app.full_name_bn,
         date_of_birth: app.date_of_birth,
-        gender: app.gender,
+        gender: app.gender || 'male',
         blood_group: app.blood_group,
         father_name_bn: app.father_name_bn,
         mother_name_bn: app.mother_name_bn,
@@ -187,42 +229,69 @@ export async function enrollApplicantToStudent(params: {
       .single();
 
     if (studentError || !student) {
-      return { success: false, error: `ভর্তি নিশ্চিতকরণ ব্যর্থ: ${studentError?.message}` };
+      return { success: false, error: `শিক্ষার্থী রেকর্ড তৈরি করা যায়নি: ${studentError?.message || 'অজানা ত্রুটি'}` };
     }
 
-    // 2. Insert primary guardian
-    await supabase.from('student_guardians').insert({
+    const rollbackStudent = async () => {
+      const enrollmentCleanup = await supabase.from('student_enrollments').delete().eq('tenant_id', context.tenantId).eq('student_id', student.id);
+      const guardianCleanup = await supabase.from('student_guardians').delete().eq('tenant_id', context.tenantId).eq('student_id', student.id);
+      const studentCleanup = await supabase.from('students').delete().eq('tenant_id', context.tenantId).eq('id', student.id);
+      return !enrollmentCleanup.error && !guardianCleanup.error && !studentCleanup.error;
+    };
+
+    const { error: guardianError } = await supabase.from('student_guardians').insert({
       tenant_id: context.tenantId,
       student_id: student.id,
       name_bn: app.father_name_bn || 'অভিভাবক',
-      name_en: app.full_name_en + ' Guardian',
-      relation_type: 'Father / Guardian',
+      name_en: 'Guardian',
+      relation_type: 'Guardian',
       phone: app.guardian_phone,
       is_primary_contact: true,
       is_financial_sponsor: true,
     });
 
-    // 3. Mark application as enrolled
-    await supabase
+    if (guardianError) {
+      const cleaned = await rollbackStudent();
+      return { success: false, error: cleaned
+        ? `অভিভাবকের তথ্য সংরক্ষণ ব্যর্থ হয়েছে: ${guardianError.message}`
+        : 'অভিভাবকের তথ্য সংরক্ষণ ব্যর্থ হয়েছে এবং অসম্পূর্ণ রেকর্ড সম্পূর্ণ পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
+    }
+
+    const { error: enrollmentError } = await supabase.from('student_enrollments').insert({
+      tenant_id: context.tenantId,
+      student_id: student.id,
+      academic_year_id: academicYearId,
+      class_id: params.classId,
+      section_id: params.sectionId,
+      roll_no: params.rollNo,
+      is_active: true,
+    });
+
+    if (enrollmentError) {
+      const cleaned = await rollbackStudent();
+      return { success: false, error: cleaned
+        ? `ক্লাসে ভর্তি সম্পন্ন হয়নি: ${enrollmentError.message}`
+        : 'ক্লাসে ভর্তি ব্যর্থ হয়েছে এবং অসম্পূর্ণ রেকর্ড সম্পূর্ণ পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
+    }
+
+    const { error: updateError } = await supabase
       .from('student_admissions')
       .update({
         status: 'enrolled',
         enrolled_student_id: student.id,
+        target_academic_year_id: academicYearId,
+        target_class_id: params.classId,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', app.id);
+      .eq('id', app.id)
+      .eq('tenant_id', context.tenantId)
+      .eq('status', 'passed');
 
-    // 4. Enroll in current academic year and class if available
-    if (app.target_academic_year_id && app.target_class_id) {
-      await supabase.from('student_enrollments').insert({
-        tenant_id: context.tenantId,
-        student_id: student.id,
-        academic_year_id: app.target_academic_year_id,
-        class_id: app.target_class_id,
-        section_id: params.sectionId || null,
-        roll_no: params.rollNo || 1,
-        is_active: true,
-      });
+    if (updateError) {
+      const cleaned = await rollbackStudent();
+      return { success: false, error: cleaned
+        ? `ভর্তি আবেদন আপডেট করা যায়নি: ${updateError.message}`
+        : 'ভর্তি আবেদন আপডেট ব্যর্থ এবং অসম্পূর্ণ রেকর্ড পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
     }
 
     await logAuditEvent({
@@ -232,11 +301,12 @@ export async function enrollApplicantToStudent(params: {
       action: 'admission.applicant_enrolled',
       entityName: 'students',
       entityId: student.id,
-      newState: { admissionNo, applicationId: app.id },
+      newState: { admissionNo, applicationId: app.id, classId: params.classId, sectionId: params.sectionId, rollNo: params.rollNo },
     });
 
     revalidatePath('/dashboard/admissions');
     revalidatePath('/dashboard/students');
+    revalidatePath('/dashboard/attendance');
     return { success: true, studentId: student.id, admissionNo };
   } catch (err: any) {
     return { success: false, error: err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
