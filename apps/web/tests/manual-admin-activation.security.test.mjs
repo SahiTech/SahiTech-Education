@@ -123,6 +123,7 @@ test('invitation and application upload token signing fail closed without a stro
 });
 
 
+const tenantContext = read('src/lib/auth/context.ts');
 const credentialRoute = read('src/app/api/platform/credential/route.ts');
 const credentialHelper = read('src/lib/security/manual-admin-credential.ts');
 const migration48 = read('../../packages/database/migrations/00048_single_use_manual_admin_credential_handoff.sql');
@@ -175,4 +176,13 @@ test('legacy direct tenant provisioning is retired and all lifecycle Owner RPCs 
   assert.match(migration52, /AAL2 guard missing in %/);
   assert.match(migration52, /v_found <> cardinality\(v_required\)/);
   assert.match(migration52, /v_guarded <> cardinality\(v_required\)/);
+});
+
+
+test('active tenant context embeds the tenant through the declared tenant foreign key', () => {
+  assert.match(tenantContext, /tenants:tenants!tenant_users_tenant_id_fkey/);
+  assert.match(tenantContext, /\.eq\('user_id', user\.id\)/);
+  assert.match(tenantContext, /\.eq\('is_active', true\)/);
+  assert.match(tenantContext, /activeTenantCookie/);
+  assert.match(tenantContext, /if \(error \|\| !memberships \|\| memberships\.length === 0\) return null/);
 });
