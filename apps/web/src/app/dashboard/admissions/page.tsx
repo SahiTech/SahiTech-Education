@@ -134,7 +134,7 @@ export default async function AdmissionsPage() {
                         <span>{dict.admissions.oralScore}: {app.oral_exam_marks != null ? app.oral_exam_marks : '—'}</span>
                       </div>
 
-                      {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
+                      {canManageAdmissions ? {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>} : <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                 );
@@ -198,7 +198,7 @@ export default async function AdmissionsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right rtl:text-left text-xs">
-                        <AdmissionEvaluationModal application={app} classes={classes} sections={sections} />
+                        {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
                       </td>
                     </tr>
                   );
