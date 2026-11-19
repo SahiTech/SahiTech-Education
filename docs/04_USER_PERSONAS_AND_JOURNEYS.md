@@ -58,4 +58,14 @@ journey
       Muhtamim checks executive dashboard: 5: Muhtamim
       Reviews 96.4% attendance & daily collections: 5: Muhtamim
 ```
+---
 
+## 3. Institution administrator sign-in and sign-out journey
+
+1. A manually provisioned Madrasa Admin signs in with the platform-issued MDI Login ID and temporary password. The applicant's submitted contact email is not the login identifier for this workflow.
+2. On first login, the Admin changes the temporary password before tenant features become available.
+3. The server resolves the account's active tenant membership. One membership is selected automatically; multiple memberships require an explicit institution selection.
+4. The Admin enters the Madrasa workspace only after the selected membership, tenant lifecycle and role are validated server-side and by database RLS.
+5. The Admin can sign out from the shared desktop header, workspace Sidebar or mobile navigation. Sign-out ends the Supabase session and removes the selected-tenant cookie.
+
+Invitation-based accounts follow the separate verified-email invitation acceptance journey; an invitation token is not used by the email-independent manual-admin workflow.
