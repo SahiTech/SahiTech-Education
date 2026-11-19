@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PublicSiteView } from '@/app/public-site/public-site-view';
+import { getServerDictionary } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,9 +56,10 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 }
 
 export default async function MadrasaPublicWebsitePage({ params }: RouteProps) {
-  const { subdomain } = await params;
+  const [{ subdomain }, dict] = await Promise.all([params, getServerDictionary()]);
   const result = await getPublicInstitution(subdomain);
   if (!result) notFound();
+  const copy = dict.publicSite;
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -67,18 +69,18 @@ export default async function MadrasaPublicWebsitePage({ params }: RouteProps) {
             {result.tenant.logo_url && <img src={result.tenant.logo_url} alt="" className="h-11 w-11 rounded-xl bg-white object-contain p-1" />}
             <div className="min-w-0">
               <span className="block truncate text-base font-extrabold leading-tight text-slate-900">{result.tenant.name}</span>
-              <span className="block text-[10px] text-slate-400">Institutional Public Website · {result.tenant.code}</span>
+              <span className="block text-[10px] text-slate-400">{copy.siteLabel} · {result.tenant.code}</span>
             </div>
           </div>
           <a href="/login" className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-            Madrasa Admin Login
+            {copy.adminLogin}
           </a>
         </header>
 
         <PublicSiteView tenant={result.tenant} notices={result.notices} />
 
         <footer className="space-y-2 border-t border-slate-200 pb-8 pt-6 text-center text-xs text-slate-400">
-          <p>Powered by <strong className="text-slate-700">SahiTech Education</strong> · Madrasa Digitalization Initiative (MDI)</p>
+          <p>{copy.poweredBy} <strong className="text-slate-700">SahiTech Education</strong> · Madrasa Digitalization Initiative (MDI)</p>
           <p>{result.tenant.name} · {result.tenant.code}</p>
         </footer>
       </div>
