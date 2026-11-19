@@ -504,6 +504,7 @@ export const en: Translations = {
     assignedClass: 'Assigned Class / Marhala',
     assignedSection: 'Select section',
     selectSection: 'Select section',
+    rollNo: 'Roll number',
     noSectionsAvailable: 'No sections have been configured for this class yet. The student record will be saved without class enrollment.',
     confirmAdmissionBtn: 'Confirm Student Admission',
     saving: 'Saving Record...',
