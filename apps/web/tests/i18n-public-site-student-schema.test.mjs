@@ -28,6 +28,9 @@ test('student create maps blood group to the real snake_case database column', (
   assert.equal(studentAction.includes('bloodGroup: input.bloodGroup'), false);
   assert.ok(newStudentForm.includes('sectionId: formData.sectionId'));
   assert.ok(newStudentForm.includes('section.class_id === formData.classId'));
+  assert.ok(studentAction.includes('Number.isSafeInteger(input.rollNo)'));
+  assert.ok(studentAction.includes('এই সেকশনে রোল নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে'));
+  assert.ok(studentAction.includes('roll_no: enrollment.rollNo'));
 });
 
 test('language selector is compact and exposes an accessible locale menu', () => {
