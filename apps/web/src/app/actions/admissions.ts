@@ -347,10 +347,12 @@ export async function submitPublicAdmissionApplication(params: {
 
     const applicationNo = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const { data: app, error } = await supabase
+    // Anonymous visitors can submit applications but cannot SELECT private
+    // admission rows. Avoid .select() here: it would fail under the intended RLS.
+    const { error } = await supabase
       .from('student_admissions')
       .insert({
-        tenant_id: params.tenantId,
+        tenant_id: tenant.id,
         application_no: applicationNo,
         full_name_bn: params.fullNameBn.trim(),
         full_name_en: params.fullNameEn?.trim() || params.fullNameBn.trim(),
@@ -359,15 +361,13 @@ export async function submitPublicAdmissionApplication(params: {
         is_residential_applicant: params.isResidentialApplicant || false,
         is_lillah_applicant: params.isLillahApplicant || false,
         status: 'applied',
-      })
-      .select('id, application_no')
-      .single();
+      });
 
-    if (error || !app) {
-      return { success: false, error: `ভর্তি আবেদন দাখিল ব্যর্থ হয়েছে: ${error?.message}` };
+    if (error) {
+      return { success: false, error: 'ভর্তি আবেদন দাখিল করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।' };
     }
 
-    return { success: true, applicationNo: app.application_no };
+    return { success: true, applicationNo };
   } catch (err: any) {
     return { success: false, error: err.message || 'অনাকাঙ্ক্ষিত ত্রুটি।' };
   }
