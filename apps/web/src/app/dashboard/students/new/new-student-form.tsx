@@ -52,12 +52,20 @@ export function NewStudentForm({ classes, sections }: NewStudentFormProps) {
     isLillahBoarder: false,
     classId: defaultClassId,
     sectionId: defaultSectionId,
+    rollNo: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
     setError(null);
+
+    const rollNo = formData.sectionId ? Number(formData.rollNo) : undefined;
+    if (formData.sectionId && (!Number.isInteger(rollNo) || (rollNo ?? 0) < 1)) {
+      setError(locale === 'en' ? 'Enter a positive roll number for the selected section.' : locale === 'ar' ? 'أدخل رقم جلوس صحيحاً للشعبة المحددة.' : 'নির্বাচিত সেকশনের জন্য সঠিক রোল নম্বর দিন।');
+      setIsPending(false);
+      return;
+    }
 
     const res = await createStudent({
       admissionNo: formData.admissionNo,
@@ -76,6 +84,7 @@ export function NewStudentForm({ classes, sections }: NewStudentFormProps) {
       isLillahBoarder: formData.isLillahBoarder,
       classId: formData.sectionId ? formData.classId : undefined,
       sectionId: formData.sectionId || undefined,
+      rollNo,
     });
 
     setIsPending(false);
@@ -320,6 +329,21 @@ export function NewStudentForm({ classes, sections }: NewStudentFormProps) {
               <p className="mt-1 text-[11px] leading-4 text-amber-700">{t.students.noSectionsAvailable}</p>
             )}
           </div>
+          {formData.sectionId && (
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">{t.students.rollNo}</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                required
+                inputMode="numeric"
+                value={formData.rollNo}
+                onChange={(event) => setFormData({ ...formData, rollNo: event.target.value })}
+                className="min-h-[42px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none sm:max-w-xs"
+              />
+            </div>
+          )}
         </div>
       )}
 
