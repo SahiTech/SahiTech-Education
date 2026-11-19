@@ -99,6 +99,14 @@ export function AdmissionEvaluationModal({ application, classes, sections }: Adm
     }
   };
 
+  if (application.status === 'enrolled') {
+    return (
+      <span className="inline-flex rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-800">
+        {t.admissions.statusEnrolled}
+      </span>
+    );
+  }
+
   if (!isOpen) {
     return (
       <button
