@@ -22,6 +22,13 @@ const publicSiteShortcut = read('src/app/public-site/page.tsx');
 const publicSiteRoute = read('src/app/m/[subdomain]/page.tsx');
 const publicSiteView = read('src/app/public-site/public-site-view.tsx');
 const admissionsAction = read('src/app/actions/admissions.ts');
+const attendanceAction = read('src/app/actions/attendance.ts');
+const attendanceView = read('src/app/dashboard/attendance/attendance-view.tsx');
+const attendancePage = read('src/app/dashboard/attendance/page.tsx');
+const admissionModal = read('src/app/dashboard/admissions/admission-modal.tsx');
+const admissionPage = read('src/app/dashboard/admissions/page.tsx');
+const examAction = read('src/app/actions/exams.ts');
+const examView = read('src/app/dashboard/academic/exams/exam-management-views.tsx');
 
 test('student create maps blood group to the real snake_case database column', () => {
   assert.ok(studentAction.includes('blood_group: input.bloodGroup'));
@@ -91,4 +98,44 @@ test('public admission submission revalidates tenant ID and slug server-side', (
   assert.ok(admissionsAction.includes(".eq('subdomain', params.tenantSubdomain)"));
   assert.ok(admissionsAction.includes(".eq('is_active', true)"));
   assert.ok(publicSiteView.includes('tenantSubdomain: tenant.subdomain'));
+});
+
+
+test('student onboarding creates a linked guardian and cleans up failed enrollment', () => {
+  assert.ok(studentAction.includes("from('student_guardians').insert"));
+  assert.ok(studentAction.includes('guardianCleanupError'));
+  assert.ok(studentAction.includes('blood_group: input.bloodGroup'));
+});
+
+test('attendance is limited to active enrolments in the selected section and year', () => {
+  assert.ok(attendanceAction.includes("requirePermission('record_attendance')"));
+  assert.ok(attendanceAction.includes(".eq('section_id', params.sectionId)"));
+  assert.ok(attendanceAction.includes(".eq('academic_year_id', currentYear.id)"));
+  assert.ok(attendanceAction.includes(".eq('is_active', true)"));
+  assert.ok(attendanceAction.includes('isValidAttendanceDate'));
+  assert.ok(attendanceView.includes('students.filter((student) => student.section_id === selectedSectionId)'));
+  assert.ok(attendanceView.includes('loadSectionAttendance({ sectionId: selectedSectionId, attendanceDate: selectedDate })'));
+  assert.ok(attendancePage.includes("hasPermission(context.role, 'record_attendance')"));
+});
+
+test('admission confirmation requires a valid class, section and roll and records guardian data', () => {
+  assert.ok(admissionModal.includes('selectedClassId'));
+  assert.ok(admissionModal.includes('selectedSectionId'));
+  assert.ok(admissionModal.includes('sections={sections}') === false);
+  assert.ok(admissionPage.includes('sections={sections}'));
+  assert.ok(admissionsAction.includes("requirePermission('manage_admissions')"));
+  assert.ok(admissionsAction.includes('sectionId: string'));
+  assert.ok(admissionsAction.includes("relation_type: 'Guardian'"));
+  assert.ok(admissionsAction.includes('.eq(\'status\', \'passed\')'));
+});
+
+test('exam actions validate subject totals, passing marks and enrollment before saving', () => {
+  assert.ok(examAction.includes('passing_marks: passingMarks'));
+  assert.ok(examAction.includes('calculateAliaGpa(percentage)'));
+  assert.ok(examAction.includes('exam.is_published'));
+  assert.ok(examAction.includes('.eq(\'class_id\', subject.class_id)'));
+  assert.ok(examAction.includes("requirePermission('input_marks')"));
+  assert.ok(examView.includes('canManageCurriculum && !exam.is_published'));
+  assert.ok(examView.includes('canInputMarks && showMarksModal'));
+  assert.ok(examView.includes('useI18n'));
 });
