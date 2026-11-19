@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Authentication
+- Require the Owner-issued temporary password during manual Admin first login and pass it to Supabase Auth as `current_password`; preserve Auth current-password security and add provider-safe error mapping and regression coverage.
+
 ### Performance
 - Remove the large decorative Islamic pattern image from the homepage hero critical path and replace it with a CSS-only texture; prioritize the hero campus image. Fresh PageSpeed measurement remains required.
 
