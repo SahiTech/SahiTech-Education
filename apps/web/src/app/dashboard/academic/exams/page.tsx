@@ -1,5 +1,6 @@
 import React from 'react';
 import { getActiveTenantContext } from '@/lib/auth/context';
+import { hasPermission } from '@sahitech/domain';
 import { createClient } from '@/lib/supabase/server';
 import { ExamManagementViews } from './exam-management-views';
 import { Award, Layers } from 'lucide-react';
@@ -43,6 +44,8 @@ export default async function ExamsPage() {
       .order('name_bn', { ascending: true }),
   ]);
 
+  const canManageCurriculum = hasPermission(context.role, 'manage_curriculum');
+  const canInputMarks = hasPermission(context.role, 'input_marks');
   const exams = examsRes.data || [];
   const students = studentsRes.data || [];
   const subjects = subjectsRes.data || [];
@@ -75,7 +78,7 @@ export default async function ExamsPage() {
         </div>
       </div>
 
-      <ExamManagementViews students={students} subjects={subjects} exams={exams} />
+      <ExamManagementViews students={students} subjects={subjects} exams={exams} canManageCurriculum={canManageCurriculum} canInputMarks={canInputMarks} />
     </div>
   );
 }
