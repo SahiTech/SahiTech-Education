@@ -184,13 +184,13 @@ The fail-closed behavior for invalid tenant-selection cookies and multiple membe
 
 | Area | Source change | Verification state |
 |---|---|---|
-| Host routing | Removed arbitrary hostname-label tenant inference; fixed Middleware tenant embed to the declared FK | Source implemented; CI pending |
-| Sign-in tenant selection | Clear stale selection, query only authenticated user's active membership rows, set Secure/HttpOnly cookie for a sole membership | Source implemented; CI pending |
-| Multiple memberships | Added server-verified `/select-tenant` page and selection action | Source implemented; CI pending |
-| Tenant context | Resolve from selected cookie or sole active membership; preserve fail-closed validation | Source implemented; CI pending |
-| Workspace Logout | Shared control in desktop Navbar, mobile navigation and workspace Sidebar; sign-out removes selection cookie | Source implemented; CI pending |
+| Host routing | Removed arbitrary hostname-label tenant inference; fixed Middleware tenant embed to the declared FK | CI #359 passed; Preview READY |
+| Sign-in tenant selection | Clear stale selection, query only authenticated user's active membership rows, set Secure/HttpOnly cookie for a sole membership | CI #359 passed; Preview READY |
+| Multiple memberships | Added server-verified `/select-tenant` page and selection action | CI #359 passed; Preview READY |
+| Tenant context | Resolve from selected cookie or sole active membership; preserve fail-closed validation | CI #359 passed; Preview READY |
+| Workspace Logout | Shared control in desktop Navbar, mobile navigation and workspace Sidebar; sign-out removes selection cookie | CI #359 passed; Preview READY |
 | Global Owner shell | Existing restricted Owner layout and Owner logout remain separate and unchanged | Source inspection |
 | Database/Auth/DNS | No Production schema, data, Auth settings, secrets or DNS changes in this change | Confirmed no change |
-| Development/Preview and Production verification | CI, Preview deployment, Production deployment and authenticated manager browser test | Pending |
+| Development/Preview and Production verification | GitHub Actions run #359 (tests, TypeScript, lint, build) passed; Vercel Preview `dpl_xmJsFmmwyhtqG9UcbbPVDXjumVEF` is READY | Development/Preview verified; Production release pending |
 
 No assertion that the manager's Production browser journey is verified should be made until a live authenticated login, dashboard load and logout test completes.
