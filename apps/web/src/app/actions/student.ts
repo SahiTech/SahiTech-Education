@@ -141,6 +141,32 @@ export async function createStudent(input: CreateStudentInput): Promise<StudentA
       };
     }
 
+    // Create the primary guardian relationship as part of student onboarding.
+    const guardianNameBn = input.fatherNameBn?.trim() || 'অভিভাবক';
+    const guardianNameEn = input.fatherNameEn?.trim() || 'Guardian';
+    const { error: guardianError } = await supabase.from('student_guardians').insert({
+      tenant_id: context.tenantId,
+      student_id: student.id,
+      name_bn: guardianNameBn,
+      name_en: guardianNameEn,
+      relation_type: input.fatherNameBn?.trim() ? 'Father' : 'Guardian',
+      phone: input.guardianPhone.trim(),
+      address: input.presentAddress?.trim() || null,
+      is_primary_contact: true,
+      is_financial_sponsor: true,
+    });
+
+    if (guardianError) {
+      const { error: cleanupError } = await supabase.from('students').delete()
+        .eq('id', student.id).eq('tenant_id', context.tenantId);
+      return {
+        success: false,
+        error: cleanupError
+          ? 'শিক্ষার্থীর অভিভাবক তথ্য সংরক্ষণ ব্যর্থ হয়েছে এবং অসম্পূর্ণ রেকর্ড পরিষ্কার করা যায়নি। Support-এর সঙ্গে যোগাযোগ করুন।'
+          : `অভিভাবকের তথ্য সংরক্ষণ ব্যর্থ হয়েছে: ${guardianError.message}`,
+      };
+    }
+
     // 5. Enroll only after tenant, year, section and roll number passed validation.
     if (enrollment) {
       const { error: enrollmentError } = await supabase.from('student_enrollments').insert({
@@ -156,13 +182,15 @@ export async function createStudent(input: CreateStudentInput): Promise<StudentA
       if (enrollmentError) {
         // Best-effort compensating cleanup: never report a successful enrollment
         // when the unique roll constraint or another database invariant rejected it.
+        const { error: guardianCleanupError } = await supabase.from('student_guardians')
+          .delete().eq('student_id', student.id).eq('tenant_id', context.tenantId);
         const { error: cleanupError } = await supabase
           .from('students')
           .delete()
           .eq('id', student.id)
           .eq('tenant_id', context.tenantId);
-        if (cleanupError) {
-          return { success: false, error: 'শিক্ষার্থী রেকর্ড তৈরি হয়েছে, কিন্তু ক্লাস ভর্তি ব্যর্থ হয়েছে এবং রোলব্যাক সম্পন্ন হয়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
+        if (cleanupError || guardianCleanupError) {
+          return { success: false, error: 'শিক্ষার্থী ও অভিভাবক রেকর্ড তৈরি হয়েছে, কিন্তু ক্লাস ভর্তি ব্যর্থ হয়েছে এবং রোলব্যাক সম্পন্ন হয়নি। Support-এর সঙ্গে যোগাযোগ করুন।' };
         }
         return { success: false, error: 'ক্লাসে ভর্তি সম্পন্ন হয়নি; শিক্ষার্থী রেকর্ডটি রোলব্যাক করা হয়েছে। সেকশন ও রোল নম্বর যাচাই করে আবার চেষ্টা করুন।' };
       }
