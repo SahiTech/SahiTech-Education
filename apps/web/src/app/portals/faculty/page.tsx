@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { requirePermission } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
 import { CheckCircle, Clock, Calendar, Users } from 'lucide-react';
@@ -17,7 +18,7 @@ export default async function FacultyPortalPage() {
   const dateLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'bn-BD';
   const supabase = await createClient();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
   const [studentsRes, attendanceRes] = await Promise.all([
     supabase
@@ -34,6 +35,14 @@ export default async function FacultyPortalPage() {
   ]);
 
   const students = studentsRes.data || [];
+  const roleLabels: Record<string, Record<string, string>> = {
+    madrasa_admin: { bn: 'মুহতামিম / প্রিন্সিপাল', en: 'Madrasa Admin / Principal', ar: 'مدير المدرسة' },
+    academic_dean: { bn: "নাজেমে তা'লীমাত", en: 'Academic Dean', ar: 'الناظر الأكاديمي' },
+    teacher: { bn: 'শিক্ষক / উস্তাদ', en: 'Teacher / Ustadh', ar: 'المعلم' },
+    accountant: { bn: 'হিসাবরক্ষক', en: 'Accountant', ar: 'المحاسب' },
+    hostel_warden: { bn: 'হোস্টেল তত্ত্বাবধায়ক', en: 'Hostel Warden', ar: 'مشرف السكن' },
+  };
+  const roleLabel = roleLabels[context.role]?.[locale] || context.role;
   const attendanceToday = attendanceRes.data || [];
   const presentStudentIds = new Set(
     attendanceToday.filter((a) => a.status === 'present').map((a) => a.student_id)
@@ -52,13 +61,22 @@ export default async function FacultyPortalPage() {
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {context.tenantName} · {copy.teacherLabel}: <strong>{context.fullName}</strong> · {copy.roleLabel}: {context.role}
+            {context.tenantName} · {copy.teacherLabel}: <strong>{context.fullName}</strong> · {copy.roleLabel}: {roleLabel}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-1.5 shadow-sm text-xs text-slate-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/dashboard/attendance"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+          >
+            <Calendar className="h-4 w-4" />
+            {dict.nav.attendance}
+          </Link>
+          <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-1.5 shadow-sm text-xs text-slate-600">
           <Calendar className="h-4 w-4 text-emerald-700" />
           <span>{copy.todayDate}: <strong>{new Date().toLocaleDateString(dateLocale)}</strong> ({today})</span>
+          </div>
         </div>
       </div>
 
