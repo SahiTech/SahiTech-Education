@@ -25,8 +25,8 @@ export default async function NazimeTaleematPortalPage() {
   const departments = departmentsRes.data || [];
   const classes = classesRes.data || [];
   const currentYear = academicYearRes.data;
-  const localizedName = (bn?: string | null, en?: string | null) =>
-    locale === 'en' ? en || bn || '' : bn || en || '';
+  const localizedName = (bn?: string | null, en?: string | null, ar?: string | null) =>
+    locale === 'ar' ? ar || en || bn || '' : locale === 'en' ? en || bn || '' : bn || en || '';
 
   return (
     <div className="space-y-6">
@@ -44,7 +44,7 @@ export default async function NazimeTaleematPortalPage() {
         <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900"><Calendar className="h-5 w-5 text-emerald-700" />{copy.academicYear}</h2>
         {currentYear ? (
           <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-4">
-            <div><span className="block text-xs font-medium text-slate-400">{copy.yearName}</span><span className="font-bold text-slate-900">{localizedName(currentYear.name_bn, currentYear.name_en)}</span></div>
+            <div><span className="block text-xs font-medium text-slate-400">{copy.yearName}</span><span className="font-bold text-slate-900">{localizedName(currentYear.name_bn, currentYear.name_en, currentYear.name_ar)}</span></div>
             <div><span className="block text-xs font-medium text-slate-400">{copy.hijriYear}</span><span className="font-semibold text-slate-900">{currentYear.hijri_year || '১৪৪৭-১৪৪৮'} {copy.hijriSuffix}</span></div>
             <div><span className="block text-xs font-medium text-slate-400">{copy.startDate}</span><span className="font-mono text-slate-700">{currentYear.start_date}</span></div>
             <div><span className="block text-xs font-medium text-slate-400">{copy.endDate}</span><span className="font-mono text-slate-700">{currentYear.end_date}</span></div>
@@ -58,7 +58,7 @@ export default async function NazimeTaleematPortalPage() {
           <div className="divide-y divide-slate-100">
             {departments.length === 0 ? <p className="py-3 text-xs text-slate-400">{copy.noDepartments}</p> : departments.map((department: any) => (
               <div key={department.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div><div className="text-sm font-bold text-slate-900">{localizedName(department.name_bn, department.name_en)}</div>{locale !== 'en' && department.name_en && <div className="text-xs text-slate-400">{department.name_en}</div>}</div>
+                <div><div className="text-sm font-bold text-slate-900">{localizedName(department.name_bn, department.name_en, department.name_ar)}</div>{locale !== 'en' && department.name_en && <div className="text-xs text-slate-400">{department.name_en}</div>}</div>
                 <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{department.code}</span>
               </div>
             ))}
@@ -70,7 +70,7 @@ export default async function NazimeTaleematPortalPage() {
           <div className="divide-y divide-slate-100">
             {classes.length === 0 ? <p className="py-3 text-xs text-slate-400">{copy.noClasses}</p> : classes.map((item: any) => (
               <div key={item.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div><div className="text-sm font-bold text-slate-900">{localizedName(item.name_bn, item.name_en)}</div>{locale !== 'en' && item.name_en && <div className="text-xs text-slate-400">{item.name_en}</div>}</div>
+                <div><div className="text-sm font-bold text-slate-900">{localizedName(item.name_bn, item.name_en, item.name_ar)}</div>{locale !== 'en' && item.name_en && <div className="text-xs text-slate-400">{item.name_en}</div>}</div>
                 <div className="flex shrink-0 items-center gap-2"><span className="text-xs text-slate-500">{copy.levelOrder}: {item.level_order}</span><span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] text-emerald-800">{item.code}</span></div>
               </div>
             ))}
