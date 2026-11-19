@@ -67,6 +67,14 @@ Background jobs cannot assume that `auth.uid()` exists. Every job must:
 
 Do not assume a `SET LOCAL app.current_tenant_id` pattern works automatically: a corresponding policy and connection/transaction implementation must be present and tested.
 
-## 6. Custom-domain and routing behavior
+## 6. Current tenant selection and domain-routing boundary
 
-Subdomain/custom-domain routing is a target capability. Only advertise a custom host as supported after DNS/TLS, tenant resolution, cookie scope, auth callbacks and routing are tested for that domain. Invalid host-to-tenant mappings must fail closed.
+The current production workspace resolves tenant context from the authenticated user's active `tenant_users` membership and the server-issued `m_active_tenant` HttpOnly cookie.
+
+- On sign-in, the server clears any previous tenant-selection cookie and reads only the signed-in user's active membership rows.
+- A single active membership is selected automatically. Multiple memberships require the explicit `/select-tenant` flow.
+- The selection cookie is a routing hint only. The server rechecks the authenticated user's membership, tenant lifecycle state and role; database grants and RLS remain authoritative.
+- Logout ends the Supabase session and deletes the tenant-selection cookie.
+- Never infer a tenant from the first label of an arbitrary hostname. In particular, `sahitech.dpdns.org` is the platform root host, not a Madrasa subdomain.
+
+Subdomain/custom-domain routing remains a target capability, not a verified current production feature. Only enable it after explicit base-domain allowlisting, DNS/TLS, tenant resolution, cookie scope, auth callbacks and routing are tested for that domain. Invalid host-to-tenant mappings must fail closed.
