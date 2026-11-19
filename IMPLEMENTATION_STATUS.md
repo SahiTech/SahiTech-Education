@@ -150,3 +150,25 @@ The secure Admin workflow still requires the feature migrations 00045–00050, s
 | Production release | No Production code deployment or Auth/Database configuration change made during investigation | Pending explicit release gate |
 
 The fix preserves Supabase's current-password policy; it does not disable or weaken Auth security settings. Temporary and new passwords must never be written to logs, telemetry, database audit records, or documentation.
+
+
+---
+
+## 2026-11-19 — Dashboard active-tenant context investigation
+
+**Production evidence:** The signed-in manual Madrasa Admin has one active `tenant_users` membership (`role=madrasa_admin`) linked to an active, verified tenant (`platform_status=active`, onboarding step 6/6). The tenant is `Taste Madrasa One`. The user account's first-login password-change gate is false.
+
+**Root cause in source:** `apps/web/src/lib/auth/context.ts` embedded the tenant relation as `tenants:tenant_id (...)`. The actual foreign key on `public.tenant_users` is `tenant_users_tenant_id_fkey`, referencing `tenants(id)`. The relation hint must identify the related table and declared foreign key; the prior hint named the scalar `tenant_id` column, causing tenant-context resolution to return null and the dashboard to render the misleading “No Active Madrasa Found” empty state.
+
+**Fix branch:** `fix/dashboard-tenant-context-resolution`
+
+| Area | Change / status |
+|---|---|
+| Tenant membership and tenant active state | Confirmed read-only in Production |
+| Tenant embed relationship | Corrected to `tenants:tenants!tenant_users_tenant_id_fkey` |
+| Regression test | Added source assertion for explicit FK relationship and active membership filter |
+| Development/Preview verification | Pending CI and Preview |
+| Production deployment | Not yet performed for this dashboard fix |
+| Database/Auth changes | None required or performed |
+
+The fail-closed behavior for invalid tenant-selection cookies and multiple memberships is intentionally preserved; no tenant fallback or cross-tenant access was introduced.
