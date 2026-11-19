@@ -128,3 +128,25 @@ Production migration ledger now has 00044, emergency 00051 and security hotfix 0
 Development also has migration 00052 and its eleven-RPC read-only smoke test passed. The Development ledger has two rows named 00052 from repeat application of the idempotent migration. Do not delete migration history manually; reconcile before any future CLI push.
 
 The secure Admin workflow still requires the feature migrations 00045–00050, server-only Auth Admin key, matching HMAC secret, real Auth E2E, final Preview/Production checks and post-deployment smoke testing.
+
+
+---
+
+## 2026-11-19 — First-login password update root-cause and fix
+
+**Investigation environment:** Production Supabase project `xbswamfmslhliayoowlo`; Production Vercel deployment `dpl_FZ6NYSmCpX8yaqsNppv85aSCNZgi`  
+**Source baseline:** `a69de3e944589a4073dd0f3bfe7963813b238378`  
+**Evidence:** Supabase Auth logs recorded six `current_password_required` HTTP 400 responses on 2026-11-19 between 12:21:22Z and 12:25:38Z. The deployed Server Action called `auth.updateUser({ password })` without `current_password`; the form did not collect the Owner-issued temporary password. The database-backed first-login gate remained true and no password-change audit event was created.  
+**Fix branch:** `fix/first-login-current-password`
+
+| Area | Change / evidence | Status |
+|---|---|---|
+| Root cause | Supabase Auth current-password policy rejected the new-password request because the current temporary password was not supplied | Production log-confirmed |
+| Server Action | Adds bounded temporary-password input handling, passes `current_password` to Supabase Auth, maps known provider error codes without logging passwords | Source implemented; verification pending |
+| First-login form | Adds Owner-issued temporary-password field with current-password autocomplete | Source implemented; verification pending |
+| Regression coverage | Adds assertions for current-password UI, Auth payload and error mapping | Source implemented; CI pending |
+| Security documentation and changelog | Updated first-login credential flow and release notes | Source implemented |
+| Development verification | CI, Development Preview and authenticated end-to-end password change | Pending |
+| Production release | No Production code deployment or Auth/Database configuration change made during investigation | Pending explicit release gate |
+
+The fix preserves Supabase's current-password policy; it does not disable or weaken Auth security settings. Temporary and new passwords must never be written to logs, telemetry, database audit records, or documentation.
