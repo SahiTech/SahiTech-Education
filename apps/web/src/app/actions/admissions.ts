@@ -34,21 +34,6 @@ export async function createAdmissionApplication(input: CreateAdmissionInput) {
       return { success: false, error: 'শিক্ষার্থীর নাম ও অভিভাবকের মোবাইল নম্বর আবশ্যক।' };
     }
 
-    // The tenant ID received from the browser is only a reference. Verify that
-    // the requested slug maps to the same currently active public institution.
-    const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
-      .select('id, subdomain')
-      .eq('id', params.tenantId)
-      .eq('subdomain', params.tenantSubdomain)
-      .eq('is_active', true)
-      .eq('platform_status', 'active')
-      .maybeSingle();
-
-    if (tenantError || !tenant) {
-      return { success: false, error: 'এই প্রতিষ্ঠানের অনলাইন ভর্তি আবেদন বর্তমানে গ্রহণ করা যাচ্ছে না।' };
-    }
-
     const applicationNo = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const { data: app, error } = await supabase
@@ -271,8 +256,23 @@ export async function submitPublicAdmissionApplication(params: {
   try {
     const supabase = await createClient();
 
-    if (!params.tenantId || !params.fullNameBn?.trim() || !params.guardianPhone?.trim()) {
+    if (!params.tenantId || !params.tenantSubdomain || !params.fullNameBn?.trim() || !params.guardianPhone?.trim()) {
       return { success: false, error: 'মাদরাসা, শিক্ষার্থীর নাম ও অভিভাবকের ফোন নম্বর আবশ্যক।' };
+    }
+
+    // A browser-supplied tenant ID is only a reference. Verify that the URL slug
+    // identifies the same currently active institution before accepting an application.
+    const { data: tenant, error: tenantError } = await supabase
+      .from('tenants')
+      .select('id, subdomain')
+      .eq('id', params.tenantId)
+      .eq('subdomain', params.tenantSubdomain)
+      .eq('is_active', true)
+      .eq('platform_status', 'active')
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      return { success: false, error: 'এই প্রতিষ্ঠানের অনলাইন ভর্তি আবেদন বর্তমানে গ্রহণ করা যাচ্ছে না।' };
     }
 
     const applicationNo = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
