@@ -52,7 +52,7 @@ export async function getActiveTenantContext(): Promise<TenantContext | null> {
     .select(`
       tenant_id,
       role,
-      tenants:tenant_id (
+      tenants:tenants!tenant_users_tenant_id_fkey (
         id,
         name,
         code,

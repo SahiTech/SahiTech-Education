@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Tenancy
+- Resolve the active tenant context using the explicit `tenant_users_tenant_id_fkey` relationship so active Madrasa Admin memberships can load their tenant dashboard.
+
 ### Authentication
 - Require the Owner-issued temporary password during manual Admin first login and pass it to Supabase Auth as `current_password`; preserve Auth current-password security and add provider-safe error mapping and regression coverage.
 
