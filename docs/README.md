@@ -3,7 +3,7 @@
 **Parent brand:** SahiTech  
 **Division:** SahiTech Education  
 **Initiative:** Madrasa Digitalization Initiative (MDI)  
-**Reviewed:** 2026-11-17
+**Reviewed:** 2026-11-20
 
 This index lists the Markdown documentation tracked in the repository. Specifications describe target requirements unless they explicitly cite implementation evidence. Read [Documentation Sync Policy](DOCUMENTATION_SYNC_POLICY.md) and the repository [agent rules](../AGENTS.md) before making code changes.
 
