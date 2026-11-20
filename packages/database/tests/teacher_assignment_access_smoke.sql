@@ -30,6 +30,18 @@ BEGIN
     RAISE EXCEPTION 'teacher_class_assignments must have RLS enabled';
   END IF;
 
+  IF has_table_privilege('anon','public.sanads','SELECT')
+     OR has_table_privilege('anon','public.students','SELECT')
+     OR has_table_privilege('anon','public.student_guardians','SELECT')
+     OR has_table_privilege('anon','public.attendance_records','SELECT')
+     OR has_table_privilege('anon','public.exam_marks','SELECT') THEN
+    RAISE EXCEPTION 'Anonymous role must not read sensitive student, guardian, academic or Sanad records';
+  END IF;
+
+  IF NOT has_function_privilege('anon','public.verify_sanad_public(text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Public Sanad verification RPC must remain available';
+  END IF;
+
   IF has_table_privilege('anon','public.teacher_class_assignments','SELECT')
      OR has_table_privilege('anon','public.teacher_class_assignments','INSERT')
      OR has_table_privilege('anon','public.teacher_class_assignments','UPDATE')
