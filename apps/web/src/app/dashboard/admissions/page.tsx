@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { getActiveTenantContext } from '@/lib/auth/context';
+import { hasPermission } from '@sahitech/domain';
 import { createClient } from '@/lib/supabase/server';
 import { UserCheck, Plus, Search, Filter, Phone, Calendar, CheckCircle2, Clock, XCircle, ArrowRight } from 'lucide-react';
 import { AdmissionEvaluationModal } from './admission-modal';
@@ -17,12 +18,15 @@ export default async function AdmissionsPage() {
 
   const supabase = await createClient();
 
-  const [admissionsRes, classesRes] = await Promise.all([
+  const [admissionsRes, classesRes, sectionsRes] = await Promise.all([
     supabase
       .from('student_admissions')
       .select(`
         id,
         application_no,
+        target_class_id,
+        target_academic_year_id,
+        interview_remarks,
         full_name_bn,
         full_name_en,
         guardian_phone,
@@ -38,12 +42,19 @@ export default async function AdmissionsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('classes')
-      .select('id, name_bn')
+      .select('id, name_bn, name_en, name_ar')
       .eq('tenant_id', context.tenantId),
+    supabase
+      .from('sections')
+      .select('id, class_id, name')
+      .eq('tenant_id', context.tenantId)
+      .order('name', { ascending: true }),
   ]);
 
+  const canManageAdmissions = hasPermission(context.role, 'manage_admissions');
   const admissions = admissionsRes.data || [];
   const classes = classesRes.data || [];
+  const sections = sectionsRes.data || [];
 
   const statusBadges: Record<string, { label: string; color: string }> = {
     applied: { label: dict.admissions.statusApplied, color: 'bg-blue-100 text-blue-800' },
@@ -123,7 +134,7 @@ export default async function AdmissionsPage() {
                         <span>{dict.admissions.oralScore}: {app.oral_exam_marks != null ? app.oral_exam_marks : '—'}</span>
                       </div>
 
-                      <AdmissionEvaluationModal application={app} classes={classes} />
+                      {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                 );
@@ -187,7 +198,7 @@ export default async function AdmissionsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right rtl:text-left text-xs">
-                        <AdmissionEvaluationModal application={app} classes={classes} />
+                        {canManageAdmissions ? <AdmissionEvaluationModal application={app} classes={classes} sections={sections} /> : <span className="text-slate-400">—</span>}
                       </td>
                     </tr>
                   );

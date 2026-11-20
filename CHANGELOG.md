@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Teacher assignment security
+- Add verified teacher-account linking, current-year class/section/optional-subject assignments, and restrictive RLS predicates for student, enrollment, attendance, exam, routine, guardian and Sanad access.
+- Add a Teachers dashboard panel for linking existing verified accounts and managing assignments; keep account creation/invitation separate and fail closed when no verified account exists.
+- Add migrations 00053–00057 and a Development SQL catalog smoke test. Development verified; Production migrations and authenticated browser E2E remain pending.
+- Revoke anonymous SELECT from sensitive tenant tables in Development while preserving the minimal public Sanad verification RPC. Production grant cleanup remains pending.
+
 ### Authentication & Workspace Access
 - Stop deriving tenant identity from arbitrary request host labels; resolve a sole active membership from the authenticated session and require explicit selection for multi-tenant users.
 - Add desktop, mobile and Sidebar Logout controls for Madrasa workspaces; clear the active-tenant selection cookie on sign-out while retaining the separate Global Owner shell.
@@ -131,3 +137,8 @@ The format follows Keep a Changelog. Versions are assigned when a release is app
   - Established initial database schema with 15 public tables, 30 foreign keys, 29 btree indexes, and zero-trust RLS policies.
   - Created pnpm monorepo architecture with `@sahitech/domain`, `@sahitech/database`, and `apps/web`.
 
+### Student registry, localization & institutional public websites
+- Fix student creation to send `blood_group`, the actual PostgreSQL column, instead of camelCase `bloodGroup`; add section selection so class enrollment supplies the required `section_id`.
+- Replace the oversized inline locale pills with an accessible compact language menu and add dictionary-driven Admin, Academic, Faculty, Bursar and tenant public-site copy for bn/en/ar.
+- Add per-institution public websites at `/m/{subdomain}`, render tenant-scoped public notices from the bilingual schema columns, expose the exact shareable URL in the Admin portal and validate tenant ID/slug before public admission submission.
+- Student/Guardian self-service login remains a separate not-yet-implemented capability; public admission submission does not create an Auth account.

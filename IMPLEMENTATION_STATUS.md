@@ -1,6 +1,6 @@
 # MDI Implementation & Verification Status
 
-**Last reviewed:** 2026-11-17  
+**Last reviewed:** 2026-11-20  
 **Repository:** SahiTech/SahiTech-Education  
 **Reviewed ref:** `main` at `aaaf802d4c4f85b7982410d346ece201201116b4`  
 **Review type:** GitHub source-tree and documentation inspection only  
@@ -194,3 +194,65 @@ The fail-closed behavior for invalid tenant-selection cookies and multiple membe
 | Development/Preview and Production verification | GitHub Actions run #359 (tests, TypeScript, lint, build) passed; Vercel Preview `dpl_xmJsFmmwyhtqG9UcbbPVDXjumVEF` is READY | Development/Preview verified; Production release pending |
 
 No assertion that the manager's Production browser journey is verified should be made until a live authenticated login, dashboard load and logout test completes.
+
+---
+
+## 2026-11-19 — Student registry, localization and institution website corrections
+
+**Production evidence reviewed:** Supabase Production project `xbswamfmslhliayoowlo`, Vercel Production commit `16667153b679bbfcaa7a687e6908b04a7fc95d3e`.
+
+**Root causes confirmed from source/schema:**
+- `createStudent` mapped the UI's `bloodGroup` value to a non-existent camelCase column. Production `public.students` exposes nullable `blood_group`; the database did not need a new column or schema-cache refresh.
+- The shared Navbar displayed three wide always-visible language buttons. The Faculty and other institutional portals contained many Bengali literals rather than resolving their content from the active server dictionary.
+- The former `/public-site` route selected the latest active tenant globally. Production has several active tenants, each with its own unique `subdomain`. Notice rendering used `title/content` even though the table columns are `title_bn/title_en/content_bn/content_en`.
+- `student_enrollments.section_id` is NOT NULL; the new-student form previously selected a Class but did not offer a Section, so it could not create a valid class enrollment.
+- Student/Guardian self-service login is not present as a complete verified workflow. Public admission submission creates an application only; it does not create an Auth account.
+
+**Fix branch:** `fix/student-schema-i18n-and-institution-websites`
+
+| Area | Source change | Verification state |
+|---|---|---|
+| Student record save | Use `blood_group` for the existing Production column | Source implemented; CI pending |
+| Class enrollment | Load tenant sections, select a section and submit the required `section_id`; if a class has no sections, preserve the student record without falsely claiming enrollment | Source implemented; CI pending |
+| Language selector | Compact accessible globe/current-locale menu; no oversized inline pills | Source implemented; CI pending |
+| Portal localization | Dictionary-driven shared portal shell and Admin, Academic, Faculty and Bursar page copy in bn/en/ar | Source implemented; CI pending |
+| Tenant public site | Add `/m/[subdomain]`, exact active-tenant lookup and tenant-scoped public notices | Source implemented; CI pending |
+| Public notice fields | Read the existing bilingual `title_bn/title_en/content_bn/content_en` columns | Source implemented; CI pending |
+| Public admission | Verify exact tenant ID + slug + active platform state before INSERT | Source implemented; CI pending |
+| Facebook/share URL | Display `https://sahitech.dpdns.org/m/{subdomain}` in the institution Admin portal | Source implemented; CI pending |
+| Student/Guardian login | No account-provisioning or self-service login route added; documented as a separate identity-verified feature | Not implemented / not verified |
+| Database/Auth/DNS | No Production schema, data, Auth configuration, secrets or DNS changes | Confirmed no change |
+| CI, Preview, Production | Full CI and exact-commit Preview/Production release | Pending |
+
+Current database evidence confirms that `Taste Madrasa One` uses slug `tasteonegghx`; the expected public path is `https://sahitech.dpdns.org/m/tasteonegghx`. This is a shared-domain path, not a custom domain. DNS/TLS and verified ownership are still required before custom-domain support can be claimed.
+
+A successful build or deployment will not by itself prove public admission end-to-end, the student insert browser journey, guardian login, or full locale/RTL quality. Those require authenticated/public browser tests after deployment.
+
+
+---
+
+## 2026-11-20 — Teacher assignment isolation and anonymous-read hardening
+
+**Work branch:** `feat/mdi-teacher-access-scope` (based on `fix/student-schema-i18n-and-institution-websites`)  
+**Draft PR:** [#20](https://github.com/SahiTech/SahiTech-Education/pull/20)  
+**Branch head at verification:** `71b85333005488e53c987b4a7415aa4588cecc21`  
+**Development Supabase project:** `srcmodeinjvfqwkramni`  
+**Production Supabase project:** `xbswamfmslhliayoowlo`  
+**Production database changes:** none
+
+| Area | Evidence | Status |
+|---|---|---|
+| Teacher assignments | Migrations 00053–00054 create tenant-aware class/section/subject/year assignments and restrictive teacher-scope policies for students, enrollments, attendance, exam marks, classes, sections, subjects and routines | Development applied; catalog smoke passed |
+| Teacher identity | Migrations 00055–00056 add atomic Admin-only linking to an existing Auth user with matching confirmed email; source action uses server-only Auth Admin lookup | Development applied; source implemented; live Auth E2E not run |
+| Teacher management UI | Teachers page is permission-gated and now includes account-link and assignment controls | Source implemented; CI/Preview and browser E2E pending |
+| Private function grants | Migration 00054 restores the least-privilege grant baseline and keeps trigger-only private functions non-callable by authenticated users | Development verified against Production grant baseline |
+| Anonymous sensitive-table reads | Migration 00057 revokes anon SELECT on sensitive tenant tables; the minimal public Sanad verification RPC remains executable | Development verified; Production still requires approved migration |
+| SQL smoke | `packages/database/tests/teacher_assignment_access_smoke.sql` | Executed successfully against Development on 2026-11-20; catalog/privilege assertions only |
+| Guardian/Parent workflow | No Guardian portal, linked guardian identity or verified invitation acceptance workflow exists in this change | Not implemented; release blocker |
+| Runtime verification | No real teacher account login, two-teacher/two-section isolation test, attendance/marks browser journey or guardian journey | Not verified |
+| CI and Preview | Parent commit `ebc99d64d2a2fbdce1fe90cd04cd2a1ca7fcb1f2` had successful CI run 44581001440. New branch CI run 44692672437 passed tests, TypeScript, lint and Production build; Vercel Preview build output completed but deployment was still BUILDING | Build checks passed; Preview availability and live route smoke test pending |
+| Production release | No PR merge, Production deployment, Production migration or live smoke test performed for this branch | Pending |
+
+**Important live Production audit correction:** the current Production migration ledger contains migrations 00045–00052, and the Vercel Production environment contains the server-side keys previously described as absent in the older status snapshot. This confirms that parts of the 2026-11-17 status are stale. Key presence does not prove correct values, Auth behavior or end-to-end readiness. Production still has anonymous SELECT grants on sensitive tables, including `sanads`, `students`, `student_guardians`, `attendance_records` and `exam_marks`; migration 00057 is not applied there. Production catalog also reports zero teacher, student and guardian rows at this audit point, so there is no live teacher/guardian journey to validate.
+
+**Release decision:** NOT READY. Do not merge or promote until the new branch CI and Preview pass, a real Development teacher identity and assignment are tested across allowed and denied sections, the Guardian/Parent identity workflow is completed, and Production migration 00057 plus post-release checks receive separate approval.

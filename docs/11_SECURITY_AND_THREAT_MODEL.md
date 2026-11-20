@@ -95,3 +95,8 @@ A TypeScript validator does not make a multi-step database workflow atomic. Use 
 - [ ] Explicit production approval is recorded.
 
 See [the dated November security audit](SECURITY_AUDIT_2026-11.md) for review observations and limitations.
+
+
+## Teacher access and anonymous table grants — 2026-11-20
+
+Migrations 00053–00056 add teacher assignment predicates, restrictive RLS, and verified teacher-account linking. Migration 00057 revokes anonymous SELECT on sensitive tenant tables in Development while retaining public Sanad verification through the minimal `verify_sanad_public(text)` RPC. The Production catalog still has direct anon SELECT grants on sensitive tables, including Sanads, students, guardians, attendance and exam marks; do not consider this mitigation Production-verified until the approved Production migration and read-only privilege recheck are complete. See [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md).

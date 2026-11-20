@@ -40,3 +40,10 @@
 4. Remaining Supabase Security Advisor findings, including leaked-password protection, need individual review.
 
 See [Security & Threat Model](11_SECURITY_AND_THREAT_MODEL.md) and [Implementation Status](../IMPLEMENTATION_STATUS.md).
+
+
+## 2026-11-20 release risks
+
+- **Teacher data overexposure:** Development now has assignment-scoped restrictive RLS and a verified account-link path. Real teacher fixtures and cross-section browser tests remain outstanding; Production has not received migrations 00053–00056.
+- **Anonymous sensitive-table grants:** Development migration 00057 revokes anonymous reads on sensitive records while preserving the public Sanad verification RPC. Production still has direct anon SELECT grants and requires an approved forward migration plus verification.
+- **Guardian identity:** Guardian rows are not yet bound to verified Auth identities; no Parent portal or one-time guardian invitation acceptance flow is implemented. This remains a release blocker for guardian self-service.

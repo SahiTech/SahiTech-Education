@@ -1,15 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
-import { 
-  Building2, 
-  ArrowLeft, 
-  ShieldCheck, 
-  BookMarked, 
-  Users, 
-  Receipt, 
-  GraduationCap 
+import {
+  Building2,
+  ArrowLeft,
+  ShieldCheck,
+  BookMarked,
+  Receipt,
+  GraduationCap,
 } from 'lucide-react';
 import { getActiveTenantContext } from '@/lib/auth/context';
+import { getServerDictionary } from '@/lib/i18n/server';
 import { redirect } from 'next/navigation';
 
 export default async function PortalsLayout({
@@ -17,72 +17,70 @@ export default async function PortalsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const context = await getActiveTenantContext();
+  const [context, dict] = await Promise.all([
+    getActiveTenantContext(),
+    getServerDictionary(),
+  ]);
 
-  if (!context) {
-    redirect('/dashboard');
-  }
+  if (!context) redirect('/dashboard');
 
   const portalNav = [
-    { name: 'মুহতামিম প্রশাসন', role: 'admin', href: '/portals/admin', icon: Building2 },
-    { name: "নাজেমে তা'লীমাত", role: 'academic', href: '/portals/academic', icon: BookMarked },
-    { name: 'আসতিযা ওয়ার্কস্পেস', role: 'faculty', href: '/portals/faculty', icon: GraduationCap },
-    { name: 'হিসাব ও ক্যাশ কাউন্টার', role: 'bursar', href: '/portals/bursar', icon: Receipt },
+    { name: dict.portals.layout.admin, href: '/portals/admin', icon: Building2 },
+    { name: dict.portals.layout.academic, href: '/portals/academic', icon: BookMarked },
+    { name: dict.portals.layout.faculty, href: '/portals/faculty', icon: GraduationCap },
+    { name: dict.portals.layout.bursar, href: '/portals/bursar', icon: Receipt },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top Bar */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 transition"
+              className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-emerald-700"
             >
-              <ArrowLeft className="h-4 w-4" />
-              মূল ড্যাশবোর্ড
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              <span className="hidden sm:inline">{dict.portals.layout.backToDashboard}</span>
+              <span className="sm:hidden">{dict.nav.overview}</span>
             </Link>
-            <div className="h-4 w-[1px] bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-sm">{context.tenantName}</span>
-              <span className="rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+            <div className="h-4 w-px shrink-0 bg-slate-200" />
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-bold text-slate-900">{context.tenantName}</span>
+              <span className="hidden shrink-0 rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 sm:inline-flex">
                 {context.role}
               </span>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span className="text-xs text-slate-500 hidden sm:inline">
-              সুরক্ষিত পোর্টাল অ্যাক্সেস
+          <div className="flex shrink-0 items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            <span className="hidden text-xs text-slate-500 sm:inline">
+              {dict.portals.layout.secureAccess}
             </span>
           </div>
         </div>
-
-        {/* Portals Sub-navigation */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 flex items-center gap-1 overflow-x-auto py-1">
+        <nav
+          aria-label="Institution portals"
+          className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto border-t border-slate-100 px-4 py-1 sm:px-6 lg:px-8"
+        >
           {portalNav.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70 transition shrink-0"
+                className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-emerald-50/70 hover:text-emerald-800"
               >
-                <Icon className="h-3.5 w-3.5 text-slate-400" />
+                <Icon className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                 <span>{item.name}</span>
               </Link>
             );
           })}
-        </div>
+        </nav>
       </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
   );
 }
-

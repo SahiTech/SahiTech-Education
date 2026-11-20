@@ -10,13 +10,21 @@ interface ClassOption {
   id: string;
   name_bn: string;
   name_en: string;
+  name_ar?: string | null;
+}
+
+interface SectionOption {
+  id: string;
+  class_id: string;
+  name: string;
 }
 
 interface NewStudentFormProps {
   classes: ClassOption[];
+  sections: SectionOption[];
 }
 
-export function NewStudentForm({ classes }: NewStudentFormProps) {
+export function NewStudentForm({ classes, sections }: NewStudentFormProps) {
   const router = useRouter();
   const { t, locale, direction } = useI18n();
   const [isPending, setIsPending] = useState(false);
@@ -24,6 +32,8 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
   const [success, setSuccess] = useState(false);
 
   const defaultAdmissionNo = `ADM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const defaultClassId = classes.find((item) => sections.some((section) => section.class_id === item.id))?.id || classes[0]?.id || '';
+  const defaultSectionId = sections.find((section) => section.class_id === defaultClassId)?.id || '';
 
   const [formData, setFormData] = useState({
     admissionNo: defaultAdmissionNo,
@@ -40,13 +50,22 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
     permanentAddress: '',
     isResidential: true,
     isLillahBoarder: false,
-    classId: classes[0]?.id || '',
+    classId: defaultClassId,
+    sectionId: defaultSectionId,
+    rollNo: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
     setError(null);
+
+    const rollNo = formData.sectionId ? Number(formData.rollNo) : undefined;
+    if (formData.sectionId && (!Number.isInteger(rollNo) || (rollNo ?? 0) < 1)) {
+      setError(locale === 'en' ? 'Enter a positive roll number for the selected section.' : locale === 'ar' ? 'أدخل رقم جلوس صحيحاً للشعبة المحددة.' : 'নির্বাচিত সেকশনের জন্য সঠিক রোল নম্বর দিন।');
+      setIsPending(false);
+      return;
+    }
 
     const res = await createStudent({
       admissionNo: formData.admissionNo,
@@ -63,7 +82,9 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
       permanentAddress: formData.permanentAddress || undefined,
       isResidential: formData.isResidential,
       isLillahBoarder: formData.isLillahBoarder,
-      classId: formData.classId || undefined,
+      classId: formData.sectionId ? formData.classId : undefined,
+      sectionId: formData.sectionId || undefined,
+      rollNo,
     });
 
     setIsPending(false);
@@ -270,23 +291,59 @@ export function NewStudentForm({ classes }: NewStudentFormProps) {
         </div>
       </div>
 
-      {/* Row 6: Class / Marhala if available */}
+      {/* Row 6: Class and required section for an actual enrollment */}
       {classes.length > 0 && (
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t.students.assignedClass}
-          </label>
-          <select
-            value={formData.classId}
-            onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none min-h-[42px]"
-          >
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {locale === 'en' ? c.name_en || c.name_bn : c.name_bn}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-700">{t.students.assignedClass}</label>
+            <select
+              value={formData.classId}
+              onChange={(event) => {
+                const classId = event.target.value;
+                const firstSection = sections.find((section) => section.class_id === classId);
+                setFormData({ ...formData, classId, sectionId: firstSection?.id || '' });
+              }}
+              className="min-h-[42px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            >
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {locale === 'ar' ? item.name_ar || item.name_en || item.name_bn : locale === 'en' ? item.name_en || item.name_bn : item.name_bn}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-700">{t.students.assignedSection}</label>
+            <select
+              value={formData.sectionId}
+              onChange={(event) => setFormData({ ...formData, sectionId: event.target.value })}
+              disabled={sections.filter((section) => section.class_id === formData.classId).length === 0}
+              className="min-h-[42px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">{t.students.selectSection}</option>
+              {sections.filter((section) => section.class_id === formData.classId).map((section) => (
+                <option key={section.id} value={section.id}>{section.name}</option>
+              ))}
+            </select>
+            {sections.filter((section) => section.class_id === formData.classId).length === 0 && (
+              <p className="mt-1 text-[11px] leading-4 text-amber-700">{t.students.noSectionsAvailable}</p>
+            )}
+          </div>
+          {formData.sectionId && (
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">{t.students.rollNo}</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                required
+                inputMode="numeric"
+                value={formData.rollNo}
+                onChange={(event) => setFormData({ ...formData, rollNo: event.target.value })}
+                className="min-h-[42px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none sm:max-w-xs"
+              />
+            </div>
+          )}
         </div>
       )}
 

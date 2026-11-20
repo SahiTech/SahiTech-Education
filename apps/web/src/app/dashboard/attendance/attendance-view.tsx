@@ -1,36 +1,78 @@
 'use client';
 
-import React, { useState } from 'react';
-import { recordBatchAttendance, SingleAttendanceRecord } from '@/app/actions/attendance';
+import React, { useEffect, useRef, useState } from 'react';
+import { loadSectionAttendance, recordBatchAttendance, SingleAttendanceRecord } from '@/app/actions/attendance';
 import { CalendarCheck, CheckCircle2, AlertCircle, X, Users, UserCheck, UserX, Clock, Calendar } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 interface AttendanceViewProps {
-  students: Array<{ id: string; full_name_bn: string; admission_no: string }>;
-  sections: Array<{ id: string; name_bn: string; classes: { name_bn: string } | null }>;
+  students: Array<{ id: string; full_name_bn: string; full_name_en: string; admission_no: string; section_id: string }>;
+  sections: Array<{ id: string; name_bn: string; class_name_bn: string; class_name_en: string }>;
   initialRecords: Array<any>;
 }
 
 export function AttendanceView({ students, sections, initialRecords }: AttendanceViewProps) {
   const { t, locale, direction } = useI18n();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
   const [selectedSectionId, setSelectedSectionId] = useState(sections[0]?.id || '');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Initialize attendance state mapping
+  const sectionStudents = students.filter((student) => student.section_id === selectedSectionId);
+
+  // Initialize saved attendance without coupling it to the first rendered section.
   const [attendanceMap, setAttendanceMap] = useState<Record<string, { status: 'present' | 'absent' | 'late' | 'excused'; remark: string }>>(() => {
     const map: Record<string, { status: 'present' | 'absent' | 'late' | 'excused'; remark: string }> = {};
     for (const rec of initialRecords) {
       map[rec.student_id] = { status: rec.status, remark: rec.remark || '' };
     }
-    for (const st of students) {
-      if (!map[st.id]) {
-        map[st.id] = { status: 'present', remark: '' };
-      }
+    for (const student of students) {
+      if (!map[student.id]) map[student.id] = { status: 'present', remark: '' };
     }
     return map;
   });
+  const hasMounted = useRef(false);
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+    if (!selectedSectionId) return;
+
+    let active = true;
+    setRefreshing(true);
+    setStatusMessage(null);
+    loadSectionAttendance({ sectionId: selectedSectionId, attendanceDate: selectedDate })
+      .then((result) => {
+        if (!active) return;
+        if (!result.success) {
+          setStatusMessage({ type: 'error', text: result.error || t.common.error });
+          return;
+        }
+        setAttendanceMap((previous) => {
+          const next = { ...previous };
+          const visibleIds = new Set(sectionStudents.map((student) => student.id));
+          visibleIds.forEach((id) => { delete next[id]; });
+          for (const record of result.records) {
+            next[record.student_id] = { status: record.status, remark: record.remark || '' };
+          }
+          for (const student of sectionStudents) {
+            if (!next[student.id]) next[student.id] = { status: 'present', remark: '' };
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        if (active) setStatusMessage({ type: 'error', text: t.common.error });
+      })
+      .finally(() => {
+        if (active) setRefreshing(false);
+      });
+
+    return () => { active = false; };
+  }, [selectedDate, selectedSectionId, students, t.common.error]);
 
   const updateStudentStatus = (studentId: string, status: 'present' | 'absent' | 'late' | 'excused') => {
     setAttendanceMap((prev) => ({
@@ -42,7 +84,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
   const markAll = (status: 'present' | 'absent') => {
     setAttendanceMap((prev) => {
       const next = { ...prev };
-      for (const st of students) {
+      for (const st of sectionStudents) {
         next[st.id] = { ...next[st.id], status };
       }
       return next;
@@ -57,7 +99,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
     setLoading(true);
     setStatusMessage(null);
 
-    const records: SingleAttendanceRecord[] = students.map((st) => ({
+    const records: SingleAttendanceRecord[] = sectionStudents.map((st) => ({
       studentId: st.id,
       status: attendanceMap[st.id]?.status || 'present',
       remark: attendanceMap[st.id]?.remark,
@@ -78,11 +120,11 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
   };
 
   // Metrics
-  const total = students.length;
-  const presentCount = students.filter((s) => (attendanceMap[s.id]?.status || 'present') === 'present').length;
-  const absentCount = students.filter((s) => attendanceMap[s.id]?.status === 'absent').length;
-  const lateCount = students.filter((s) => attendanceMap[s.id]?.status === 'late').length;
-  const excusedCount = students.filter((s) => attendanceMap[s.id]?.status === 'excused').length;
+  const total = sectionStudents.length;
+  const presentCount = sectionStudents.filter((s) => (attendanceMap[s.id]?.status || 'present') === 'present').length;
+  const absentCount = sectionStudents.filter((s) => attendanceMap[s.id]?.status === 'absent').length;
+  const lateCount = sectionStudents.filter((s) => attendanceMap[s.id]?.status === 'late').length;
+  const excusedCount = sectionStudents.filter((s) => attendanceMap[s.id]?.status === 'excused').length;
   const percentage = total > 0 ? Math.round((presentCount / total) * 100) : 0;
 
   return (
@@ -138,7 +180,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
               ) : (
                 sections.map((sec) => (
                   <option key={sec.id} value={sec.id}>
-                    {sec.classes?.name_bn || 'Class'} - {sec.name_bn}
+                    {locale === 'en' ? sec.class_name_en || 'Class' : sec.class_name_bn || 'শ্রেণি'} - {sec.name_bn}
                   </option>
                 ))
               )}
@@ -164,7 +206,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
           <button
             type="button"
             onClick={handleSaveAttendance}
-            disabled={loading}
+            disabled={loading || refreshing || sectionStudents.length === 0}
             className="rounded-lg bg-emerald-700 px-5 py-2 text-xs font-bold text-white shadow hover:bg-emerald-800 disabled:opacity-50 transition min-h-[42px]"
           >
             {loading ? t.students.saving : t.attendance.saveAttendance}
@@ -206,7 +248,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
           <span className="text-xs text-slate-500 font-mono">{selectedDate}</span>
         </div>
 
-        {students.length === 0 ? (
+        {sectionStudents.length === 0 ? (
           <div className="p-12 text-center text-xs text-slate-500">
             {t.students.noStudentsDesc}
           </div>
@@ -214,7 +256,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
   <>
     {/* Mobile Touch-Optimized Cards (< 640px) */}
     <div className="divide-y divide-slate-100 block sm:hidden">
-      {students.map((st) => {
+      {sectionStudents.map((st) => {
         const currentStatus = attendanceMap[st.id]?.status || 'present';
         return (
           <div key={st.id} className="p-4 space-y-3">
@@ -297,7 +339,7 @@ export function AttendanceView({ students, sections, initialRecords }: Attendanc
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {students.map((st) => {
+          {sectionStudents.map((st) => {
             const currentStatus = attendanceMap[st.id]?.status || 'present';
             return (
               <tr key={st.id} className="hover:bg-slate-50/60 transition">

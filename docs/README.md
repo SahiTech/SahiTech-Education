@@ -3,7 +3,7 @@
 **Parent brand:** SahiTech  
 **Division:** SahiTech Education  
 **Initiative:** Madrasa Digitalization Initiative (MDI)  
-**Reviewed:** 2026-11-17
+**Reviewed:** 2026-11-20
 
 This index lists the Markdown documentation tracked in the repository. Specifications describe target requirements unless they explicitly cite implementation evidence. Read [Documentation Sync Policy](DOCUMENTATION_SYNC_POLICY.md) and the repository [agent rules](../AGENTS.md) before making code changes.
 
@@ -31,6 +31,7 @@ This index lists the Markdown documentation tracked in the repository. Specifica
 | 08 | [Database Architecture & ERD](08_DATABASE_ARCHITECTURE_AND_ERD.md) | Schema model, relational integrity and migration discipline |
 | 09 | [Multi-Tenancy Architecture](09_MULTI_TENANCY_ARCHITECTURE.md) | Tenant resolution, RLS, isolation and background-job boundaries |
 | 10 | [Authentication & Authorization](10_AUTHENTICATION_AND_AUTHORIZATION.md) | Supabase Auth, Global Owner boundary and tenant roles |
+| 31 | [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md) | Verified teacher account linking, class/section/subject assignments and RLS scope |
 | 11 | [Security & Threat Model](11_SECURITY_AND_THREAT_MODEL.md) | Threats, defensive controls, security review and open risks |
 | 12 | [Qawmi Academic Specification](12_QAWMI_ACADEMIC_SPECIFICATION.md) | Configurable Qawmi curriculum and assessment model |
 | 13 | [Alia Academic Specification](13_ALIA_ACADEMIC_SPECIFICATION.md) | BMEB/Alia curriculum and grading configuration |

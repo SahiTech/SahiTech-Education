@@ -6,7 +6,7 @@
 
 ## 1. Schema source of truth
 
-The ordered SQL migrations are the schema change source of truth. The current manual-admin security branch contains migration files through `00052`. This is a repository/source statement only; it must not be confused with the migration ledger in any particular Development or Production database.
+The ordered SQL migrations are the schema change source of truth. The current manual-admin security branch contains migration files through `00057`. This is a repository/source statement only; it must not be confused with the migration ledger in any particular Development or Production database.
 
 Before changing the schema:
 1. Read the complete relevant migration history and current branch head.
@@ -70,3 +70,8 @@ Required production design:
 `packages/database/tests/platform_security_smoke.sql` is a separate historical SQL test file; its table-count/header assumptions describe an older schema and it is not a current full-schema test. A targeted read-only regression script, `packages/database/tests/owner_rpc_aal2_security_smoke.sql`, verifies that the legacy direct-provision RPC is absent and all reviewed privileged Owner RPCs contain a database AAL2 guard. It was executed successfully against the isolated Development project on 2026-11-17. The repository database package's placeholder test script remains distinct from executing these SQL checks.
 
 Run targeted SQL checks only against the intended isolated database and record exact environment/result. Never point destructive or fixture-creating tests at production.
+
+
+## Teacher assignment scope — migrations 00053–00057
+
+The schema now includes `teacher_class_assignments`, scoped by tenant, teacher, academic year, class, section and optional subject. Tenant-aware composite foreign keys enforce consistent academic relationships. Restrictive RLS predicates narrow tenant-wide teacher access to assigned sections and subjects; see [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md). Development migration and catalog smoke evidence is recorded in `IMPLEMENTATION_STATUS.md`; Production is not yet migrated.
