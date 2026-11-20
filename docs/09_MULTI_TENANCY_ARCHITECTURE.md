@@ -86,3 +86,8 @@ The current shared-domain public URL pattern is `https://sahitech.dpdns.org/m/{s
 The slug and tenant ID sent by a public admission form are untrusted input. The server action re-queries the active tenant using both the ID and exact slug before accepting the application. The database's public-admission INSERT policy remains an independent boundary and still requires an active tenant with `platform_status = 'active'`.
 
 The shared platform domain plus path slug is the currently implemented sharing model. Do not present `custom_domain` values or tenant subdomains on a separate DNS host as operational unless DNS, TLS, host allowlisting, auth cookies and route resolution have been independently verified.
+
+
+## Teacher assignment boundary
+
+A `teacher` tenant membership is not a tenant-wide data grant. Migrations 00053–00054 add explicit academic-year teacher assignments and restrictive policies that AND with existing permissive tenant policies. Student/enrollment/attendance/mark/routine access is evaluated against the authenticated teacher's own active assignment. Admin and academic-dean access remains separate. Development verification and Production release blockers are documented in [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md).
