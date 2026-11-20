@@ -6,7 +6,7 @@
 
 ## 1. Schema source of truth
 
-The ordered SQL migrations are the schema change source of truth. The current manual-admin security branch contains migration files through `00052`. This is a repository/source statement only; it must not be confused with the migration ledger in any particular Development or Production database.
+The ordered SQL migrations are the schema change source of truth. The current manual-admin security branch contains migration files through `00057`. This is a repository/source statement only; it must not be confused with the migration ledger in any particular Development or Production database.
 
 Before changing the schema:
 1. Read the complete relevant migration history and current branch head.
