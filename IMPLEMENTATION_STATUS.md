@@ -227,3 +227,30 @@ No assertion that the manager's Production browser journey is verified should be
 Current database evidence confirms that `Taste Madrasa One` uses slug `tasteonegghx`; the expected public path is `https://sahitech.dpdns.org/m/tasteonegghx`. This is a shared-domain path, not a custom domain. DNS/TLS and verified ownership are still required before custom-domain support can be claimed.
 
 A successful build or deployment will not by itself prove public admission end-to-end, the student insert browser journey, guardian login, or full locale/RTL quality. Those require authenticated/public browser tests after deployment.
+
+
+---
+
+## 2026-11-20 — Teacher assignment isolation and anonymous-read hardening
+
+**Work branch:** `feat/mdi-teacher-access-scope` (based on `fix/student-schema-i18n-and-institution-websites`)  
+**Development Supabase project:** `srcmodeinjvfqwkramni`  
+**Production Supabase project:** `xbswamfmslhliayoowlo`  
+**Production database changes:** none
+
+| Area | Evidence | Status |
+|---|---|---|
+| Teacher assignments | Migrations 00053–00054 create tenant-aware class/section/subject/year assignments and restrictive teacher-scope policies for students, enrollments, attendance, exam marks, classes, sections, subjects and routines | Development applied; catalog smoke passed |
+| Teacher identity | Migrations 00055–00056 add atomic Admin-only linking to an existing Auth user with matching confirmed email; source action uses server-only Auth Admin lookup | Development applied; source implemented; live Auth E2E not run |
+| Teacher management UI | Teachers page is permission-gated and now includes account-link and assignment controls | Source implemented; CI/Preview and browser E2E pending |
+| Private function grants | Migration 00054 restores the least-privilege grant baseline and keeps trigger-only private functions non-callable by authenticated users | Development verified against Production grant baseline |
+| Anonymous sensitive-table reads | Migration 00057 revokes anon SELECT on sensitive tenant tables; the minimal public Sanad verification RPC remains executable | Development verified; Production still requires approved migration |
+| SQL smoke | `packages/database/tests/teacher_assignment_access_smoke.sql` | Executed successfully against Development on 2026-11-20; catalog/privilege assertions only |
+| Guardian/Parent workflow | No Guardian portal, linked guardian identity or verified invitation acceptance workflow exists in this change | Not implemented; release blocker |
+| Runtime verification | No real teacher account login, two-teacher/two-section isolation test, attendance/marks browser journey or guardian journey | Not verified |
+| CI and Preview | Parent commit `ebc99d64d2a2fbdce1fe90cd04cd2a1ca7fcb1f2` had successful CI run 44581001440 and a READY Vercel Preview before this branch's commits | New branch CI and Preview pending |
+| Production release | No PR merge, Production deployment, Production migration or live smoke test performed for this branch | Pending |
+
+**Important live Production audit correction:** the current Production migration ledger contains migrations 00045–00052, and the Vercel Production environment contains the server-side keys previously described as absent in the older status snapshot. This confirms that parts of the 2026-11-17 status are stale. Key presence does not prove correct values, Auth behavior or end-to-end readiness. Production still has anonymous SELECT grants on sensitive tables, including `sanads`, `students`, `student_guardians`, `attendance_records` and `exam_marks`; migration 00057 is not applied there. Production catalog also reports zero teacher, student and guardian rows at this audit point, so there is no live teacher/guardian journey to validate.
+
+**Release decision:** NOT READY. Do not merge or promote until the new branch CI and Preview pass, a real Development teacher identity and assignment are tested across allowed and denied sections, the Guardian/Parent identity workflow is completed, and Production migration 00057 plus post-release checks receive separate approval.
