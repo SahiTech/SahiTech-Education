@@ -95,3 +95,8 @@ A future student/guardian account workflow must be explicitly designed and teste
 - limit a student to their own permitted records;
 - link a parent/guardian account only through a verified `student_guardians` relationship and constrain access to the linked ward(s);
 - never treat a public admission number, unverified phone number, tenant ID or caller-supplied student ID as authentication.
+
+
+## Teacher identity binding
+
+A teacher role is usable for classroom access only when an active `teachers` record is linked to an existing Auth user with a confirmed email matching the teacher record. The Madrasa Admin-only `admin_link_teacher_account` RPC performs the profile and tenant-membership link atomically. The workflow does not create passwords or silently invite unverified identities. Assignment-level access is enforced separately by RLS; see [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md). Guardian identity linking and invitation acceptance remain unimplemented.
