@@ -57,6 +57,17 @@ BEGIN
     RAISE EXCEPTION 'Expected 7 private SECURITY DEFINER teacher predicates with authenticated-only execution and safe search_path; found %', v_function_count;
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid='public.admin_link_teacher_account(uuid,uuid,uuid)'::regprocedure
+      AND p.prosecdef
+      AND has_function_privilege('authenticated',p.oid,'EXECUTE')
+      AND NOT has_function_privilege('anon',p.oid,'EXECUTE')
+      AND position('pg_temp' in array_to_string(p.proconfig,',')) > 0
+  ) THEN
+    RAISE EXCEPTION 'Teacher account-link RPC must be SECURITY DEFINER, authenticated-only and use a safe search_path';
+  END IF;
+
   IF has_function_privilege('authenticated','private.capture_platform_audit()','EXECUTE')
      OR has_function_privilege('authenticated','private.capture_application_document_review_audit()','EXECUTE')
      OR has_function_privilege('authenticated','private.mark_manual_admin_tenant_flags()','EXECUTE') THEN
