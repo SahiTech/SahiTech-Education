@@ -24,3 +24,8 @@ See:
 - [Document 09 — Multi-Tenancy](09_MULTI_TENANCY_ARCHITECTURE.md)
 - [Document 11 — Security](11_SECURITY_AND_THREAT_MODEL.md)
 - [Documentation Sync Policy](DOCUMENTATION_SYNC_POLICY.md)
+
+
+## Teacher assignment table
+
+`public.teacher_class_assignments` is the current-year access grant linking a teacher profile to a tenant-owned class and section, with an optional subject scope. See [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md) for its RLS and account-linking rules.
