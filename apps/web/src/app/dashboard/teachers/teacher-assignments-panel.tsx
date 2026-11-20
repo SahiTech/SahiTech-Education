@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignTeacherToSection, linkTeacherAccount, removeTeacherAssignment } from '@/app/actions/teachers';
 
@@ -35,7 +35,7 @@ export function TeacherAssignmentsPanel({
   const availableSections = useMemo(() => sections.filter((section) => section.class_id === classId), [sections, classId]);
   const availableSubjects = useMemo(() => subjects.filter((subject) => subject.class_id === classId), [subjects, classId]);
 
-  async function handleLink(event: React.FormEvent<HTMLFormElement>) {
+  async function handleLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setMessage(null);
     const result = await linkTeacherAccount({ teacherId: linkTeacherId, email: linkEmail });
