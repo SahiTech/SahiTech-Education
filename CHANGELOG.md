@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Teacher assignment security
+- Add verified teacher-account linking, current-year class/section/optional-subject assignments, and restrictive RLS predicates for student, enrollment, attendance, exam, routine, guardian and Sanad access.
+- Add a Teachers dashboard panel for linking existing verified accounts and managing assignments; keep account creation/invitation separate and fail closed when no verified account exists.
+- Add migrations 00053–00057 and a Development SQL catalog smoke test. Development verified; Production migrations and authenticated browser E2E remain pending.
+- Revoke anonymous SELECT from sensitive tenant tables in Development while preserving the minimal public Sanad verification RPC. Production grant cleanup remains pending.
+
 ### Authentication & Workspace Access
 - Stop deriving tenant identity from arbitrary request host labels; resolve a sole active membership from the authenticated session and require explicit selection for multi-tenant users.
 - Add desktop, mobile and Sidebar Logout controls for Madrasa workspaces; clear the active-tenant selection cookie on sign-out while retaining the separate Global Owner shell.
