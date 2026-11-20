@@ -1,6 +1,6 @@
 # MDI Implementation & Verification Status
 
-**Last reviewed:** 2026-11-17  
+**Last reviewed:** 2026-11-20  
 **Repository:** SahiTech/SahiTech-Education  
 **Reviewed ref:** `main` at `aaaf802d4c4f85b7982410d346ece201201116b4`  
 **Review type:** GitHub source-tree and documentation inspection only  
