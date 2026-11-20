@@ -78,3 +78,8 @@ The web regression suite checks:
 - student class enrollment only receives a section selection when an actual section is selected.
 
 These source-level checks do not replace authenticated browser testing of student insert, class enrollment, public admission and all three locale/RTL layouts against a disposable tenant.
+
+
+## Teacher assignment SQL smoke coverage
+
+`packages/database/tests/teacher_assignment_access_smoke.sql` verifies assignment-table RLS, restrictive teacher policies, private helper function grants/search_path, the Admin-only teacher-link RPC, trigger-function execution grants, and anonymous access revocation. It was executed successfully against the isolated Development project on 2026-11-20. This is a catalog/privilege smoke test only; it does not replace authenticated two-teacher/two-section RLS tests, browser E2E, or Production verification. See [Teacher Assignment Access Control](31_TEACHER_ASSIGNMENT_ACCESS_CONTROL.md).
