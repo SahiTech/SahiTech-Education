@@ -137,7 +137,6 @@ export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'r
 }
 
 
-import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function linkTeacherAccount(params: { teacherId: string; email: string }) {
   try {
